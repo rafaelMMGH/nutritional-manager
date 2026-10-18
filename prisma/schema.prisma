@@ -1,0 +1,475 @@
+// One model per AppDb collection (src/lib/types.ts). Field names match the JSON keys; tables are snake_case.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id         String    @id
+  // Insertion order (db.json arrays were ordered); every read orders by it.
+  seq        Int       @default(autoincrement())
+  email      String
+  name       String
+  // Weekly report goals: target weight and how many days a week to exercise.
+  weight_goal_kg     Float?
+  activity_goal_days Int       @default(4)
+  created_at DateTime  @db.Timestamptz(3)
+  updated_at DateTime  @db.Timestamptz(3)
+  deleted_at DateTime? @db.Timestamptz(3)
+
+  sessions          Session[]
+  plans             Plan[]
+  recipes           Recipe[]
+  ingredients       Ingredient[]
+  carts             Cart[]
+  shoppingLists     ShoppingList[]
+  shoppingTemplates ShoppingTemplate[]
+  ragIndexes        RagIndex[]
+  auditEvents       AuditEvent[]
+  dailyLogs         DailyLog[]
+
+  @@map("users")
+}
+
+model Session {
+  token   String @id
+  // Insertion order (db.json arrays were ordered); every read orders by it.
+  seq     Int    @default(autoincrement())
+  user_id String
+  user    User   @relation(fields: [user_id], references: [id])
+
+  @@index([user_id])
+  @@map("sessions")
+}
+
+// Single row (id = 1) holding AppDb.settings.
+model Settings {
+  id   Int  @id @default(1) @db.SmallInt
+  data Json @db.Json
+
+  @@map("settings")
+}
+
+model Plan {
+  id                String    @id
+  // Insertion order (db.json arrays were ordered); every read orders by it.
+  seq               Int       @default(autoincrement())
+  user_id           String
+  name              String
+  objective         String
+  status            String
+  processing_status String
+  created_at        DateTime  @db.Timestamptz(3)
+  updated_at        DateTime  @db.Timestamptz(3)
+  deleted_at        DateTime? @db.Timestamptz(3)
+
+  user         User          @relation(fields: [user_id], references: [id])
+  versions     PlanVersion[]
+  uploadedPdfs UploadedPdf[]
+
+  @@index([user_id])
+  @@map("plans")
+}
+
+model PlanVersion {
+  id              String    @id
+  // Insertion order (db.json arrays were ordered); every read orders by it.
+  seq             Int       @default(autoincrement())
+  plan_id         String
+  version_number  Int
+  structured_data Json      @db.Json
+  change_summary  String
+  is_current      Boolean
+  created_at      DateTime  @db.Timestamptz(3)
+  updated_at      DateTime  @db.Timestamptz(3)
+  deleted_at      DateTime? @db.Timestamptz(3)
+
+  plan               Plan                @relation(fields: [plan_id], references: [id])
+  mealTypes          MealType[]
+  mealOptions        MealOption[]
+  planVersionRecipes PlanVersionRecipe[]
+  sharedAddOns       SharedAddOn[]
+  shoppingLists      ShoppingList[]
+
+  @@index([plan_id])
+  @@map("plan_versions")
+}
+
+model UploadedPdf {
+  id             String    @id
+  // Insertion order (db.json arrays were ordered); every read orders by it.
+  seq            Int       @default(autoincrement())
+  plan_id        String
+  file_path      String
+  file_name      String
+  mime_type      String
+  storage_status String
+  created_at     DateTime  @db.Timestamptz(3)
+  deleted_at     DateTime? @db.Timestamptz(3)
+
+  plan Plan @relation(fields: [plan_id], references: [id])
+
+  @@index([plan_id])
+  @@map("uploaded_pdfs")
+}
+
+model MealType {
+  id              String    @id
+  // Insertion order (db.json arrays were ordered); every read orders by it.
+  seq             Int       @default(autoincrement())
+  plan_version_id String
+  name            String
+  display_order   Int
+  time_window     String
+  created_at      DateTime  @db.Timestamptz(3)
+  deleted_at      DateTime? @db.Timestamptz(3)
+
+  planVersion        PlanVersion         @relation(fields: [plan_version_id], references: [id])
+  mealOptions        MealOption[]
+  planVersionRecipes PlanVersionRecipe[]
+  sharedAddOns       SharedAddOn[]
+
+  @@index([plan_version_id])
+  @@map("meal_types")
+}
+
+model Recipe {
+  id             String    @id
+  // Insertion order (db.json arrays were ordered); every read orders by it.
+  seq            Int       @default(autoincrement())
+  user_id        String
+  name           String
+  description    String
+  canonical_hash String
+  created_at     DateTime  @db.Timestamptz(3)
+  updated_at     DateTime  @db.Timestamptz(3)
+  deleted_at     DateTime? @db.Timestamptz(3)
+
+  user               User                @relation(fields: [user_id], references: [id])
+  mealOptions        MealOption[]
+  planVersionRecipes PlanVersionRecipe[]
+
+  @@index([user_id])
+  @@index([canonical_hash])
+  @@map("recipes")
+}
+
+model MealOption {
+  id               String    @id
+  // Insertion order (db.json arrays were ordered); every read orders by it.
+  seq              Int       @default(autoincrement())
+  plan_version_id  String
+  meal_type_id     String
+  recipe_id        String
+  option_number    Int
+  is_unique_option Boolean
+  created_at       DateTime  @db.Timestamptz(3)
+  deleted_at       DateTime? @db.Timestamptz(3)
+
+  planVersion PlanVersion @relation(fields: [plan_version_id], references: [id])
+  mealType    MealType    @relation(fields: [meal_type_id], references: [id])
+  recipe      Recipe      @relation(fields: [recipe_id], references: [id])
+
+  @@index([plan_version_id])
+  @@index([meal_type_id])
+  @@index([recipe_id])
+  @@map("meal_options")
+}
+
+model PlanVersionRecipe {
+  id              String    @id
+  // Insertion order (db.json arrays were ordered); every read orders by it.
+  seq             Int       @default(autoincrement())
+  plan_version_id String
+  recipe_id       String
+  meal_type_id    String
+  option_number   Int
+  created_at      DateTime  @db.Timestamptz(3)
+  deleted_at      DateTime? @db.Timestamptz(3)
+
+  planVersion PlanVersion @relation(fields: [plan_version_id], references: [id])
+  recipe      Recipe      @relation(fields: [recipe_id], references: [id])
+  mealType    MealType    @relation(fields: [meal_type_id], references: [id])
+
+  @@index([plan_version_id])
+  @@index([recipe_id])
+  @@index([meal_type_id])
+  @@map("plan_version_recipes")
+}
+
+model SharedAddOn {
+  id                     String    @id
+  // Insertion order (db.json arrays were ordered); every read orders by it.
+  seq                    Int       @default(autoincrement())
+  plan_version_id        String
+  meal_type_id           String
+  name                   String
+  applies_to_all_options Boolean   @default(true)
+  required               Boolean?
+  notes                  String?
+  canonical_hash         String
+  // Catch-all for record fields that have no column.
+  extra                  Json      @default("{}") @db.Json
+  created_at             DateTime  @db.Timestamptz(3)
+  deleted_at             DateTime? @db.Timestamptz(3)
+
+  planVersion PlanVersion @relation(fields: [plan_version_id], references: [id])
+  mealType    MealType    @relation(fields: [meal_type_id], references: [id])
+
+  @@index([plan_version_id])
+  @@index([meal_type_id])
+  @@map("shared_add_ons")
+}
+
+model Ingredient {
+  id             String    @id
+  // Insertion order (db.json arrays were ordered); every read orders by it.
+  seq            Int       @default(autoincrement())
+  user_id        String
+  canonical_name String
+  category       String
+  primary_unit   String
+  created_at     DateTime  @db.Timestamptz(3)
+  updated_at     DateTime  @db.Timestamptz(3)
+  deleted_at     DateTime? @db.Timestamptz(3)
+
+  user              User               @relation(fields: [user_id], references: [id])
+  usages            IngredientUsage[]
+  cartItems         CartItem[]
+  shoppingListItems ShoppingListItem[]
+
+  @@index([user_id])
+  @@index([canonical_name])
+  @@map("ingredients")
+}
+
+// Empty in db.json and never written by the app yet; shape unknown, so id + json.
+model IngredientAlias {
+  id    String @id
+  // Insertion order (db.json arrays were ordered); every read orders by it.
+  seq   Int    @default(autoincrement())
+  extra Json   @default("{}") @db.Json
+
+  @@map("ingredient_aliases")
+}
+
+model AlternativeGroup {
+  id    String @id
+  // Insertion order (db.json arrays were ordered); every read orders by it.
+  seq   Int    @default(autoincrement())
+  extra Json   @default("{}") @db.Json
+
+  @@map("alternative_groups")
+}
+
+model IngredientUsage {
+  id                   String    @id
+  // Insertion order (db.json arrays were ordered); every read orders by it.
+  seq                  Int       @default(autoincrement())
+  ingredient_id        String?
+  // Polymorphic: recipe | add_on | manual.
+  source_type          String
+  source_id            String
+  quantity             Float
+  unit                 String
+  practical_quantity   Float?
+  practical_unit       String?
+  notes                String
+  is_optional          Boolean
+  // Not a real FK: alternativeGroups is empty while usages carry generated group ids.
+  alternative_group_id String?
+  confidence_score     Float
+  requires_review      Boolean
+  name_snapshot        String?
+  category_snapshot    String?
+  created_at           DateTime  @db.Timestamptz(3)
+  deleted_at           DateTime? @db.Timestamptz(3)
+
+  ingredient Ingredient? @relation(fields: [ingredient_id], references: [id])
+
+  @@index([ingredient_id])
+  @@index([source_type, source_id])
+  @@map("ingredient_usages")
+}
+
+model Cart {
+  id         String    @id
+  // Insertion order (db.json arrays were ordered); every read orders by it.
+  seq        Int       @default(autoincrement())
+  user_id    String
+  status     String
+  created_at DateTime  @db.Timestamptz(3)
+  updated_at DateTime  @db.Timestamptz(3)
+  deleted_at DateTime? @db.Timestamptz(3)
+
+  user          User           @relation(fields: [user_id], references: [id])
+  items         CartItem[]
+  shoppingLists ShoppingList[]
+
+  @@index([user_id])
+  @@map("carts")
+}
+
+model CartItem {
+  id                    String    @id
+  // Insertion order (db.json arrays were ordered); every read orders by it.
+  seq                   Int       @default(autoincrement())
+  cart_id               String
+  source_type           String
+  // Polymorphic: recipe id or shopping list id depending on source_type.
+  source_id             String?
+  quantity_multiplier   Float
+  period_days           Int
+  training_days         Int
+  selected_alternatives Json      @db.Json
+  include_add_ons       Boolean
+  include_supplements   Boolean
+  manual_name           String?
+  manual_quantity       Float?
+  manual_unit           String?
+  manual_ingredient_id  String?
+  created_at            DateTime  @db.Timestamptz(3)
+  updated_at            DateTime  @db.Timestamptz(3)
+  deleted_at            DateTime? @db.Timestamptz(3)
+
+  cart             Cart        @relation(fields: [cart_id], references: [id])
+  manualIngredient Ingredient? @relation(fields: [manual_ingredient_id], references: [id])
+
+  @@index([cart_id])
+  @@index([manual_ingredient_id])
+  @@map("cart_items")
+}
+
+model ShoppingList {
+  id                     String    @id
+  // Insertion order (db.json arrays were ordered); every read orders by it.
+  seq                    Int       @default(autoincrement())
+  user_id                String
+  name                   String
+  plan_version_id        String?
+  period_days            Int
+  generated_from_cart_id String
+  snapshot_data          Json      @db.Json
+  created_at             DateTime  @db.Timestamptz(3)
+  updated_at             DateTime  @db.Timestamptz(3)
+  deleted_at             DateTime? @db.Timestamptz(3)
+
+  user          User               @relation(fields: [user_id], references: [id])
+  planVersion   PlanVersion?       @relation(fields: [plan_version_id], references: [id])
+  generatedFrom Cart               @relation(fields: [generated_from_cart_id], references: [id])
+  items         ShoppingListItem[]
+
+  @@index([user_id])
+  @@index([plan_version_id])
+  @@index([generated_from_cart_id])
+  @@map("shopping_lists")
+}
+
+model ShoppingListItem {
+  id                String    @id
+  // Insertion order (db.json arrays were ordered); every read orders by it.
+  seq               Int       @default(autoincrement())
+  shopping_list_id  String
+  ingredient_id     String?
+  name_snapshot     String
+  quantity_snapshot Float
+  unit_snapshot     String
+  category_snapshot String
+  status            String
+  substitution_data Json?     @db.Json
+  source_breakdown  Json      @db.Json
+  created_at        DateTime  @db.Timestamptz(3)
+  updated_at        DateTime  @db.Timestamptz(3)
+  deleted_at        DateTime? @db.Timestamptz(3)
+
+  shoppingList ShoppingList @relation(fields: [shopping_list_id], references: [id])
+  ingredient   Ingredient?  @relation(fields: [ingredient_id], references: [id])
+
+  @@index([shopping_list_id])
+  @@index([ingredient_id])
+  @@map("shopping_list_items")
+}
+
+model ShoppingTemplate {
+  id                 String    @id
+  // Insertion order (db.json arrays were ordered); every read orders by it.
+  seq                Int       @default(autoincrement())
+  user_id            String
+  name               String
+  description        String
+  source_config      Json?     @db.Json
+  reference_snapshot Json      @db.Json
+  created_at         DateTime  @db.Timestamptz(3)
+  updated_at         DateTime  @db.Timestamptz(3)
+  deleted_at         DateTime? @db.Timestamptz(3)
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@index([user_id])
+  @@map("shopping_templates")
+}
+
+model RagIndex {
+  id             String    @id
+  // Insertion order (db.json arrays were ordered); every read orders by it.
+  seq            Int       @default(autoincrement())
+  user_id        String
+  // Polymorphic: currently always plan_version.
+  scope_type     String
+  scope_id       String
+  status         String
+  index_metadata Json      @db.Json
+  extra          Json      @default("{}") @db.Json
+  created_at     DateTime  @db.Timestamptz(3)
+  updated_at     DateTime  @db.Timestamptz(3)
+  deleted_at     DateTime? @db.Timestamptz(3)
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@index([user_id])
+  @@index([scope_type, scope_id])
+  @@map("rag_indexes")
+}
+
+model AuditEvent {
+  id         String   @id
+  // Insertion order (db.json arrays were ordered); every read orders by it.
+  seq        Int      @default(autoincrement())
+  user_id    String
+  event      String
+  entity_id  String?
+  extra      Json     @default("{}") @db.Json
+  created_at DateTime @db.Timestamptz(3)
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@index([user_id])
+  @@index([entity_id])
+  @@map("audit_events")
+}
+
+model DailyLog {
+  id            String   @id
+  // Insertion order (db.json arrays were ordered); every read orders by it.
+  seq           Int      @default(autoincrement())
+  user_id       String
+  date          DateTime @db.Date
+  meals_done    String[]
+  water_glasses Int
+  // Weight logged that day, if any, and whether the user exercised.
+  weight_kg     Float?
+  exercised     Boolean  @default(false)
+  created_at    DateTime @db.Timestamptz(3)
+  updated_at    DateTime @db.Timestamptz(3)
+
+  user User @relation(fields: [user_id], references: [id])
+
+  // One log per user and day: concurrent first saves used to create duplicates, and reads picked the wrong one.
+  @@unique([user_id, date])
+  @@map("daily_logs")
+}

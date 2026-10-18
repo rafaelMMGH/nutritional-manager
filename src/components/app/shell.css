@@ -1,0 +1,134 @@
+/*
+ * Signed-in top bar: floating glass pills (same material as the landing page's nav), so content scrolls under them.
+ * The account pill sits on its own at the left edge; the section navigation stays centered.
+ */
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 16px max(28px, calc((100% - 1704px) / 2)) 8px;
+  pointer-events: none;
+  view-transition-name: site-header;
+}
+.topbar-account { grid-column: 1; justify-self: start; }
+.topbar-island { grid-column: 2; }
+.topbar-island, .topbar-account {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 6px;
+  border: 1px solid rgb(255 255 255 / 0.75);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.72);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.9), 0 16px 40px -24px rgb(22 23 29 / 0.4);
+}
+
+.nav { display: flex; gap: 4px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.nav::-webkit-scrollbar { display: none; }
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 999px;
+  color: var(--text-2);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 200ms ease, color 200ms ease, transform 100ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.pill svg { flex: none; }
+.pill:active { transform: scale(0.96); }
+.pill.active { background: var(--text-1); color: white; }
+@media (hover: hover) and (pointer: fine) {
+  .pill:not(.active):hover { background: rgb(22 23 29 / 0.06); color: var(--text-1); }
+}
+
+/* ---------- Account ---------- */
+
+.user-menu { position: relative; flex: none; }
+.user-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px 0 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-1);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 200ms ease, transform 100ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.user-chip:active { transform: scale(0.97); }
+.user-chip[aria-expanded="true"] { background: rgb(22 23 29 / 0.06); }
+@media (hover: hover) and (pointer: fine) {
+  .user-chip:hover { background: rgb(22 23 29 / 0.06); }
+}
+.user-text { display: grid; }
+.user-text strong { font-size: 14px; line-height: 20px; font-weight: 600; }
+.user-text small { max-width: 160px; overflow: hidden; color: var(--text-3); font-size: 12px; line-height: 16px; text-overflow: ellipsis; white-space: nowrap; }
+.user-caret { color: var(--text-3); transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1); }
+.user-chip[aria-expanded="true"] .user-caret { transform: rotate(180deg); }
+.avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: var(--brand);
+  color: white;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.pill:focus-visible, .user-chip:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+/* The account menu grows out of the pill that opened it, aligned to its left edge. */
+.user-popover {
+  top: calc(100% + 14px);
+  left: -6px;
+  right: auto;
+  transform-origin: top left;
+  transition: opacity 180ms cubic-bezier(0.23, 1, 0.32, 1), transform 180ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+@starting-style {
+  .user-popover { opacity: 0; transform: scale(0.95); }
+}
+@media (max-width: 1100px) {
+  .user-text, .user-caret { display: none; }
+  .user-chip { padding: 0; }
+}
+
+@media (max-width: 680px) {
+  .topbar { grid-template-columns: auto minmax(0, 1fr); padding: 12px 16px 8px; gap: 8px; }
+  .topbar-island { width: 100%; box-sizing: border-box; justify-content: space-between; }
+  .pill { padding: 0 12px; }
+  .pill span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .pill.active span { position: static; width: auto; height: auto; overflow: visible; clip-path: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pill, .user-chip { transform: none !important; }
+  .user-popover { transition: opacity 150ms ease; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .topbar-island, .topbar-account { background: white; backdrop-filter: none; -webkit-backdrop-filter: none; }
+}
+@media (prefers-contrast: more) {
+  .topbar-island, .topbar-account { background: white; backdrop-filter: none; -webkit-backdrop-filter: none; border-color: var(--text-3); }
+}

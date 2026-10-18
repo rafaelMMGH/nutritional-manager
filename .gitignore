@@ -1,0 +1,23 @@
+# Private data: uploaded plan PDFs, db.json, local backups
+data/
+.backup/
+.env*.local
+
+# Dependencies and build output
+node_modules/
+.next/
+src/generated/
+*.tsbuildinfo
+
+# Editor and agent tooling (local only)
+.DS_Store
+.idea/
+.agents/
+.claude/
+skills-lock.json
+
+# Playwright e2e
+.next-e2e/
+test-results/
+playwright-report/
+tests/e2e/.auth/

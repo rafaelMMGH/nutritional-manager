@@ -1,0 +1,783 @@
+/*
+ * Signed-in home, laid out like the reference: a greeting with an assistant search on top; a tall schedule on the
+ * left; the weekly report and the shopping list on the right; intake, activity and the plan promo underneath.
+ * Acapulco sage for the brand, yellow for the selected day and shopping. Feedback stays within 100–250ms on
+ * --home-ease-out; entrances settle quickly because this page opens many times a day.
+ */
+
+.home {
+  --home-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --home-ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --home-ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --home-line: rgb(22 23 29 / 0.07);
+  --home-muted: #6b6e7a;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+
+/* ---------- Entrance ---------- */
+
+/* Visited many times a day, so the entrance is short and quiet: 8px and a fade, 40ms apart. */
+@keyframes home-rise {
+  from { opacity: 0; transform: translateY(8px); }
+}
+.home-rise { animation: home-rise 400ms var(--home-ease-out) backwards; animation-delay: calc(var(--i, 0) * 40ms); }
+
+/* Numbers roll to their new value: up when they grow, down when they shrink. */
+.home-roll { display: inline-block; transition: transform 200ms var(--home-ease-out), opacity 200ms var(--home-ease-out); }
+@starting-style {
+  .home-roll[data-dir="up"] { opacity: 0; transform: translateY(40%); }
+  .home-roll[data-dir="down"] { opacity: 0; transform: translateY(-40%); }
+}
+
+/* ---------- Greeting + assistant search ---------- */
+
+.home-head { display: flex; align-items: center; gap: 32px; }
+.home-hello { flex: none; }
+.home-hello h1 { margin: 0; color: var(--text-1); font-size: 36px; line-height: 40px; font-weight: 400; letter-spacing: -0.025em; }
+.home-hello h1 strong { font-weight: 700; }
+.home-hello p { margin: 4px 0 0; color: var(--text-2); font-size: 16px; line-height: 24px; }
+.home-hello p b { color: var(--text-1); font-weight: 700; }
+
+.home-search {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 56px;
+  padding: 0 8px 0 20px;
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-3);
+  box-shadow: 0 1px 2px rgb(22 23 29 / 0.04);
+  transition: box-shadow 200ms ease;
+}
+.home-search:focus-within { box-shadow: 0 0 0 2px var(--brand), 0 0 0 6px var(--brand-100); }
+.home-search input { flex: 1; min-width: 0; height: 100%; padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--text-1); font: inherit; font-size: 16px; outline: none; }
+.home-search input::placeholder { color: #9a9da7; }
+.home-search-scope { position: relative; }
+.home-search-filter { display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border: 0; border-radius: 999px; background: transparent; color: var(--text-2); cursor: pointer; transition: background-color 200ms ease, color 200ms ease, transform 100ms var(--home-ease-out); }
+.home-search-filter:active { transform: scale(0.92); }
+.home-search-filter.is-on { background: var(--brand-100); color: var(--brand-700); }
+@media (hover: hover) and (pointer: fine) {
+  .home-search-filter:not(.is-on):hover { background: var(--canvas); color: var(--text-1); }
+}
+.home-search-filter:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.home-scope-menu { top: calc(100% + 10px); right: -4px; transform-origin: top right; transition: opacity 180ms var(--home-ease-out), transform 180ms var(--home-ease-out); }
+@starting-style {
+  .home-scope-menu { opacity: 0; transform: scale(0.95); }
+}
+
+/* ---------- Grid ---------- */
+
+/* Left: the schedule, full height. Right: two rows; report + shopping on top, intake + the plan banner below. */
+.home-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(320px, 1fr) repeat(6, minmax(0, 0.38fr));
+  grid-template-rows: minmax(0, 1.5fr) minmax(0, 1fr);
+  grid-template-areas:
+    "day report report report shop shop shop"
+    "day intake intake promo promo promo promo";
+  gap: 24px;
+  min-height: 0;
+}
+.home-day { grid-area: day; }
+.home-report { grid-area: report; }
+.home-shop { grid-area: shop; }
+.home-intake { grid-area: intake; }
+.home-promo { grid-area: promo; }
+
+.home-card {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+  border: 1px solid var(--home-line);
+  border-radius: 28px;
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgb(22 23 29 / 0.04), 0 16px 32px -28px rgb(22 23 29 / 0.25);
+}
+.home-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 32px; }
+.home-card-head h2 { margin: 0; font-size: 18px; line-height: 28px; font-weight: 700; letter-spacing: -0.01em; color: var(--text-1); }
+.home-card-tools { display: flex; align-items: center; gap: 8px; }
+.home-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--canvas);
+  color: var(--text-2);
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.home-count svg { color: #f2762e; }
+.home-big { margin: 0; color: var(--text-1); font-size: 30px; line-height: 36px; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.home-big small { color: var(--home-muted); font-size: 14px; line-height: 20px; font-weight: 500; letter-spacing: 0; }
+.home-note { margin: 0; color: var(--home-muted); font-size: 14px; line-height: 20px; }
+
+/* ---------- Buttons ---------- */
+
+.home-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 20px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--btn);
+  color: white;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 200ms ease, box-shadow 200ms ease, transform 100ms var(--home-ease-out);
+}
+.home-btn:active { transform: scale(0.97); }
+.home-btn.is-quiet { background: transparent; color: var(--text-1); box-shadow: inset 0 0 0 1.5px rgb(22 23 29 / 0.14); }
+.home-btn.is-soft { background: var(--brand-50); color: var(--brand-700); }
+.home-btn svg { transition: transform 200ms var(--home-ease-out); }
+@media (hover: hover) and (pointer: fine) {
+  .home-btn:hover { background: var(--btn-hover); box-shadow: 0 10px 20px -12px rgb(39 72 60 / 0.6); }
+  .home-btn.is-quiet:hover { background: var(--canvas); box-shadow: inset 0 0 0 1.5px rgb(22 23 29 / 0.24); }
+  .home-btn.is-quiet:hover svg { transform: translateX(3px); }
+  .home-btn.is-soft:hover { background: var(--brand-100); box-shadow: none; }
+}
+.home-btn:focus-visible, .home-icon-btn:focus-visible, .home-check:focus-visible, .home-daypill:focus-visible, .home-chev:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
+}
+
+.home-icon-btn {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--canvas);
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background-color 200ms ease, color 200ms ease, transform 100ms var(--home-ease-out);
+}
+.home-icon-btn:active { transform: scale(0.94); }
+.home-icon-btn.is-on { background: var(--text-1); color: white; }
+@media (hover: hover) and (pointer: fine) {
+  .home-icon-btn:not(.is-on):hover { background: var(--pill-hover); color: var(--text-1); }
+}
+
+/* ---------- Tags and ingredient chips ---------- */
+
+.home-tag { padding: 2px 10px; border-radius: 999px; font-size: 13px; line-height: 20px; font-weight: 600; }
+.home-tag.tone-teal { background: #dff6f2; color: #0b6f65; }
+.home-tag.tone-coral { background: #ffe4de; color: #b2361d; }
+.home-tag.tone-green { background: var(--brand-100); color: var(--brand-700); }
+.home-tag.tone-orange { background: #ffecd6; color: #9a4a00; }
+.home-tag.tone-blue { background: #e1efff; color: #1b5fae; }
+.home-ingredients { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0; padding: 0; list-style: none; }
+.home-ingredients li {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  min-width: 0;
+  padding: 4px 12px 4px 4px;
+  border-radius: 999px;
+  background: var(--canvas);
+  color: var(--text-1);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+}
+.home-ingredients img { width: 28px; height: 28px; padding: 2px; box-sizing: border-box; border-radius: 999px; background: white; object-fit: contain; }
+.home-ingredients small { color: var(--home-muted); font-size: 13px; }
+/* Long names from the PDF truncate on one line; the amount always stays whole beside them. */
+.home-ingredients li span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.home-ingredients li small { flex: none; white-space: nowrap; }
+.home-ingredients img { flex: none; }
+.home-ingredients li.is-unreadable span { color: var(--home-muted); }
+.home-ingredients .home-ingredients-more { padding: 4px 12px; color: var(--home-muted); }
+
+/* ---------- Day ---------- */
+
+.home-day { min-height: 0; }
+.home-strip { position: relative; }
+.home-strip-days, .home-strip-pill { display: flex; align-items: center; justify-content: center; gap: 8px; }
+/* The selected-day pill: a yellow copy of the strip clipped to one day. Moving the clip slides it to the new day,
+   with text and background moving together (250ms, on-screen movement curve). */
+.home-strip-pill {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: clip-path 250ms var(--home-ease-in-out), opacity 200ms ease;
+}
+.home-strip-pill.is-on { opacity: 1; }
+.home-strip-pill .home-chev { visibility: hidden; }
+.home-strip-pill .home-daypill { background: var(--yellow); color: var(--text-1); }
+.home-strip-pill .home-daypill b { font-weight: 700; }
+/* Until the pill is measured (first paint), the selected day carries the yellow itself. */
+.home-strip:not(.is-ready) .home-strip-days .home-daypill.is-selected { background: var(--yellow); color: var(--text-1); }
+.home-chev {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 48px;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background-color 200ms ease, transform 100ms var(--home-ease-out);
+}
+.home-chev:active { transform: scale(0.94); }
+@media (hover: hover) and (pointer: fine) {
+  .home-chev:hover { background: var(--canvas); color: var(--text-1); }
+}
+.home-daypill {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 64px;
+  display: grid;
+  justify-items: center;
+  gap: 0;
+  padding: 12px 4px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--canvas);
+  color: var(--text-2);
+  font: inherit;
+  cursor: pointer;
+  transition: background-color 200ms ease, color 200ms ease, opacity 200ms var(--home-ease-out), transform 200ms var(--home-ease-out);
+}
+.home-daypill:active { transition-duration: 100ms; }
+/* Arrows bring the new five days in from the side you moved toward. */
+@starting-style {
+  .home-strip[data-shift="next"] .home-daypill { opacity: 0; transform: translateX(12px); }
+  .home-strip[data-shift="prev"] .home-daypill { opacity: 0; transform: translateX(-12px); }
+}
+.home-daypill small { font-size: 12px; line-height: 16px; font-weight: 500; }
+.home-daypill b { font-size: 20px; line-height: 28px; font-weight: 600; color: var(--text-1); font-variant-numeric: tabular-nums; }
+.home-daypill:active { transform: scale(0.96); }
+.home-daypill.is-today b { color: var(--brand-600); font-weight: 700; }
+.home-daypill.is-selected b { color: var(--text-1); font-weight: 700; }
+@media (hover: hover) and (pointer: fine) {
+  .home-daypill:not(.is-selected):hover { background: var(--pill-hover); }
+}
+
+.home-timeline {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 240px;
+  margin: 0 -8px;
+  padding: 0 8px 24px;
+  list-style: none;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent);
+}
+.home-timeline > li {
+  position: relative;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  padding: 12px;
+  border-radius: 16px;
+  transition: background-color 200ms ease;
+}
+.home-timeline > li + li { margin-top: 4px; }
+/* Re-keyed per day: switching days brings the rows in top to bottom, 30ms apart. */
+@keyframes home-row-in {
+  from { opacity: 0; transform: translateY(6px); }
+}
+.home-timeline > li { animation: home-row-in 250ms var(--home-ease-out) both; animation-delay: calc(var(--i, 0) * 30ms); }
+/* Dashed spine between checks, filling in green once two meals in a row are done. */
+.home-timeline > li:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: 25px;
+  top: 44px;
+  bottom: -16px;
+  border-left: 2px dashed #d9dbe2;
+}
+.home-timeline > li:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  left: 25px;
+  top: 44px;
+  bottom: -16px;
+  width: 2px;
+  background: var(--brand);
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform 250ms var(--home-ease-out);
+}
+.home-timeline > li.is-done:has(+ li.is-done)::before { transform: scaleY(1); }
+.home-timeline > li.is-next { background: var(--brand-50); box-shadow: inset 0 0 0 1px var(--brand-100); }
+.home-meal { display: grid; gap: 2px; min-width: 0; }
+.home-meal time { color: var(--home-muted); font-size: 13px; line-height: 20px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.home-meal strong { overflow: hidden; color: var(--text-1); font-size: 16px; line-height: 24px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; transition: color 200ms ease; }
+.home-timeline > li.is-done .home-meal strong { color: var(--home-muted); }
+.home-meal-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin-top: 4px; color: var(--home-muted); font-size: 13px; line-height: 20px; }
+.home-meal-meta > span:not(.home-tag) { display: inline-flex; align-items: center; gap: 4px; }
+.home-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px; border-radius: 999px; background: var(--canvas); color: var(--text-2); font-size: 13px; line-height: 20px; font-weight: 600; }
+.home-now-flag { margin-left: 8px; padding: 1px 8px; border-radius: 999px; background: var(--yellow); color: var(--text-1); font-size: 11px; line-height: 18px; font-weight: 700; }
+/* The next meal opens up in place. Every row of today carries its details folded (0fr); the next one unfolds (1fr),
+   so a check-off folds one row while the next opens in the same 250ms instead of the list jumping. */
+.home-next-wrap { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 250ms var(--home-ease-out); }
+.home-next-clip { min-height: 0; overflow: hidden; margin: 0 -4px; padding: 0 4px; }
+.home-next { display: grid; gap: 12px; margin: 12px 0 4px; opacity: 0; transform: translateY(-6px); transition: opacity 200ms var(--home-ease-out), transform 250ms var(--home-ease-out); }
+.home-timeline > li.is-next .home-next-wrap { grid-template-rows: 1fr; }
+.home-timeline > li.is-next .home-next { opacity: 1; transform: none; }
+.home-next .home-ingredients { margin: 0; }
+.home-next .home-ingredients li { background: white; }
+.home-next-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.home-next-actions .home-btn { min-height: 40px; padding: 6px 16px; font-size: 14px; }
+
+.home-check {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 2px solid #cfd2da;
+  border-radius: 999px;
+  background: white;
+  color: white;
+  cursor: pointer;
+  transition: background-color 200ms var(--home-ease-out), border-color 200ms var(--home-ease-out), transform 100ms var(--home-ease-out);
+}
+.home-check:active:not(:disabled) { transform: scale(0.88); }
+.home-check[aria-checked="true"] { border-color: var(--brand); background: var(--brand); }
+.home-check:disabled { cursor: not-allowed; opacity: 0.45; }
+.home-check svg { transition: transform 200ms var(--home-ease-out), opacity 200ms var(--home-ease-out); }
+@starting-style {
+  .home-check svg { transform: scale(0.5); opacity: 0; }
+}
+@media (hover: hover) and (pointer: fine) {
+  .home-check:hover:not(:disabled) { border-color: var(--brand); }
+}
+.home-time-input { width: 128px; height: 32px; padding: 0 8px; border: 1px solid #d9dbe2; border-radius: 8px; font: inherit; font-size: 14px; color: var(--text-1); background: white; }
+.home-time-input:focus { outline: 2px solid var(--brand-100); border-color: var(--brand); }
+
+.home-empty { flex: 1; display: grid; place-items: center; align-content: center; gap: 12px; padding: 32px 16px; text-align: center; color: var(--home-muted); }
+.home-empty p { margin: 0; max-width: 320px; color: inherit; }
+
+/* ---------- Water cups (inside Ingesta) ---------- */
+
+.home-card-head h2 { display: flex; align-items: center; gap: 8px; }
+.home-card-head h2 svg { color: var(--text-2); }
+.home-water { display: grid; gap: 8px; }
+.home-water p { margin: 0; color: var(--text-2); font-size: 14px; line-height: 20px; }
+.home-water p b { color: var(--text-1); font-weight: 700; font-variant-numeric: tabular-nums; }
+.home-cups { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 4px; }
+.home-cup { position: relative; display: grid; place-items: center; height: 40px; padding: 0; border: 0; border-radius: 8px; background: transparent; cursor: pointer; transition: transform 100ms var(--home-ease-out); }
+.home-cup svg { width: 100%; max-width: 28px; height: 100%; overflow: visible; }
+.home-cup-glass { fill: #f3f9ff; stroke: #a9d0f5; stroke-width: 1.6; stroke-linejoin: round; transition: stroke 200ms ease; }
+/* Water rises from the bottom; neighbours follow 30ms apart so a long jump pours across. */
+.home-cup-water { fill: #4ea2ef; transform: scaleY(0); transform-origin: 50% 100%; transform-box: fill-box; transition: transform 250ms var(--home-ease-out); transition-delay: calc(var(--i, 0) * 30ms); }
+.home-cup.is-full .home-cup-water { transform: scaleY(1); }
+.home-cup.is-full .home-cup-glass { stroke: #4ea2ef; }
+.home-cup:active:not(:disabled) { transform: scale(0.92); }
+.home-cup:disabled { cursor: not-allowed; opacity: 0.5; }
+.home-cup:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.home-cup-plus { position: absolute; left: 50%; top: 55%; display: grid; place-items: center; width: 18px; height: 18px; border-radius: 999px; background: #4ea2ef; color: white; transform: translate(-50%, -50%); }
+@media (hover: hover) and (pointer: fine) {
+  .home-cup:not(.is-full):not(:disabled):hover .home-cup-glass { stroke: #4ea2ef; }
+}
+
+/* ---------- Intake: rounded-square rings, icon riding the top edge ---------- */
+
+.home-intake-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0; padding: 0; list-style: none; }
+.home-intake-list li { position: relative; display: grid; place-items: center; aspect-ratio: 1; max-height: 112px; min-width: 0; padding-top: 6px; }
+.home-intake-list svg { position: absolute; inset: 6px 0 0; width: 100%; height: calc(100% - 6px); }
+.home-intake-list path { fill: none; stroke-width: 8; stroke-linecap: round; }
+.home-intake-track { stroke: color-mix(in srgb, var(--group) 18%, white); }
+.home-intake-bar { stroke: var(--group); transition: stroke-dashoffset 600ms var(--home-ease-out); }
+@starting-style {
+  .home-intake-bar { stroke-dashoffset: 100; }
+}
+.home-intake-list img { position: absolute; top: -4px; left: 50%; width: 28px; height: 28px; object-fit: contain; transform: translateX(-50%); filter: drop-shadow(0 4px 6px rgb(0 0 0 / 0.12)); }
+.home-intake-text { position: relative; display: grid; justify-items: center; gap: 0; }
+.home-intake-text small { color: var(--text-2); font-size: 12px; line-height: 16px; font-weight: 600; }
+.home-intake-text b { color: var(--text-1); font-size: 20px; line-height: 28px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+
+/* ---------- Weekly report: four tinted tiles ---------- */
+
+.home-report { min-height: 0; }
+.home-tiles { flex: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: minmax(168px, 1fr); gap: 12px; min-height: 0; }
+.home-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  min-height: 0;
+  padding: 16px;
+  overflow: visible;
+  border-radius: 22px;
+  isolation: isolate;
+}
+/* A tile with an open popover rises above its neighbours so the popover is never covered. */
+.home-tile:has(.home-popover) { z-index: 5; }
+.home-tile.tone-weight { background: #fdf5e2; }
+.home-tile.tone-activity { background: #eef6dd; }
+.home-tile.tone-water { overflow: hidden; background: #eaf4ff; }
+.home-tile.tone-meals { background: #fdeef0; }
+.home-tile-label { position: relative; z-index: 1; color: var(--text-1); font-size: 15px; line-height: 20px; font-weight: 700; }
+.home-tile-value { position: relative; z-index: 1; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 8px; margin: 0; }
+.home-tile-value b { color: var(--text-1); font-size: 24px; line-height: 32px; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.home-tile-value b small { color: var(--text-2); font-size: 13px; font-weight: 600; letter-spacing: 0; }
+.home-tile-value > small { color: var(--home-muted); font-size: 13px; line-height: 20px; font-weight: 500; }
+.home-tile-empty { font-size: 16px !important; line-height: 24px !important; }
+.home-tile-label { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 8px; }
+/* Tiles size themselves; on narrow ones the weekly weight change badge steps aside. */
+.home-tile { container-type: inline-size; }
+@container (max-width: 200px) {
+  .home-tile-badge { display: none; }
+}
+.home-tile-badge { padding: 2px 8px; border-radius: 999px; background: rgb(255 255 255 / 0.7); color: #8a5a00; font-size: 12px; line-height: 18px; font-weight: 600; }
+
+
+/* The weight tile is one big button (an invisible layer under the content) that opens its popover. */
+.home-tile-hit { position: absolute; inset: 0; z-index: 0; padding: 0; border: 0; border-radius: inherit; background: transparent; cursor: pointer; transition: background-color 200ms ease, transform 100ms var(--home-ease-out); }
+.home-tile:has(.home-tile-hit:active) { transform: scale(0.98); transition: transform 100ms var(--home-ease-out); }
+.home-tile-hit:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; }
+@media (hover: hover) and (pointer: fine) {
+  .home-tile-hit:hover { background: rgb(255 255 255 / 0.35); }
+}
+.home-tile.tone-weight > :not(.home-tile-hit, .home-popover) { pointer-events: none; }
+
+.home-gauge { position: relative; z-index: 1; display: grid; place-items: end center; align-self: center; width: 100%; max-width: 168px; }
+.home-gauge svg { display: block; width: 100%; height: auto; overflow: visible; }
+.home-gauge path { fill: none; stroke-width: 12; stroke-linecap: round; }
+.home-gauge-bar { transition: stroke-dasharray 400ms var(--home-ease-out); }
+.home-gauge-arm { transform-box: view-box; transform-origin: 60px 58px; transition: transform 400ms var(--home-ease-out); }
+.home-gauge-knob { fill: white; stroke-width: 4; }
+.home-gauge-icon { position: absolute; bottom: 4px; left: 50%; display: grid; place-items: center; transform: translateX(-50%); }
+.home-gauge.tone-weight .home-gauge-track { stroke: #f7e6c0; }
+.home-gauge.tone-weight .home-gauge-from { stop-color: #e6735c; }
+.home-gauge.tone-weight .home-gauge-to { stop-color: #f6d55c; }
+.home-gauge.tone-weight .home-gauge-knob { stroke: #eaa04f; }
+.home-gauge.tone-meals .home-gauge-track { stroke: #f8d3d8; }
+.home-gauge.tone-meals .home-gauge-from { stop-color: #e5604f; }
+.home-gauge.tone-meals .home-gauge-to { stop-color: #f08a7c; }
+.home-gauge.tone-meals .home-gauge-icon { color: #e5604f; }
+
+/* Weekly water: the wave rises with the week's total. */
+.home-wave { position: absolute; inset: 24% 0 0; z-index: 0; display: block; background: #8cc3f7; transition: transform 400ms var(--home-ease-out); }
+.home-wave svg { position: absolute; left: 0; bottom: 100%; width: 100%; height: 24px; }
+.home-wave-back { fill: #b7dafb; }
+.home-wave-front { fill: #8cc3f7; }
+.home-tile.tone-water .home-tile-value b, .home-tile.tone-water .home-tile-value > small { color: white; text-shadow: 0 1px 2px rgb(23 92 160 / 0.25); }
+
+/* Activity: the week as seven dots, and today's toggle. */
+.home-activity-days { position: relative; z-index: 1; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin: 0; padding: 0; list-style: none; }
+.home-activity-days li { display: grid; justify-items: center; gap: 4px; }
+.home-activity-days i { width: 100%; max-width: 20px; aspect-ratio: 1; border-radius: 999px; background: rgb(101 163 13 / 0.16); transition: background-color 250ms var(--home-ease-out), transform 250ms var(--home-ease-out); }
+.home-activity-days li.is-done i { background: #65a30d; }
+.home-activity-days li.is-today i { box-shadow: 0 0 0 2px #eef6dd, 0 0 0 4px rgb(101 163 13 / 0.5); }
+.home-activity-days li.is-future i { background: rgb(101 163 13 / 0.07); }
+.home-activity-days small { color: var(--home-muted); font-size: 11px; line-height: 14px; font-weight: 600; }
+.home-activity-toggle {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: white;
+  color: #3f6212;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 200ms ease, color 200ms ease, transform 100ms var(--home-ease-out);
+}
+.home-activity-toggle:active { transform: scale(0.96); }
+.home-activity-toggle.is-on { background: #65a30d; color: white; }
+.home-activity-toggle svg { transition: transform 200ms var(--home-ease-out), opacity 200ms var(--home-ease-out); }
+@starting-style {
+  .home-activity-toggle svg { transform: scale(0.6); opacity: 0; }
+}
+.home-activity-toggle:focus-visible, .home-tile-link:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+@media (hover: hover) and (pointer: fine) {
+  .home-activity-toggle:not(.is-on):hover { background: #f7fbef; }
+}
+.home-tile-link { padding: 0; border: 0; background: none; color: #4d7c0f; font: inherit; font-size: 13px; line-height: 20px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: rgb(77 124 15 / 0.35); cursor: pointer; }
+
+/* Popovers grow out of the tile that opened them. */
+.home-popover {
+  position: absolute;
+  top: calc(100% - 8px);
+  left: 8px;
+  z-index: 20;
+  display: grid;
+  gap: 12px;
+  width: min(260px, calc(100vw - 48px));
+  padding: 16px;
+  border-radius: 18px;
+  background: white;
+  box-shadow: 0 24px 60px -18px rgb(22 23 29 / 0.35), 0 0 0 1px rgb(22 23 29 / 0.06);
+  transform-origin: top left;
+  transition: opacity 180ms var(--home-ease-out), transform 180ms var(--home-ease-out);
+}
+@starting-style {
+  .home-popover { opacity: 0; transform: scale(0.95); }
+}
+.home-popover.is-small { top: auto; bottom: calc(100% + 8px); left: auto; right: -8px; width: auto; transform-origin: bottom right; justify-items: center; }
+.home-popover label { display: grid; gap: 6px; color: var(--text-2); font-size: 13px; font-weight: 600; }
+.home-input { display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 12px; border: 1px solid #dfe1e7; border-radius: 12px; background: white; transition: border-color 200ms ease, box-shadow 200ms ease; }
+.home-input:focus-within { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-100); }
+.home-input input { flex: 1; min-width: 0; height: 100%; padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--text-1); font: inherit; font-size: 16px; font-weight: 600; outline: none; }
+.home-input small { color: var(--home-muted); font-size: 13px; }
+.home-popover-error { margin: 0; color: #a5301a; font-size: 13px; line-height: 18px; }
+.home-popover-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.home-popover-actions .home-btn { min-height: 38px; padding: 6px 14px; font-size: 14px; }
+.home-popover > span { color: var(--text-2); font-size: 13px; font-weight: 600; white-space: nowrap; }
+.home-stepper { display: flex; align-items: center; gap: 12px; }
+.home-stepper b { min-width: 24px; color: var(--text-1); font-size: 24px; line-height: 32px; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; }
+.home-stepper button { display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 999px; background: var(--canvas); color: var(--text-1); cursor: pointer; transition: background-color 200ms ease, transform 100ms var(--home-ease-out); }
+.home-stepper button:active:not(:disabled) { transform: scale(0.9); }
+.home-stepper button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ---------- Shopping list ---------- */
+
+.home-shop-list { flex: 1 1 auto; display: grid; align-content: start; gap: 2px; min-height: 0; margin: 0 -8px; padding: 0 8px; list-style: none; overflow-y: auto; scrollbar-width: thin; }
+.home-shop-list li { display: grid; grid-template-columns: 24px 32px minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 44px; color: var(--text-1); font-size: 15px; line-height: 20px; font-weight: 500; }
+.home-shop-list img { width: 32px; height: 32px; object-fit: contain; }
+.home-shop-name { position: relative; justify-self: start; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: color 200ms ease; }
+.home-shop-name::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 1.5px; background: currentColor; transform: scaleX(0); transform-origin: left; transition: transform 200ms var(--home-ease-out); }
+.home-shop-list li.is-checked .home-shop-name::after { transform: scaleX(1); }
+.home-shop-name.is-unreadable { color: var(--home-muted); }
+.home-shop-list small { color: var(--home-muted); font-size: 14px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.home-shop-list li.is-checked .home-shop-name { color: var(--home-muted); }
+.home-box {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 2px solid #cfd2da;
+  border-radius: 7px;
+  background: white;
+  color: white;
+  cursor: pointer;
+  transition: background-color 200ms var(--home-ease-out), border-color 200ms var(--home-ease-out), transform 100ms var(--home-ease-out);
+}
+.home-box:active { transform: scale(0.88); }
+.home-box[aria-checked="true"] { border-color: var(--brand); background: var(--brand); }
+.home-box svg { transition: transform 200ms var(--home-ease-out), opacity 200ms var(--home-ease-out); }
+@starting-style {
+  .home-box svg { transform: scale(0.5); opacity: 0; }
+}
+.home-box.is-placeholder { border-style: dashed; cursor: default; }
+.home-box:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+@media (hover: hover) and (pointer: fine) {
+  .home-box:not(.is-placeholder):hover { border-color: var(--brand); }
+}
+.home-shop .home-btn { flex: none; width: 100%; }
+.home-btn.is-yellow { background: var(--yellow); color: var(--text-1); }
+@media (hover: hover) and (pointer: fine) {
+  .home-btn.is-yellow:hover { background: var(--yellow-hover); box-shadow: 0 10px 20px -12px rgb(161 120 0 / 0.55); }
+}
+.home-icon-btn.is-dark { background: var(--text-1); color: white; }
+@media (hover: hover) and (pointer: fine) {
+  .home-icon-btn.is-dark:hover { background: #2c2e36; color: white; }
+}
+
+/* ---------- Plan banner ---------- */
+
+/* The banner is its own size container, so its layout follows the space it gets, not the viewport. */
+.home-promo {
+  position: relative;
+  container-type: inline-size;
+  display: flex;
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 28px;
+  background: var(--brand-800);
+  color: white;
+}
+.home-promo-layout {
+  flex: 1;
+  display: grid;
+  grid-template-columns: clamp(150px, 28cqi, 230px) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 24px;
+  padding: 24px 32px 24px 0;
+}
+.home-promo-art { position: relative; align-self: stretch; min-height: 140px; }
+/* The dish bleeds off the bottom-left corner, like the reference character. It scales with the banner's height,
+   and the two small fruits sit just above it at proportional positions, so the cluster holds together at any size. */
+.home-promo-dish {
+  position: absolute;
+  left: -14px;
+  bottom: -10%;
+  width: auto;
+  height: min(80%, 240px);
+  aspect-ratio: 1;
+  object-fit: contain;
+  filter: drop-shadow(0 18px 24px rgb(0 0 0 / 0.3));
+  transform: rotate(-8deg);
+  transition: transform 300ms var(--home-ease-out);
+}
+.home-promo-float { position: absolute; object-fit: contain; filter: drop-shadow(0 8px 12px rgb(0 0 0 / 0.25)); transition: transform 300ms var(--home-ease-out); }
+.home-promo-float.f0 { bottom: 66%; left: 64%; width: 44px; height: 44px; rotate: 14deg; }
+.home-promo-float.f1 { bottom: 54%; left: 6%; width: 34px; height: 34px; rotate: -12deg; }
+.home-promo-copy { display: grid; gap: 8px; min-width: 0; }
+.home-promo h2 { margin: 0; color: white; font-size: 28px; line-height: 34px; font-weight: 700; letter-spacing: -0.025em; text-wrap: balance; }
+.home-promo p { margin: 0; color: rgb(255 255 255 / 0.82); font-size: 15px; line-height: 22px; text-wrap: pretty; }
+.home-promo-tags { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 0; padding: 0; list-style: none; }
+.home-promo-tags li { padding: 4px 12px; border-radius: 10px; background: rgb(255 255 255 / 0.14); color: white; font-size: 13px; line-height: 20px; font-weight: 600; }
+.home-promo-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 0 24px;
+  border: 0;
+  border-radius: 999px;
+  background: white;
+  color: var(--text-1);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 12px 24px -14px rgb(0 0 0 / 0.5);
+  transition: background-color 200ms ease, box-shadow 200ms ease, transform 100ms var(--home-ease-out);
+}
+.home-promo-btn:active { transform: scale(0.97); }
+.home-promo-btn:focus-visible { outline: 2px solid white; outline-offset: 3px; }
+@media (hover: hover) and (pointer: fine) {
+  .home-promo-btn:hover { background: var(--brand-50); box-shadow: 0 16px 28px -14px rgb(0 0 0 / 0.55); }
+  /* The dish leans in when the banner is under the pointer; small and quick, since this page opens often. */
+  .home-promo:hover .home-promo-dish { transform: rotate(-3deg) scale(1.04); }
+  .home-promo:hover .home-promo-float.f0 { transform: translateY(-3px); }
+}
+
+/* Narrow banner: the art shrinks and the button drops under the copy. */
+@container (max-width: 640px) {
+  .home-promo-layout { grid-template-columns: clamp(120px, 24cqi, 156px) minmax(0, 1fr); gap: 16px 20px; padding: 20px 20px 20px 0; }
+  .home-promo-art { grid-row: span 2; min-height: 140px; }
+  .home-promo-float.f0 { width: 36px; height: 36px; }
+  .home-promo-float.f1 { width: 28px; height: 28px; }
+  .home-promo h2 { font-size: 22px; line-height: 28px; }
+  .home-promo-btn { justify-self: start; min-height: 44px; font-size: 15px; }
+}
+@container (max-width: 400px) {
+  .home-promo-layout { grid-template-columns: minmax(0, 1fr); padding: 20px; }
+  .home-promo-art { display: none; }
+  .home-promo-btn { width: 100%; }
+}
+
+/* ---------- One screen on desktop ---------- */
+
+/* Wide but short screens: fill at least the viewport, and let the page scroll. */
+@media (min-width: 1280px) {
+  .app-shell:has(> .content > .home) { display: flex; flex-direction: column; min-height: 100dvh; }
+  .app-shell:has(> .content > .home) > .content { flex: 1; width: 100%; box-sizing: border-box; display: flex; flex-direction: column; }
+  .home { flex: 1; }
+}
+
+/* Tall enough: exactly one screen, no page scroll. The timeline and the shopping list scroll inside their cards. */
+@media (min-width: 1360px) and (min-height: 860px) {
+  .app-shell:has(> .content > .home) { height: 100dvh; overflow: hidden; }
+  .app-shell:has(> .content > .home) > .content { min-height: 0; padding-bottom: 24px; }
+  .home { min-height: 0; gap: 20px; }
+  .home-grid { min-height: 0; gap: 16px; }
+  .home-card { min-height: 0; padding: 20px; gap: 12px; }
+  .home-promo { min-height: 0; }
+  .home-day { gap: 16px; }
+  .home-timeline { flex: 1 1 0; min-height: 0; }
+  .home-tiles { grid-auto-rows: minmax(0, 1fr); gap: 10px; }
+  /* Compact tiles so the 2×2 report fits the top row. */
+  .home-tile { padding: 12px 14px; gap: 4px; }
+  .home-tile-label { font-size: 14px; }
+  .home-tile-value b { font-size: 20px; line-height: 28px; }
+  .home-gauge { max-width: 132px; }
+  .home-activity-days i { max-width: 16px; }
+  .home-activity-toggle { min-height: 32px; padding: 4px 10px; }
+  .home-intake-list li { max-height: 88px; }
+}
+
+/* ---------- Smaller screens ---------- */
+
+@media (max-width: 1279px) {
+  .home-head { flex-wrap: wrap; gap: 16px; }
+  .home-search { flex-basis: 100%; }
+  .home-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: none;
+    grid-template-areas:
+      "day report"
+      "day shop"
+      "intake promo";
+  }
+  .home-day { max-height: 960px; }
+  .home-tiles { grid-auto-rows: minmax(168px, auto); }
+}
+@media (max-width: 860px) {
+  .home-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "day" "report" "shop" "intake" "promo"; }
+  .home-day { max-height: none; }
+  .home-timeline { flex: none; overflow: visible; mask-image: none; padding-bottom: 0; }
+}
+@media (max-width: 760px) {
+  .home-hello h1 { font-size: 30px; line-height: 36px; }
+  .home-card { padding: 16px; border-radius: 24px; }
+  .home-timeline > li { gap: 12px; padding: 8px; }
+  .home-timeline > li:not(:last-child)::after, .home-timeline > li:not(:last-child)::before { left: 21px; top: 40px; }
+  .home-tiles { gap: 8px; grid-auto-rows: minmax(160px, auto); }
+  .home-tile { padding: 14px; }
+  .home-next-actions .home-btn { flex: 1 1 auto; }
+}
+
+/* ---------- Accessibility preferences ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .home-rise, .home-timeline > li { animation-name: home-fade; animation-duration: 200ms; }
+  .home-btn, .home-icon-btn, .home-check, .home-daypill, .home-chev, .home-cup, .home-box, .home-search-filter, .home-promo-btn, .home-promo-dish, .home-promo-float, .home-btn svg { transform: none !important; }
+  .home-roll { transition: opacity 200ms ease; transform: none !important; }
+  .home-cup-water { transition: opacity 200ms ease; transition-delay: 0ms; transform: none; opacity: 0; }
+  .home-cup.is-full .home-cup-water { opacity: 1; }
+  .home-scope-menu { transition: opacity 150ms ease; }
+  .home-next-wrap { transition: none; }
+  .home-next { transform: none; transition: opacity 150ms ease; }
+  .home-strip-pill { transition: opacity 150ms ease; }
+  .home-daypill { transform: none !important; }
+  .home-timeline > li::before, .home-shop-name::after, .home-gauge-arm { transition-duration: 0ms; }
+  .home-wave, .home-gauge-bar { transition-duration: 0ms; }
+  .home-check svg, .home-activity-toggle svg { transition: opacity 200ms ease; }
+  .home-tile, .home-activity-toggle, .home-stepper button { transform: none !important; }
+  .home-popover { transition: opacity 150ms ease; }
+}
+@keyframes home-fade { from { opacity: 0; } }
+@media (prefers-contrast: more) {
+  .home-card { border-color: var(--text-3); }
+  .home-meal time, .home-meal-meta, .home-note, .home-big small { color: var(--text-2); }
+}

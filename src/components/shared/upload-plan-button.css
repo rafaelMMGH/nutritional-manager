@@ -1,0 +1,47 @@
+/* Upload: a clear secondary action, quieter than "Marcar como hecha" but impossible to miss. */
+.upload-plan-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px 8px 8px;
+  border: 1.5px solid var(--brand-200);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--brand-700);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 8px 20px -16px rgb(39 72 60 / 0.5);
+  transition: border-color 200ms ease, box-shadow 200ms ease, background-color 200ms ease, transform 100ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.upload-plan-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: var(--brand);
+  color: white;
+  transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.upload-plan-text { display: grid; }
+.upload-plan-text b { font-size: 15px; line-height: 20px; font-weight: 700; color: var(--brand-700); }
+.upload-plan-text small { font-size: 12px; line-height: 16px; font-weight: 500; color: var(--text-3); }
+.upload-plan-arrow { flex: none; transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1); }
+.upload-plan-btn:active { transform: scale(0.97); }
+.upload-plan-btn:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; }
+@media (hover: hover) and (pointer: fine) {
+  .upload-plan-btn:hover { border-color: var(--brand); background: var(--brand-50); box-shadow: 0 14px 28px -18px rgb(39 72 60 / 0.6); }
+  /* The icon lifts, pointing at what the button does: sending a file up. */
+  .upload-plan-btn:hover .upload-plan-icon { transform: translateY(-2px); }
+  .upload-plan-btn:hover .upload-plan-arrow { transform: translateX(3px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .upload-plan-btn, .upload-plan-icon, .upload-plan-arrow { transform: none !important; }
+}
+@media (max-width: 760px) {
+  .upload-plan-btn { width: 100%; }
+  .upload-plan-arrow { margin-left: auto; }
+}
