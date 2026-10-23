@@ -7,7 +7,7 @@
   border: 1.5px solid var(--brand-200);
   border-radius: 999px;
   background: var(--surface);
-  color: var(--brand-700);
+  color: var(--brand-ink);
   font: inherit;
   text-align: left;
   cursor: pointer;
@@ -21,12 +21,12 @@
   width: 40px;
   height: 40px;
   border-radius: 999px;
-  background: var(--brand);
-  color: white;
+  background: var(--brand-solid);
+  color: var(--on-brand);
   transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 .upload-plan-text { display: grid; }
-.upload-plan-text b { font-size: 15px; line-height: 20px; font-weight: 700; color: var(--brand-700); }
+.upload-plan-text b { font-size: 15px; line-height: 20px; font-weight: 700; color: var(--brand-ink); }
 .upload-plan-text small { font-size: 12px; line-height: 16px; font-weight: 500; color: var(--text-3); }
 .upload-plan-arrow { flex: none; transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1); }
 .upload-plan-btn:active { transform: scale(0.97); }
