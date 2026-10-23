@@ -115,9 +115,18 @@ export const canvasColor = (page: Page) => effectiveBackground(page.locator("bod
 /** html `color-scheme` is the theme, and meta theme-color equals the page background. */
 export async function expectThemeMeta(page: Page, theme: Theme) {
   await expect.poll(() => page.evaluate(() => getComputedStyle(document.documentElement).colorScheme), { message: "html color-scheme" }).toBe(theme);
-  const metas = await page.locator('meta[name="theme-color"]').evaluateAll((elements) => elements.map((element) => element.getAttribute("content")));
-  expect(metas, "exactly one theme-color meta").toHaveLength(1);
-  expect(await toRgb(page, metas[0]!), "theme-color equals the page background").toEqual(await canvasColor(page));
+  // theme-color is updated by script after the CSS-driven color-scheme, so it is polled as well.
+  await expect
+    .poll(
+      async () => {
+        const metas = await page.locator('meta[name="theme-color"]').evaluateAll((elements) => elements.map((element) => element.getAttribute("content")));
+        if (metas.length !== 1) return `${metas.length} theme-color metas`;
+        const [meta, canvas] = [await toRgb(page, metas[0]!), await canvasColor(page)];
+        return meta.join() === canvas.join() ? "equal" : `theme-color ${meta} is not the page background ${canvas}`;
+      },
+      { message: "exactly one theme-color meta, equal to the page background" }
+    )
+    .toBe("equal");
 }
 
 /** Marks the document so a later check can prove a navigation was client-side (the marker survived). */
