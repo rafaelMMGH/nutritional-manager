@@ -168,26 +168,26 @@ export function qty(value: number) {
 }
 
 const FOOD_GROUPS: Record<string, { label: string; short: string; color: string; icon: string }> = {
-  proteinas: { label: "Proteínas", short: "Prot.", color: "#f59e0b", icon: "poultry" },
-  "cereales / tortillas / pan": { label: "Cereales", short: "Cereal", color: "#8b6cf0", icon: "flatbread" },
-  frutas: { label: "Frutas", short: "Fruta", color: "#ef5b73", icon: "apple" },
-  verduras: { label: "Verduras", short: "Verd.", color: "#34a853", icon: "leafy-green" },
-  lacteos: { label: "Lácteos", short: "Lácteo", color: "#2180e6", icon: "milk" },
-  leguminosas: { label: "Leguminosas", short: "Legum.", color: "#b45309", icon: "beans" },
-  grasas: { label: "Grasas", short: "Grasa", color: "#65a30d", icon: "avocado" },
-  suplementos: { label: "Suplementos", short: "Supl.", color: "#14b8a6", icon: "pill" }
+  proteinas: { label: "Proteínas", short: "Prot.", color: "var(--macro-protein)", icon: "poultry" },
+  "cereales / tortillas / pan": { label: "Cereales", short: "Cereal", color: "var(--macro-cereal)", icon: "flatbread" },
+  frutas: { label: "Frutas", short: "Fruta", color: "var(--macro-fruit)", icon: "apple" },
+  verduras: { label: "Verduras", short: "Verd.", color: "var(--macro-vegetable)", icon: "leafy-green" },
+  lacteos: { label: "Lácteos", short: "Lácteo", color: "var(--macro-dairy)", icon: "milk" },
+  leguminosas: { label: "Leguminosas", short: "Legum.", color: "var(--macro-legume)", icon: "beans" },
+  grasas: { label: "Grasas", short: "Grasa", color: "var(--macro-fat)", icon: "avocado" },
+  suplementos: { label: "Suplementos", short: "Supl.", color: "var(--macro-supplement)", icon: "pill" }
 };
 
 // Nutritionist "equivalentes" per food group (SMAE), as printed in the plan's table.
 const EQUIVALENT_GROUPS: Record<string, { short: string; color: string; icon: string }> = {
-  Verduras: { short: "Verd.", color: "#34a853", icon: "leafy-green" },
-  Frutas: { short: "Fruta", color: "#ef5b73", icon: "apple" },
-  Cereales: { short: "Cereal", color: "#8b6cf0", icon: "flatbread" },
-  AOA: { short: "AOA", color: "#f59e0b", icon: "poultry" },
-  Leche: { short: "Leche", color: "#2180e6", icon: "milk" },
-  "Aceites y grasas": { short: "Grasa", color: "#65a30d", icon: "avocado" },
-  Leguminosas: { short: "Legum.", color: "#b45309", icon: "beans" },
-  Azúcares: { short: "Azúcar", color: "#db2777", icon: "honey" }
+  Verduras: { short: "Verd.", color: "var(--macro-vegetable)", icon: "leafy-green" },
+  Frutas: { short: "Fruta", color: "var(--macro-fruit)", icon: "apple" },
+  Cereales: { short: "Cereal", color: "var(--macro-cereal)", icon: "flatbread" },
+  AOA: { short: "AOA", color: "var(--macro-protein)", icon: "poultry" },
+  Leche: { short: "Leche", color: "var(--macro-dairy)", icon: "milk" },
+  "Aceites y grasas": { short: "Grasa", color: "var(--macro-fat)", icon: "avocado" },
+  Leguminosas: { short: "Legum.", color: "var(--macro-legume)", icon: "beans" },
+  Azúcares: { short: "Azúcar", color: "var(--macro-sugar)", icon: "honey" }
 };
 
 export function equivalentGroup(name: string) {
