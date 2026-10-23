@@ -880,6 +880,21 @@ html:has([data-theme-lock]) { color-scheme: light !important; }
 ::view-transition-group(.text-morph) { animation-duration: var(--duration-move); }
 ::view-transition-old(.text-morph) { display: none; }
 ::view-transition-new(.text-morph) { animation: none; object-fit: none; object-position: left top; }
+/* Theme change: the new theme grows as a circle from the switch (--reveal-* are set by switchTheme). The other
+   morph names are dropped meanwhile so the header and recipe images are part of the root snapshot, not separate layers. */
+:root {
+  --theme-reveal-duration: 500ms;
+}
+@keyframes theme-reveal {
+  from { clip-path: circle(0 at var(--reveal-x, 50%) var(--reveal-y, 0)); }
+  to { clip-path: circle(var(--reveal-r, 150vmax) at var(--reveal-x, 50%) var(--reveal-y, 0)); }
+}
+html.theme-vt * { view-transition-name: none !important; }
+html.theme-vt::view-transition-old(root) { animation: none; }
+html.theme-vt::view-transition-new(root) {
+  animation: theme-reveal var(--theme-reveal-duration) ease-out both;
+  mix-blend-mode: normal;
+}
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-old(*),
   ::view-transition-new(*),

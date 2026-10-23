@@ -62,11 +62,57 @@ function applyChrome(theme: Theme) {
   meta.content = THEME_COLORS[theme];
 }
 
-/** Applies the theme to the page and remembers it. If storage fails the page still changes. Ignored on locked pages. */
-export function switchTheme(next: Theme) {
+// The running reveal, so a quick second click can end it instead of stacking a second one.
+let pendingReveal: ViewTransition | null = null;
+
+/** The reveal is skipped (change is instant) for reduced motion, forced colors and browsers without the API. */
+const canReveal = () =>
+  typeof document.startViewTransition === "function" &&
+  !matchMedia("(prefers-reduced-motion: reduce)").matches &&
+  !matchMedia("(forced-colors: active)").matches;
+
+/** Sets the circle the reveal grows from (the center of the switch) and how far it must reach to cover the page. */
+function setRevealOrigin(trigger: Element) {
+  const box = trigger.getBoundingClientRect();
+  const x = box.left + box.width / 2;
+  const y = box.top + box.height / 2;
+  const radius = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+  const style = document.documentElement.style;
+  style.setProperty("--reveal-x", `${x}px`);
+  style.setProperty("--reveal-y", `${y}px`);
+  style.setProperty("--reveal-r", `${Math.ceil(radius)}px`);
+}
+
+/**
+ * Applies the theme to the page and remembers it. If storage fails the page still changes. Ignored on locked pages.
+ * With a trigger, the change is revealed as a circle growing from it, unless motion is reduced or unsupported.
+ */
+export function switchTheme(next: Theme, trigger?: Element) {
   if (isLocked()) return;
+  // Set first: the last click wins even while an earlier reveal is still running.
   chosen = next;
-  applyTheme(next);
+  if (trigger && canReveal()) {
+    pendingReveal?.skipTransition();
+    setRevealOrigin(trigger);
+    const root = document.documentElement;
+    root.classList.add("theme-vt");
+    const transition = document.startViewTransition(() => applyTheme(next));
+    pendingReveal = transition;
+    // A skipped transition settles too, so only the latest one may clear the marker.
+    const clear = () => {
+      if (pendingReveal !== transition) return;
+      pendingReveal = null;
+      root.classList.remove("theme-vt");
+    };
+    transition.finished.then(clear, clear);
+    // A skipped transition rejects `ready` with an AbortError; nobody waits on it, so that expected skip must not
+    // surface as an unhandled rejection. Anything else is a real failure of the reveal and is worth a warning.
+    transition.ready.catch((error) => {
+      if (!(error instanceof DOMException && error.name === "AbortError")) console.warn("[theme] reveal failed", error);
+    });
+  } else {
+    applyTheme(next);
+  }
   try {
     localStorage.setItem(THEME_STORAGE_KEY, next);
   } catch (error) {

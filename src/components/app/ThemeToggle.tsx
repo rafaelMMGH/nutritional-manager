@@ -13,7 +13,7 @@ export function ThemeToggle() {
   const next = theme === "dark" ? "light" : "dark";
   const label = next === "dark" ? "Cambiar a tema oscuro" : "Cambiar a tema claro";
   return (
-    <button type="button" className="theme-toggle" aria-label={label} title={label} onClick={() => switchTheme(next)}>
+    <button type="button" className="theme-toggle" aria-label={label} title={label} onClick={(event) => switchTheme(next, event.currentTarget)}>
       <Sun className="theme-icon-sun" size={20} aria-hidden data-icon={theme === "light" ? "sun" : undefined} />
       <Moon className="theme-icon-moon" size={20} aria-hidden data-icon={theme === "dark" ? "moon" : undefined} />
     </button>
