@@ -10,12 +10,18 @@ const prefersDark = () => matchMedia("(prefers-color-scheme: dark)");
 // still not undo an explicit click; only the next load falls back to the OS.
 let chosen: Theme | null = null;
 
+// A blocked storage fails on every read (OS flips, toggles); one warning per page is enough context.
+let warnedReadFailure = false;
+
 function readStored(): Theme | null {
   try {
     const value = localStorage.getItem(THEME_STORAGE_KEY);
     return value === "light" || value === "dark" ? value : null;
   } catch (error) {
-    console.warn("[theme] could not read the saved choice, following the OS", error);
+    if (!warnedReadFailure) {
+      warnedReadFailure = true;
+      console.warn("[theme] could not read the saved choice, following the OS", error);
+    }
     return null;
   }
 }
