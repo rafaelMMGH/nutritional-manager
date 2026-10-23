@@ -1,6 +1,8 @@
 /*
  * Login page. Builds on the landing tokens (.lp in landing.css): Manrope, the island nav, buttons and footer.
  * The card is a frosted glass layer over floating food illustrations, so the translucency has something to show.
+ * Colors come from the app tokens, whose light values equal the literals they replaced. Unlike the landing, the login
+ * follows the theme: the dark block at the end remaps the --lp-* variables landing.css reads.
  */
 
 .login-page { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
@@ -21,7 +23,7 @@
 .login-back svg { transition: transform 200ms var(--lp-ease-out); }
 .login-back:active { transform: scale(0.97); }
 @media (hover: hover) and (pointer: fine) {
-  .login-back:hover { background: rgb(22 23 29 / 0.06); color: var(--lp-ink); }
+  .login-back:hover { background: var(--hover-tint); color: var(--lp-ink); }
   .login-back:hover svg { transform: translateX(-4px); }
 }
 
@@ -49,15 +51,15 @@
   max-width: 440px;
   box-sizing: border-box;
   padding: 32px;
-  border: 1px solid rgb(255 255 255 / 0.75);
+  border: 1px solid var(--glass-border);
   border-radius: 32px;
-  background: rgb(255 255 255 / 0.62);
+  background: color-mix(in srgb, var(--surface) 62%, transparent);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.9),
-    0 48px 96px -48px rgb(39 72 60 / 0.35),
-    0 16px 32px -24px rgb(22 23 29 / 0.25);
+    inset 0 1px 0 var(--glass-shine),
+    0 48px 96px -48px color-mix(in srgb, var(--brand-800) 35%, transparent),
+    0 16px 32px -24px rgb(var(--shadow-rgb) / 0.25);
   animation: login-materialize 700ms var(--lp-ease) 100ms both;
 }
 
@@ -74,9 +76,9 @@
   height: 48px;
   box-sizing: border-box;
   padding: 12px 16px;
-  border: 1px solid rgb(22 23 29 / 0.12);
+  border: 1px solid color-mix(in srgb, var(--text-1) 12%, transparent);
   border-radius: 12px;
-  background: rgb(255 255 255 / 0.85);
+  background: color-mix(in srgb, var(--surface) 85%, transparent);
   color: var(--lp-ink);
   font: inherit;
   font-size: 16px;
@@ -85,13 +87,13 @@
   transition: border-color 200ms ease, box-shadow 200ms ease, background-color 200ms ease;
 }
 @media (hover: hover) and (pointer: fine) {
-  .login-field input:hover { border-color: rgb(22 23 29 / 0.24); }
+  .login-field input:hover { border-color: color-mix(in srgb, var(--text-1) 24%, transparent); }
 }
-.login-field input:focus { border-color: var(--lp-brand); background: white; box-shadow: 0 0 0 4px var(--lp-mint); }
-.login-field.has-error input { border-color: #d1432f; }
-.login-field.has-error input:focus { box-shadow: 0 0 0 4px #fde1db; }
+.login-field input:focus { border-color: var(--lp-brand); background: var(--surface); box-shadow: 0 0 0 4px var(--lp-mint); }
+.login-field.has-error input { border-color: var(--danger-edge); }
+.login-field.has-error input:focus { box-shadow: 0 0 0 4px var(--danger-halo); }
 .login-field-error {
-  color: #a5301a;
+  color: var(--danger-ink-strong);
   font-size: 14px;
   line-height: 20px;
   transition: opacity 200ms var(--lp-ease-out), transform 200ms var(--lp-ease-out);
@@ -103,8 +105,8 @@
   gap: 8px;
   padding: 12px 16px;
   border-radius: 12px;
-  background: #fdecea;
-  color: #8f2a17;
+  background: var(--danger-hover-bg);
+  color: var(--danger-ink-deep);
   font-size: 14px;
   line-height: 20px;
   font-weight: 500;
@@ -174,10 +176,53 @@
   .login-dots i { animation-duration: 2s; }
 }
 @media (prefers-reduced-transparency: reduce) {
-  .login-card { background: white; backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .login-card { background: var(--surface); backdrop-filter: none; -webkit-backdrop-filter: none; }
 }
 @media (prefers-contrast: more) {
-  .login-card { background: white; backdrop-filter: none; -webkit-backdrop-filter: none; border-color: var(--lp-ink-3); }
-  .login-field input { border-color: var(--lp-ink-3); background: white; }
+  .login-card { background: var(--surface); backdrop-filter: none; -webkit-backdrop-filter: none; border-color: var(--lp-ink-3); }
+  .login-field input { border-color: var(--lp-ink-3); background: var(--field-bg); }
   .login-head p, .login-note { color: var(--lp-ink-2); }
+}
+
+/* ---------- Dark theme ---------- */
+
+/* Screen only (print stays light) and never under a light lock; the login root carries none. landing.css is not
+   edited because it also serves the locked pages: the --lp-* variables are remapped here, and the rules that use a
+   variable for both a fill and its text, or a literal, are overridden. */
+@media screen {
+  html.dark:not(:has([data-theme-lock])) .login-page {
+    --lp-bg: var(--canvas);
+    --lp-surface: var(--surface);
+    --lp-ink: var(--text-1);
+    --lp-ink-2: var(--text-2);
+    --lp-ink-3: var(--text-3);
+    --lp-line: var(--hairline);
+    --lp-brand: var(--brand-300);
+    --lp-mint: var(--focus-halo);
+    --lp-brand-deep: var(--btn);
+    --lp-brand-deepest: var(--btn-hover);
+  }
+
+  html.dark:not(:has([data-theme-lock])) .login-page .lp-island {
+    background: var(--glass-bg);
+    border-color: var(--glass-border);
+    box-shadow: 0 16px 40px -24px rgb(var(--shadow-rgb) / 0.35);
+  }
+  /* --lp-ink is now a light text color, so white-on-ink would vanish: use the inverted toggle pair. */
+  html.dark:not(:has([data-theme-lock])) .login-page .lp-skip { background: var(--toggle-bg); color: var(--toggle-fg) !important; }
+  html.dark:not(:has([data-theme-lock])) .login-page .lp-mark { background: var(--btn); color: var(--on-brand); }
+  html.dark:not(:has([data-theme-lock])) .login-page .lp-btn { background: var(--btn); color: var(--on-brand); }
+  @media (hover: hover) and (pointer: fine) {
+    html.dark:not(:has([data-theme-lock])) .login-page .lp-btn:hover { background: var(--btn-hover); box-shadow: 0 12px 24px -12px rgb(var(--shadow-rgb) / 0.55); }
+    html.dark:not(:has([data-theme-lock])) .login-page .login-submit:disabled:hover { background: var(--btn); box-shadow: none; }
+  }
+  /* landing.css uses --lp-brand-deep as link text on hover; it is now a fill, so pin the text to the light brand shade. */
+  html.dark:not(:has([data-theme-lock])) .login-page .lp-footer ul a:hover { color: var(--brand-300); }
+
+  html.dark:not(:has([data-theme-lock])) .login-page .login-field input { border-color: var(--field-border); background: var(--field-bg); }
+  @media (hover: hover) and (pointer: fine) {
+    html.dark:not(:has([data-theme-lock])) .login-page .login-field input:hover { border-color: var(--button-hover-border); }
+  }
+  html.dark:not(:has([data-theme-lock])) .login-page .login-field input:focus { border-color: var(--lp-brand); }
+  html.dark:not(:has([data-theme-lock])) .login-page .login-field.has-error input { border-color: var(--danger-edge); }
 }

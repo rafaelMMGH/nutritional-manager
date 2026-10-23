@@ -155,6 +155,9 @@
   --danger-hover-bg: #fdecea;
   --danger-fill: #ef4444;
   --warn-text: #c2410c;
+  --danger-edge: #d1432f; /* border of a field with an error */
+  --danger-halo: #fde1db; /* focus ring of a field with an error */
+  --danger-ink-deep: #8f2a17; /* text of the error banner */
 
   /* Chips, tags and illustration panels by tone */
   --chip-bg: #f2f2f6;
@@ -297,6 +300,9 @@
     --danger-hover-bg: oklch(0.3 0.06 25);
     --danger-fill: oklch(0.5 0.19 27);
     --warn-text: oklch(0.8 0.13 55);
+    --danger-edge: oklch(0.7 0.15 25);
+    --danger-halo: oklch(0.7 0.15 25);
+    --danger-ink-deep: oklch(0.88 0.1 28);
 
     --chip-bg: oklch(0.27 0.012 166);
     --chip-fg: oklch(0.84 0.01 166);
