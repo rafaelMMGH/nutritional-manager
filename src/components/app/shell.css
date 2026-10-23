@@ -58,7 +58,7 @@
 
 /* ---------- Account ---------- */
 
-/* Theme switch: the sun and moon are stacked; the icon of the current theme is the visible one (data-icon). */
+/* Theme switch: the sun and moon are stacked; the icon of the current theme is the visible one (html.dark). */
 .theme-toggle {
   position: relative;
   display: grid;
@@ -78,7 +78,8 @@
 .theme-toggle:hover { background: var(--pill); }
 .theme-toggle:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 .theme-toggle svg { grid-area: 1 / 1; opacity: 0; transition: opacity 150ms ease; }
-.theme-toggle svg[data-icon] { opacity: 1; }
+.theme-toggle .theme-icon-sun, html.dark .theme-toggle .theme-icon-moon { opacity: 1; }
+html.dark .theme-toggle .theme-icon-sun { opacity: 0; }
 @media (forced-colors: active) {
   .theme-toggle { border: 1px solid ButtonText; }
   .theme-toggle svg { color: currentColor; }
