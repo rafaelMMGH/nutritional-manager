@@ -45,4 +45,17 @@ test.describe("signed out, light", () => {
       });
     }
   }
+
+  // /login follows the theme (REQ-15), so it is not a locked page; its light look is what must not change (REQ-11).
+  test.describe("login, light OS, nothing stored", () => {
+    test.use({ colorScheme: "light" });
+
+    test("looks as it did", async ({ page }) => {
+      await seedTheme(page, null);
+      await page.goto("/login");
+      await page.waitForLoadState("networkidle");
+      // The pointer stays at 0,0 so the floaters' parallax does not move.
+      await expect(page).toHaveScreenshot("public-login.png", shot);
+    });
+  });
 });
