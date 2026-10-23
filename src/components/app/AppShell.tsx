@@ -13,6 +13,7 @@ import { Badge, ConfirmationDialogHost, Empty } from "@/components/app/feedback"
 import { accountNav, activeView, hrefFor, mainNav } from "@/components/app/navigation";
 import { AssistantPageProvider, useAssistantState } from "@/components/app/assistant";
 import { AssistantChat } from "@/components/shared/AssistantChat";
+import { ThemeToggle } from "@/components/app/ThemeToggle";
 import "./shell.css";
 import { api, getErrorMessage } from "@/lib/client/api";
 
@@ -69,6 +70,7 @@ export function AppShell({ user, children }: Props) {
         <header className="topbar">
           <div className="topbar-account">
             <UserMenu user={user} onLogout={logout} />
+            <ThemeToggle />
           </div>
           <div className="topbar-island">
             <RoutedNav />

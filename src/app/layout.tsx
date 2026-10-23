@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { Toaster } from "sonner";
+import { ThemeRuntime } from "@/components/app/ThemeRuntime";
 import { manrope } from "@/components/landing/font";
+import { themeInitScript } from "@/lib/theme";
 import "./globals.css";
-
 
 export const metadata: Metadata = {
   title: "Nutritional Manager",
@@ -10,11 +10,15 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  // suppressHydrationWarning: the init script adds the dark class and color-scheme to <html> before React hydrates.
   return (
-    <html lang="es" className={manrope.variable}>
+    <html lang="es" className={manrope.variable} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body>
         {children}
-        <Toaster richColors closeButton position="top-right" />
+        <ThemeRuntime />
       </body>
     </html>
   );
