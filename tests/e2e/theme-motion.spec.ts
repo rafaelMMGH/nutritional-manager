@@ -27,6 +27,12 @@ async function countViewTransitions(page: Page) {
 }
 const viewTransitionCalls = (page: Page) => page.evaluate(() => (window as unknown as { __vtCalls: number }).__vtCalls);
 
+function collectRevealWarnings(page: Page) {
+  const warnings: string[] = [];
+  page.on("console", (message) => message.type() === "warning" && message.text().includes("[theme] reveal failed") && warnings.push(message.text()));
+  return warnings;
+}
+
 async function open(page: Page, path = "/") {
   await page.goto(path);
   await expect(toggleOf(page)).toBeVisible();
@@ -107,6 +113,54 @@ test.describe("REQ-12: the theme change is revealed from the switch", () => {
     expect(issues).toEqual([]);
   });
 
+  // In Chromium a throwing update callback rejects updateCallbackDone, ready and finished with the same error.
+  test("a reveal whose update callback rejects (all three promises) warns once, without a page or console error", async ({ page, issues }) => {
+    await page.addInitScript(() => {
+      document.startViewTransition = ((update: () => void) => {
+        update();
+        const err = new Error("boom");
+        return {
+          ready: Promise.reject(err),
+          finished: Promise.reject(err),
+          updateCallbackDone: Promise.reject(err),
+          skipTransition() {}
+        };
+      }) as unknown as typeof document.startViewTransition;
+    });
+    const warnings = collectRevealWarnings(page);
+    await open(page);
+    await toggleOf(page).click();
+    await expect.poll(() => colorScheme(page)).toBe("dark");
+    await expect.poll(() => warnings.length).toBe(1);
+    await page.waitForTimeout(200);
+    expect(warnings).toHaveLength(1);
+    await expect(page.locator("html")).not.toHaveClass(/theme-vt/);
+    expect(issues).toEqual([]);
+  });
+
+  test("a real failure inside the update callback warns once, clears the marker and raises no error", async ({ page, issues }) => {
+    await open(page);
+    const warnings = collectRevealWarnings(page);
+    await page.evaluate(() => {
+      const list = document.documentElement.classList;
+      const original = list.toggle.bind(list);
+      let thrown = false;
+      list.toggle = ((...args: Parameters<typeof original>) => {
+        if (!thrown) {
+          thrown = true;
+          throw new Error("boom");
+        }
+        return original(...args);
+      }) as typeof list.toggle;
+    });
+    await toggleOf(page).click();
+    await expect.poll(() => warnings.length).toBe(1);
+    await expect(page.locator("html")).not.toHaveClass(/theme-vt/);
+    await page.waitForTimeout(200);
+    expect(warnings).toHaveLength(1);
+    expect(issues).toEqual([]);
+  });
+
   test("three quick clicks end on the last choice with state, storage, icon and name in agreement", async ({ page }) => {
     await open(page);
     const toggle = toggleOf(page);
@@ -145,8 +199,14 @@ test.describe("REQ-12: the theme change is revealed from the switch", () => {
   test("a recipe opened within the reveal still navigates, and the theme and marker class settle", async ({ page }) => {
     await countViewTransitions(page);
     await open(page, "/recipes");
-    await toggleOf(page).click();
-    await page.locator(".rx-open").first().click();
+    // One task: the recipe is opened while the reveal's marker class is certainly still on <html>.
+    const duringReveal = await page.evaluate(() => {
+      document.querySelector<HTMLElement>(".topbar .theme-toggle")!.click();
+      const revealing = document.documentElement.classList.contains("theme-vt");
+      document.querySelector<HTMLElement>(".rx-open")!.click();
+      return revealing;
+    });
+    expect(duringReveal, "the recipe was opened while the reveal was running").toBe(true);
     await expect(page).toHaveURL(/\/recipes\/[^/]+$/);
     await expect.poll(() => colorScheme(page)).toBe("dark");
     await expect(page.locator("html")).not.toHaveClass(/theme-vt/);
