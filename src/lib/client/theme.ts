@@ -105,11 +105,16 @@ export function switchTheme(next: Theme, trigger?: Element) {
       root.classList.remove("theme-vt");
     };
     transition.finished.then(clear, clear);
-    // A skipped transition rejects `ready` with an AbortError; nobody waits on it, so that expected skip must not
-    // surface as an unhandled rejection. Anything else is a real failure of the reveal and is worth a warning.
-    transition.ready.catch((error) => {
-      if (!(error instanceof DOMException && error.name === "AbortError")) console.warn("[theme] reveal failed", error);
-    });
+    // When the update callback throws, the browser rejects updateCallbackDone, ready and finished with the same error;
+    // skipping a transition (a newer click) rejects ready with an AbortError. Nobody awaits these promises, so each
+    // rejection is handled here to avoid unhandled rejections, and the failure is reported once, through
+    // updateCallbackDone then ready (console.warn, never error). On failure the theme may not have changed.
+    transition.ready.catch(() => {});
+    transition.updateCallbackDone
+      .then(() => transition.ready)
+      .catch((error: unknown) => {
+        if (!(error instanceof DOMException && error.name === "AbortError")) console.warn("[theme] reveal failed", error);
+      });
   } else {
     applyTheme(next);
   }
