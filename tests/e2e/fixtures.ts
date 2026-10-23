@@ -1,4 +1,4 @@
-import { expect, test as base } from "@playwright/test";
+import { expect, test as base, type Page } from "@playwright/test";
 
 export { expect };
 
@@ -11,22 +11,33 @@ type Options = {
   expectedIssues: RegExp[];
 };
 
+/** Records page errors, console errors and failed API calls of `page` into `issues`. Use it for pages the test opens itself. */
+export function watch(page: Page, issues: string[]) {
+  page.on("pageerror", (error) => issues.push(`page error: ${error.message}`));
+  page.on("console", (message) => message.type() === "error" && issues.push(`console: ${message.text().slice(0, 200)}`));
+  page.on("response", (response) => {
+    if (response.url().includes("/api/") && response.status() >= 400) issues.push(`${response.request().method()} ${new URL(response.url()).pathname} → ${response.status()}`);
+  });
+}
+
 export const test = base.extend<Options & { issues: string[] }>({
   expectedIssues: [[], { option: true }],
   // Any page error, console error or failed API call fails the test that caused it. Warnings do not.
   issues: [
     async ({ page, expectedIssues }, use) => {
       const issues: string[] = [];
-      page.on("pageerror", (error) => issues.push(`page error: ${error.message}`));
-      page.on("console", (message) => message.type() === "error" && issues.push(`console: ${message.text().slice(0, 200)}`));
-      page.on("response", (response) => {
-        if (response.url().includes("/api/") && response.status() >= 400) issues.push(`${response.request().method()} ${new URL(response.url()).pathname} → ${response.status()}`);
-      });
+      watch(page, issues);
       await use(issues);
 
+      // Each issue consumes the first pattern that matches it, so list the most specific patterns first.
+      // lastIndex is reset before every match: a /g or /y regex would otherwise carry state between issues and tests.
+      const matches = (pattern: RegExp, issue: string) => {
+        pattern.lastIndex = 0;
+        return pattern.test(issue);
+      };
       const unconsumed = [...expectedIssues];
       const unexpected = issues.filter((issue) => {
-        const index = unconsumed.findIndex((pattern) => pattern.test(issue));
+        const index = unconsumed.findIndex((pattern) => matches(pattern, issue));
         if (index === -1) return true;
         unconsumed.splice(index, 1);
         return false;

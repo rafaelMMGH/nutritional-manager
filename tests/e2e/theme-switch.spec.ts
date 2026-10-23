@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test";
-import { expect, test } from "./fixtures";
+import { expect, test, watch } from "./fixtures";
 import { blockThemeStorage, canvasColor, expectThemeMeta, inScopePages, seedTheme, softNavMarker, THEME_KEY, toRgb, type Theme } from "./theme-helpers";
 
 // US1 (REQ-1 to REQ-5), the mechanism part of REQ-10, and REQ-16: the switch, persistence, no flash, OS default.
@@ -124,7 +124,7 @@ test.describe("REQ-2 and REQ-10: switching the page", () => {
 });
 
 test.describe("REQ-3: the choice persists", () => {
-  test("survives a reload and a new tab", async ({ page, context }) => {
+  test("survives a reload and a new tab", async ({ page, context, issues }) => {
     await open(page);
     await switchOf(page).click();
     await expectTheme(page, "dark");
@@ -133,14 +133,16 @@ test.describe("REQ-3: the choice persists", () => {
     await expectTheme(page, "dark");
 
     const tab = await context.newPage();
+    watch(tab, issues);
     await open(tab);
     await expectTheme(tab, "dark");
   });
 
-  test("survives signing out and signing in again", async ({ browser, baseURL }) => {
+  test("survives signing out and signing in again", async ({ browser, baseURL, issues }) => {
     // A fresh context with its own session: logging out must never delete the shared one.
     const context = await browser.newContext({ baseURL, locale: "es-MX", storageState: { cookies: [], origins: [] } });
     const page = await context.newPage();
+    watch(page, issues);
     const signIn = async () => {
       await page.goto("/login");
       await page.locator(".login-submit").click();
@@ -172,6 +174,12 @@ test.describe("REQ-3: the choice persists", () => {
     await expectTheme(page, "dark");
     await expect.poll(() => warnings.filter((text) => /theme/i.test(text)).length).toBeGreaterThan(0);
 
+    // Nothing could be stored, but the click is still an explicit choice: OS changes in this page must not undo it.
+    await page.emulateMedia({ colorScheme: "dark" });
+    await page.emulateMedia({ colorScheme: "light" });
+    await page.waitForTimeout(300);
+    await expectTheme(page, "dark");
+
     await page.reload();
     await expectTheme(page, "light");
     await page.emulateMedia({ colorScheme: "dark" });
@@ -197,12 +205,23 @@ test.describe("REQ-4: the theme is in the document before any app script runs", 
     });
   }
 
+  test("the switch shows the stored theme's icon at first paint, before the app hydrates", async ({ page }) => {
+    // Empty app scripts keep the page unhydrated; the inline init script and the CSS still run.
+    await page.route(/\/_next\/static\/.*\.js(\?.*)?$/, (route) => route.fulfill({ status: 200, contentType: "application/javascript", body: "" }));
+    await seedTheme(page, "dark");
+    await page.goto("/");
+    const opacity = (icon: string) => page.locator(`.topbar .theme-toggle .theme-icon-${icon}`).evaluate((element) => getComputedStyle(element).opacity);
+    await expect.poll(() => colorScheme(page)).toBe("dark");
+    await expect.poll(() => opacity("moon")).toBe("1");
+    expect(await opacity("sun")).toBe("0");
+  });
+
   for (const [chosen, os] of [["dark", "light"], ["light", "dark"]] as const) {
     test(`a stored ${chosen} choice beats the ${os} OS from the first delivered document`, async ({ page }) => {
       await page.emulateMedia({ colorScheme: os });
       await seedTheme(page, chosen);
       await recordColorScheme(page);
-      for (const { name, path } of inScopePages.filter(({ name }) => ["home", "recipes", "plans", "settings"].includes(name))) {
+      for (const { name, path } of inScopePages) {
         await page.goto(path());
         await expect(switchOf(page)).toBeVisible();
         await page.waitForLoadState("networkidle");
