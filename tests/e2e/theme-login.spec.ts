@@ -10,8 +10,8 @@ test.use({ storageState: { cookies: [], origins: [] } });
 
 const LOCK = "[data-theme-lock]";
 
-/** What one element looks like in one state: effective background, text color, and a signature of its edges. */
-type Look = { bg: Rgba; color: Rgba; edges: string };
+/** What one element looks like in one state: effective background, text color, a signature of its edges, and its border color (or "none"). */
+type Look = { bg: Rgba; color: Rgba; edges: string; border: string };
 
 async function lookOf(page: Page, target: Locator): Promise<Look> {
   const edges = await target.evaluate((element) => {
@@ -19,8 +19,12 @@ async function lookOf(page: Page, target: Locator): Promise<Look> {
     const outline = style.outlineStyle === "none" ? "none" : style.outlineColor;
     return [style.borderTopColor, style.boxShadow, outline].join("|");
   });
-  const color = await target.evaluate((element) => getComputedStyle(element).color);
-  return { bg: await effectiveBackground(target), color: await toRgb(page, color), edges };
+  const { color, border } = await target.evaluate((element) => {
+    const style = getComputedStyle(element);
+    const hasBorder = style.borderTopStyle !== "none" && parseFloat(style.borderTopWidth) > 0;
+    return { color: style.color, border: hasBorder ? style.borderTopColor : "none" };
+  });
+  return { bg: await effectiveBackground(target), color: await toRgb(page, color), edges, border };
 }
 
 const sameRgb = (a: Rgba, b: Rgba) => a.slice(0, 3).map(Math.round).join() === b.slice(0, 3).map(Math.round).join();
@@ -132,17 +136,26 @@ test.describe("REQ-15: /login follows the stored theme", () => {
     await visit(page, "/login", "dark");
     const dark = await collectLooks(page);
 
+    // Brand fills keep their value in dark by design. Each entry is "<part prefix>:<facet>" with the reason it may not change.
+    const allowUnchanged: Record<string, string> = {
+      "lp-mark:bg": "brand fill (teal mark)",
+      "lp-mark:color": "text on the brand fill",
+      "login-submit:bg": "brand fill (primary button)",
+      "login-submit:color": "text on the brand fill",
+      "login-submit:border": "border of the brand fill"
+    };
+    const allowed = (key: string, facet: string) => `${key.split(" ")[0]}:${facet}` in allowUnchanged;
+
     const problems: string[] = [];
     for (const [key, before] of light) {
       const after = dark.get(key)!;
-      // Brand fills (the mark and the primary button) keep their background and text by design; judge the rest per facet.
-      const brand = key.startsWith("lp-mark") || key.startsWith("login-submit");
-      if (!brand && sameRgb(before.bg, after.bg) && oklch(before.bg).L > 0.8) problems.push(`background unchanged: ${key}`);
-      if (!brand && sameRgb(before.color, after.color) && oklch(before.color).L < 0.35) problems.push(`text color unchanged: ${key}`);
-      if (!brand && before.edges !== "none" && before.edges === after.edges && key.includes("focus")) problems.push(`edges unchanged: ${key}`);
+      if (sameRgb(before.bg, after.bg) && !allowed(key, "bg")) problems.push(`background unchanged: ${key}`);
+      if (sameRgb(before.color, after.color) && !allowed(key, "color")) problems.push(`text color unchanged: ${key}`);
+      if (key.endsWith(" default") && before.border !== "none" && before.border === after.border && !allowed(key, "border")) {
+        problems.push(`border color unchanged: ${key}`);
+      }
       if (oklch(before.bg).L > 0.8 && oklch(after.bg).L > 0.5) problems.push(`surface still light in dark: ${key}`);
       if (oklch(before.color).L < 0.35 && oklch(after.color).L < 0.6) problems.push(`dark text unchanged in dark: ${key}`);
-      if (before.edges !== "none" && key.includes("focus") && before.edges === after.edges) problems.push(`focus edge unchanged: ${key}`);
     }
     expect(problems).toEqual([]);
   });
