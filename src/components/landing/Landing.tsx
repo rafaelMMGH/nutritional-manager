@@ -143,7 +143,7 @@ export function Landing() {
   return (
     // lp-js is rendered by the server so sections already on screen start hidden and animate in on load.
     // Adding it after hydration made them fade out and straight back in, which looked like no animation.
-    <div className={`lp lp-js ${manrope.variable}`} ref={root}>
+    <div className={`lp lp-js ${manrope.variable}`} data-theme-lock="light" ref={root}>
       <noscript dangerouslySetInnerHTML={{ __html: `<style>${NO_SCRIPT_CSS}</style>` }} />
       <a className="lp-skip" href="#contenido">
         Saltar al contenido

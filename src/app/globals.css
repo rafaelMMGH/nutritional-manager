@@ -2,8 +2,16 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-@custom-variant dark (&:is(.dark *));
+/* Dark only on screen (print always gets the light theme) and never inside a light-locked page (landing, legal, 404). */
+@custom-variant dark {
+  @media screen {
+    &:is(html.dark:not(:has([data-theme-lock])) *) {
+      @slot;
+    }
+  }
+}
 
+/* theme-tokens:start */
 :root {
   color-scheme: light;
 
@@ -45,7 +53,7 @@
   --app-warn: #d97706;
   --app-danger: #dc2626;
   --button-bg: #f1f1f5;
-  --button-border: #d9dbe2;
+  --button-border: var(--line-strong);
   --button-hover-bg: #e7e8ee;
   --button-hover-border: #b9bcc7;
   --accent-hover: var(--brand-600);
@@ -91,7 +99,285 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* Semantic tokens: each light value equals the literal it replaced, so light renders as before. Every
+     component stylesheet uses these names; dark overrides them in the block below. */
+  --on-brand: #ffffff; /* text and icons on brand fills */
+  --on-yellow: #16171d; /* text on the yellow accent */
+  --on-yellow-2: #3e404a;
+  --brand-400: #65a98a;
+  --brand-ink: var(--brand-700); /* teal text on tinted or neutral surfaces */
+  --brand-text: var(--brand); /* teal text and icons that sit on neutral surfaces */
+  --brand-accent: var(--brand-600); /* teal icons and emphasis */
+  --brand-solid: var(--brand); /* brand fills that carry white text or icons */
+  --brand-fill: var(--brand-700); /* selected pills and own chat bubbles */
+  --focus-ring: var(--brand-200);
+  --focus-halo: var(--brand-100);
+  --surface-raised: #ffffff;
+  --field-bg: #ffffff;
+  --field-border: #dfe1e7;
+  --field-line: var(--hairline);
+  --field-ring: 0 0 0 0 transparent; /* dark draws a hard edge around fields that are only a fill */
+  --line-strong: #d9dbe2;
+  --check-border: #cfd2da;
+  --dash-line: #d4d6de;
+  --spine-line: #d9dbe2;
+  --placeholder: #9a9da7;
+  --text-muted: #6b6e7a;
+  --hover-tint: rgb(22 23 29 / 0.06);
+  --fill-tint: rgb(22 23 29 / 0.1);
+  --line-faint: rgb(22 23 29 / 0.07);
+  --line-quiet: rgb(22 23 29 / 0.14);
+  --line-quiet-hover: rgb(22 23 29 / 0.24);
+  --shadow-rgb: 22 23 29;
+  --overlay: rgba(22, 23, 29, 0.32);
+  --overlay-modal: rgba(22, 23, 29, 0.38);
+  --glass-bg: rgb(255 255 255 / 0.72);
+  --glass-border: rgb(255 255 255 / 0.75);
+  --glass-shine: rgb(255 255 255 / 0.9);
+  --toggle-bg: var(--text-1); /* toggles and the active nav pill: black in light, near-white in dark */
+  --toggle-fg: #ffffff;
+  --toggle-hover: #2c2e36;
+  --promo-btn-bg: #ffffff;
+  --promo-btn-fg: #16171d;
+  --promo-btn-hover: var(--brand-50);
+  --segmented-bg: #f1f1f5;
+  --popover-hover: #f3f3f6;
+  --popover-ring: rgba(22, 23, 29, 0.05);
+  --popover-ring-home: rgb(22 23 29 / 0.06);
+  --badge-bg: #f7f7f9;
+  --bubble-bg: #f6f6f9;
+  --icon-disc: #ffffff; /* the disc behind food pictures */
+  --track-base: #ffffff;
+  --danger-text: #d43d3d;
+  --danger-ink: #c2412b;
+  --danger-ink-strong: #a5301a;
+  --danger-hover-bg: #fdecea;
+  --danger-fill: #ef4444;
+  --warn-text: #c2410c;
+  --danger-edge: #d1432f; /* border of a field with an error */
+  --danger-halo: #fde1db; /* focus ring of a field with an error */
+  --danger-ink-deep: #8f2a17; /* text of the error banner */
+
+  /* Chips, tags and illustration panels by tone */
+  --chip-bg: #f2f2f6;
+  --chip-fg: #575a66;
+  --chip-icon: #8a8d98;
+  --chip-coral-bg: #fdeceb;
+  --chip-coral-fg: #e04f45;
+  --chip-green-bg: #e4f6e9;
+  --chip-green-fg: #23914f;
+  --chip-orange-bg: #fff1db;
+  --chip-orange-fg: #d98200;
+  --chip-teal-bg: #dff6f2;
+  --chip-teal-fg: #0f8f82;
+  --order-coral-fg: #c8433a;
+  --tag-teal-fg: #0b6f65;
+  --tag-coral-bg: #ffe4de;
+  --tag-coral-fg: #b2361d;
+  --tag-orange-bg: #ffecd6;
+  --tag-orange-fg: #9a4a00;
+  --tag-blue-bg: #e1efff;
+  --tag-blue-fg: #1b5fae;
+  --media-teal: #d7f3ee;
+  --media-coral: #ffe1d8;
+  --media-orange: #ffe7c9;
+  --media-blue: #dcecff;
+
+  /* Home report tiles, gauges, water and activity */
+  --tile-weight: #fdf5e2;
+  --tile-activity: #eef6dd;
+  --tile-water: #eaf4ff;
+  --tile-meals: #fdeef0;
+  --tile-badge-bg: rgb(255 255 255 / 0.7);
+  --tile-badge-fg: #8a5a00;
+  --tile-hit-hover: rgb(255 255 255 / 0.35);
+  --gauge-weight-track: #f7e6c0;
+  --gauge-weight-to: #f6d55c;
+  --gauge-meals-track: #f8d3d8;
+  --cup-glass-fill: #f3f9ff;
+  --cup-glass-stroke: #a9d0f5;
+  --cup-plus-bg: #4ea2ef;
+  --wave-front: #8cc3f7;
+  --wave-back: #b7dafb;
+  --activity-fill: #65a30d;
+  --activity-on-fg: #ffffff;
+  --activity-ink: #3f6212;
+  --activity-link: #4d7c0f;
+  --activity-hover: #f7fbef;
+
+  /* Data-visual colors (food.ts emits var(--macro-<key>)) */
+  --macro-protein: #f59e0b;
+  --macro-cereal: #8b6cf0;
+  --macro-fruit: #ef5b73;
+  --macro-vegetable: #34a853;
+  --macro-dairy: #2180e6;
+  --macro-legume: #b45309;
+  --macro-fat: #65a30d;
+  --macro-supplement: #14b8a6;
+  --macro-sugar: #db2777;
 }
+
+/* Dark theme: screen only, so print resolves to the light tokens above, and never inside a light-locked page
+   (landing, legal, 404). Surfaces carry the brand hue (about 166 deg) at very low chroma. Surfaces a primary button
+   can sit on stay at OKLCH L <= 0.195: teal-600 buttons are already only 3.01:1 on --surface, so a lighter surface
+   would break the 3:1 button boundary. Teal text and links use the 300/400 shades. */
+@media screen {
+  html.dark:not(:has([data-theme-lock])) {
+    color-scheme: dark;
+    --canvas: oklch(0.165 0.011 166);
+    --surface: oklch(0.195 0.012 166);
+    --surface-raised: var(--surface);
+    --text-1: oklch(0.95 0.006 166);
+    --text-2: oklch(0.85 0.008 166);
+    --text-3: oklch(0.72 0.01 166);
+    --text-muted: var(--text-3);
+    --hairline: oklch(0.3 0.01 166);
+    --pill: oklch(0.27 0.012 166);
+    --pill-hover: oklch(0.32 0.012 166);
+
+    --brand-50: oklch(0.195 0.03 166);
+    --brand-100: oklch(0.29 0.04 166);
+    --brand-200: oklch(0.4 0.05 166);
+    --brand-300: oklch(0.78 0.08 166);
+    --brand-400: oklch(0.7 0.09 166);
+    --btn-hover: oklch(0.5 0.075 166);
+    --brand-ink: var(--brand-300);
+    --brand-text: var(--brand-300);
+    --brand-accent: var(--brand-400);
+    --brand-solid: var(--brand-600);
+    --brand-fill: var(--brand-600);
+    --focus-ring: var(--brand-300);
+    --focus-halo: var(--brand-300);
+    --promo-btn-hover: oklch(0.9 0.03 166);
+    --accent-line: var(--brand-200);
+
+    --button-bg: oklch(0.26 0.012 166);
+    --button-border: var(--line-strong);
+    --button-hover-bg: oklch(0.31 0.012 166);
+    --button-hover-border: oklch(0.62 0.012 166);
+    --field-bg: var(--canvas);
+    --field-border: oklch(0.56 0.012 166);
+    --field-line: oklch(0.56 0.012 166);
+    --field-ring: inset 0 0 0 1px oklch(0.56 0.012 166);
+    --line-strong: oklch(0.56 0.012 166);
+    --check-border: oklch(0.56 0.012 166);
+    --dash-line: oklch(0.4 0.012 166);
+    --spine-line: oklch(0.36 0.01 166);
+    --placeholder: oklch(0.7 0.01 166);
+    --hover-tint: oklch(1 0 0 / 0.08);
+    --fill-tint: oklch(1 0 0 / 0.12);
+    --line-faint: oklch(1 0 0 / 0.1);
+    --line-quiet: oklch(1 0 0 / 0.28);
+    --line-quiet-hover: oklch(1 0 0 / 0.42);
+    --shadow-rgb: 0 0 0;
+    --overlay: rgb(0 0 0 / 0.55);
+    --overlay-modal: rgb(0 0 0 / 0.6);
+    --glass-bg: oklch(0.2 0.012 166 / 0.78);
+    --glass-border: oklch(1 0 0 / 0.2);
+    --glass-shine: oklch(1 0 0 / 0.08);
+    --toggle-bg: oklch(0.97 0.005 166);
+    --toggle-fg: var(--canvas);
+    --toggle-hover: oklch(0.88 0.006 166);
+    --segmented-bg: oklch(0.26 0.012 166);
+    --popover-hover: oklch(0.29 0.012 166);
+    --popover-ring: oklch(1 0 0 / 0.16);
+    --popover-ring-home: oklch(1 0 0 / 0.16);
+    --badge-bg: oklch(0.25 0.012 166);
+    --bubble-bg: oklch(0.25 0.012 166);
+    --icon-disc: oklch(0.3 0.012 166);
+    --track-base: var(--surface);
+
+    --app-warn: oklch(0.8 0.14 75);
+    --app-danger: oklch(0.76 0.15 25);
+    --warn-soft: oklch(0.27 0.05 80);
+    --warn-line: oklch(0.45 0.09 85);
+    --danger-soft: oklch(0.27 0.055 25);
+    --danger-line: oklch(0.45 0.1 25);
+    --danger-text: oklch(0.76 0.14 25);
+    --danger-ink: oklch(0.78 0.13 28);
+    --danger-ink-strong: oklch(0.82 0.12 28);
+    --danger-hover-bg: oklch(0.3 0.06 25);
+    --danger-fill: oklch(0.5 0.19 27);
+    --warn-text: oklch(0.8 0.13 55);
+    --danger-edge: oklch(0.7 0.15 25);
+    --danger-halo: oklch(0.7 0.15 25);
+    --danger-ink-deep: oklch(0.88 0.1 28);
+
+    --chip-bg: oklch(0.27 0.012 166);
+    --chip-fg: oklch(0.84 0.01 166);
+    --chip-icon: oklch(0.74 0.01 166);
+    --chip-coral-bg: oklch(0.29 0.055 25);
+    --chip-coral-fg: oklch(0.82 0.11 25);
+    --chip-green-bg: oklch(0.28 0.05 150);
+    --chip-green-fg: oklch(0.82 0.12 150);
+    --chip-orange-bg: oklch(0.29 0.05 70);
+    --chip-orange-fg: oklch(0.84 0.12 70);
+    --chip-teal-bg: oklch(0.28 0.045 185);
+    --chip-teal-fg: oklch(0.82 0.09 185);
+    --order-coral-fg: oklch(0.82 0.11 25);
+    --tag-teal-fg: oklch(0.84 0.09 185);
+    --tag-coral-bg: oklch(0.3 0.055 30);
+    --tag-coral-fg: oklch(0.84 0.1 30);
+    --tag-orange-bg: oklch(0.3 0.055 65);
+    --tag-orange-fg: oklch(0.85 0.11 65);
+    --tag-blue-bg: oklch(0.29 0.05 250);
+    --tag-blue-fg: oklch(0.84 0.09 250);
+    --media-teal: oklch(0.27 0.04 185);
+    --media-coral: oklch(0.28 0.05 35);
+    --media-orange: oklch(0.29 0.05 70);
+    --media-blue: oklch(0.28 0.045 250);
+
+    --tile-weight: oklch(0.25 0.035 85);
+    --tile-activity: oklch(0.25 0.035 130);
+    --tile-water: oklch(0.2 0.04 250);
+    --tile-meals: oklch(0.25 0.035 10);
+    --tile-badge-bg: oklch(1 0 0 / 0.1);
+    --tile-badge-fg: oklch(0.86 0.1 85);
+    --tile-hit-hover: oklch(1 0 0 / 0.08);
+    --gauge-weight-track: oklch(0.38 0.04 85);
+    --gauge-meals-track: oklch(0.38 0.045 10);
+    --cup-glass-fill: oklch(0.3 0.03 250);
+    --cup-glass-stroke: oklch(0.66 0.09 250);
+    --cup-plus-bg: oklch(0.5 0.13 250);
+    --wave-front: oklch(0.52 0.1 250);
+    --wave-back: oklch(0.4 0.08 250);
+    --activity-fill: oklch(0.8 0.17 130);
+    --activity-on-fg: oklch(0.2 0.03 130);
+    --activity-ink: oklch(0.84 0.12 130);
+    --activity-link: oklch(0.84 0.12 130);
+    --activity-hover: oklch(0.3 0.03 130);
+
+    /* shadcn */
+    --background: var(--canvas);
+    --foreground: var(--text-1);
+    --card: var(--surface);
+    --card-foreground: var(--text-1);
+    --popover: var(--surface-raised);
+    --popover-foreground: var(--text-1);
+    --primary: var(--brand-600);
+    --primary-foreground: var(--on-brand);
+    --secondary: oklch(0.27 0.012 166);
+    --secondary-foreground: var(--text-1);
+    --muted: oklch(0.26 0.012 166);
+    --muted-foreground: var(--text-3);
+    --accent: oklch(0.27 0.012 166);
+    --accent-foreground: var(--text-1);
+    --destructive: oklch(0.76 0.15 25);
+    --border: oklch(0.34 0.01 166);
+    --input: var(--field-border);
+    --ring: var(--brand-300);
+    --sidebar: var(--surface);
+    --sidebar-foreground: var(--text-1);
+    --sidebar-primary: var(--brand-600);
+    --sidebar-primary-foreground: var(--on-brand);
+    --sidebar-accent: oklch(0.27 0.012 166);
+    --sidebar-accent-foreground: var(--text-1);
+    --sidebar-border: oklch(0.34 0.01 166);
+    --sidebar-ring: var(--brand-300);
+  }
+}
+/* theme-tokens:end */
 
 * { box-sizing: border-box; }
 
@@ -132,9 +418,9 @@ button, input, select, textarea { font: inherit; }
 
 :where(input, select, textarea) {
   width: 100%;
-  border: 1px solid #dfe1e7;
+  border: 1px solid var(--field-border);
   border-radius: 12px;
-  background: white;
+  background: var(--field-bg);
   color: var(--text-1);
   padding: 10px 12px;
 }
@@ -176,8 +462,8 @@ label.check input { width: auto; }
   padding: 0 5px;
   border-radius: 999px;
   border: 2px solid var(--canvas);
-  background: var(--brand);
-  color: white;
+  background: var(--brand-solid);
+  color: var(--on-brand);
   font-size: 11px;
   font-weight: 700;
   line-height: 16px;
@@ -192,8 +478,8 @@ label.check input { width: auto; }
   min-width: 230px;
   padding: 8px;
   border-radius: 18px;
-  background: white;
-  box-shadow: 0 24px 60px -18px rgba(22, 23, 29, 0.3), 0 0 0 1px rgba(22, 23, 29, 0.05);
+  background: var(--surface-raised);
+  box-shadow: 0 24px 60px -18px rgba(22, 23, 29, 0.3), 0 0 0 1px var(--popover-ring);
   display: grid;
   gap: 2px;
 }
@@ -216,12 +502,12 @@ label.check input { width: auto; }
   cursor: pointer;
 }
 .user-popover button, .user-popover a { justify-content: flex-start; text-decoration: none; }
-.popover button:hover, .popover a:hover { background: #f3f3f6; }
+.popover button:hover, .popover a:hover { background: var(--popover-hover); }
 .popover button svg, .popover a svg { color: var(--text-3); }
-.popover button[aria-checked="true"] { color: var(--brand); font-weight: 600; }
-.popover button[aria-checked="true"] svg { color: var(--brand); }
-.popover button.danger { color: #d43d3d; }
-.popover button.danger svg { color: #d43d3d; }
+.popover button[aria-checked="true"] { color: var(--brand-text); font-weight: 600; }
+.popover button[aria-checked="true"] svg { color: var(--brand-text); }
+.popover button.danger { color: var(--danger-text); }
+.popover button.danger svg { color: var(--danger-text); }
 .popover hr { margin: 4px 6px; border: 0; border-top: 1px solid var(--hairline); }
 
 .content {
@@ -242,9 +528,9 @@ label.check input { width: auto; }
 .page-head p { margin: 0; font-size: 15px; }
 
 /* Drawer (cart + assistant) */
-.drawer-backdrop { position: fixed; inset: 0; z-index: 45; background: rgba(22, 23, 29, 0.32); }
+.drawer-backdrop { position: fixed; inset: 0; z-index: 45; background: var(--overlay); }
 .drawer-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.segmented { display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: #f1f1f5; }
+.segmented { display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: var(--segmented-bg); }
 .segmented button {
   display: inline-flex;
   align-items: center;
@@ -259,7 +545,7 @@ label.check input { width: auto; }
   font-weight: 600;
   cursor: pointer;
 }
-.segmented button.active { background: white; color: var(--text-1); box-shadow: 0 1px 3px rgba(22, 23, 29, 0.12); }
+.segmented button.active { background: var(--surface-raised); color: var(--text-1); box-shadow: 0 1px 3px rgba(22, 23, 29, 0.12); }
 .drawer-body { display: grid; gap: 14px; align-content: start; min-height: 0; overflow: auto; padding: 4px 4px 12px; }
 .drawer-body h2 { margin: 0; }
 
@@ -286,7 +572,7 @@ label.check input { width: auto; }
   gap: 10px;
   border: 1px solid var(--hairline);
   border-radius: 14px;
-  background: white;
+  background: var(--surface-raised);
   padding: 10px 12px;
 }
 .mini-item img { width: 32px; height: 32px; object-fit: contain; }
@@ -310,12 +596,12 @@ label.check input { width: auto; }
   padding: 3px 9px;
   font-size: 12px;
   color: var(--text-3);
-  background: #f7f7f9;
+  background: var(--badge-bg);
 }
-.badge.success { color: var(--brand-700); border-color: var(--brand-200); background: var(--brand-50); }
+.badge.success { color: var(--brand-ink); border-color: var(--brand-200); background: var(--brand-50); }
 .badge.warn { color: var(--app-warn); border-color: var(--warn-line); background: var(--warn-soft); }
 
-.empty { color: var(--text-3); border: 1px dashed #d4d6de; border-radius: 16px; padding: 18px; text-align: center; }
+.empty { color: var(--text-3); border: 1px dashed var(--dash-line); border-radius: 16px; padding: 18px; text-align: center; }
 .alert { margin-bottom: 14px; border-radius: 12px; background: var(--danger-soft); border: 1px solid var(--danger-line); color: var(--app-danger); padding: 10px 12px; }
 
 .table-wrap { width: 100%; overflow-x: auto; }
@@ -328,10 +614,10 @@ td select { min-width: 170px; }
 .manual-form input[name="name"], .manual-form button { grid-column: 1 / -1; }
 .chat-form { display: grid; gap: 10px; }
 .chat-log { display: grid; gap: 8px; max-height: 56vh; overflow: auto; }
-.bubble { border-radius: 16px; padding: 10px 12px; background: #f6f6f9; white-space: pre-wrap; font-size: 14px; }
-.bubble.user { background: var(--brand-50); color: var(--brand-700); justify-self: end; max-width: 85%; }
+.bubble { border-radius: 16px; padding: 10px 12px; background: var(--bubble-bg); white-space: pre-wrap; font-size: 14px; }
+.bubble.user { background: var(--brand-50); color: var(--brand-ink); justify-self: end; max-width: 85%; }
 
-.modal-backdrop { position: fixed; inset: 0; z-index: 50; background: rgba(22, 23, 29, 0.38); display: grid; place-items: center; padding: 18px; }
+.modal-backdrop { position: fixed; inset: 0; z-index: 50; background: var(--overlay-modal); display: grid; place-items: center; padding: 18px; }
 .modal {
   width: min(900px, 100%);
   max-height: 90vh;
@@ -340,7 +626,7 @@ td select { min-width: 170px; }
   border-radius: 24px;
   box-shadow: var(--shadow);
 }
-.modal header, .modal footer { position: sticky; z-index: 1; background: white; padding: 14px 18px; }
+.modal header, .modal footer { position: sticky; z-index: 1; background: var(--surface-raised); padding: 14px 18px; }
 .modal header { top: 0; border-bottom: 1px solid var(--hairline); }
 .modal footer { bottom: 0; border-top: 1px solid var(--hairline); }
 .modal main { padding: 18px; }
@@ -369,18 +655,18 @@ td select { min-width: 170px; }
   height: 28px;
   padding: 0 10px;
   border-radius: 9px;
-  background: #f2f2f6;
-  color: #575a66;
+  background: var(--chip-bg);
+  color: var(--chip-fg);
   font-size: 13px;
   font-weight: 500;
   white-space: nowrap;
 }
-.chip svg { color: #8a8d98; }
-.chip.tone-coral { background: #fdeceb; color: #e04f45; font-weight: 600; }
-.chip.tone-green { background: #e4f6e9; color: #23914f; font-weight: 600; }
-.chip.tone-orange { background: #fff1db; color: #d98200; font-weight: 600; }
-.chip.tone-blue { background: var(--brand-50); color: var(--brand-700); font-weight: 600; }
-.chip.tone-teal { background: #dff6f2; color: #0f8f82; font-weight: 600; }
+.chip svg { color: var(--chip-icon); }
+.chip.tone-coral { background: var(--chip-coral-bg); color: var(--chip-coral-fg); font-weight: 600; }
+.chip.tone-green { background: var(--chip-green-bg); color: var(--chip-green-fg); font-weight: 600; }
+.chip.tone-orange { background: var(--chip-orange-bg); color: var(--chip-orange-fg); font-weight: 600; }
+.chip.tone-blue { background: var(--brand-50); color: var(--brand-ink); font-weight: 600; }
+.chip.tone-teal { background: var(--chip-teal-bg); color: var(--chip-teal-fg); font-weight: 600; }
 
 @media (max-width: 980px) {
   .content { padding: 6px 20px 32px; }
@@ -412,6 +698,9 @@ td select { min-width: 170px; }
   --color-chart-2: var(--chart-2);
   --color-chart-1: var(--chart-1);
   --color-ring: var(--ring);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-hover: var(--danger-hover-bg);
+  --color-danger-text: var(--danger-text);
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
@@ -438,38 +727,17 @@ td select { min-width: 170px; }
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+/* Light-locked pages beat the inline color-scheme the init script sets before the app knows the page is locked. */
+html:has([data-theme-lock]) { color-scheme: light !important; }
+
+/* Sonner draws its focus ring in translucent black, which disappears on dark surfaces. */
+@media screen {
+  html.dark:not(:has([data-theme-lock])) [data-sonner-toast]:focus-visible { box-shadow: 0 0 0 2px var(--focus-ring); }
+}
+
+/* The init script sets an inline color-scheme (needed before CSS and hydration); print must stay light anyway. */
+@media print {
+  html { color-scheme: light !important; }
 }
 
 @layer base {
@@ -506,15 +774,15 @@ td select { min-width: 170px; }
   height: 60px;
   border: 0;
   border-radius: 50%;
-  background: var(--brand);
-  color: white;
+  background: var(--brand-solid);
+  color: var(--on-brand);
   box-shadow: 0 10px 28px rgb(15 23 42 / 0.22);
   cursor: pointer;
   transition: transform 160ms ease, background 160ms ease;
 }
 .assistant-fab:hover { transform: scale(1.05); }
-.assistant-fab:focus-visible { outline: 3px solid var(--brand-200); outline-offset: 3px; }
-.assistant-fab.open { background: var(--text-1); }
+.assistant-fab:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 3px; }
+.assistant-fab.open { background: var(--toggle-bg); color: var(--toggle-fg); }
 .assistant-chat {
   position: fixed;
   right: 24px;
@@ -538,10 +806,10 @@ td select { min-width: 170px; }
 .assistant-chat.open { opacity: 1; transform: none; visibility: visible; pointer-events: auto; transition: opacity 180ms ease, transform 180ms ease; }
 .assistant-chat-close { display: grid; place-items: center; flex: none; width: 36px; height: 36px; margin-left: auto; border: 0; border-radius: 50%; background: var(--pill); color: var(--text-2); cursor: pointer; }
 .assistant-chat-close:hover { background: var(--pill-hover); }
-.assistant-chat-error { margin: 0 18px 8px; color: #c2410c; font-size: 13px; }
+.assistant-chat-error { margin: 0 18px 8px; color: var(--warn-text); font-size: 13px; }
 .assistant-chat-form .assistant-mic { background: var(--pill); color: var(--text-1); }
 .assistant-chat-form .assistant-mic:hover { background: var(--pill-hover); }
-.assistant-chat-form .assistant-mic.listening { background: #ef4444; color: white; animation: mic-pulse 1.4s ease-out infinite; }
+.assistant-chat-form .assistant-mic.listening { background: var(--danger-fill); color: var(--on-brand); animation: mic-pulse 1.4s ease-out infinite; }
 @keyframes mic-pulse { 0% { box-shadow: 0 0 0 0 rgb(239 68 68 / 0.45); } 100% { box-shadow: 0 0 0 12px rgb(239 68 68 / 0); } }
 @media (prefers-reduced-motion: reduce) {
   .assistant-chat, .assistant-fab { transition: none; }
@@ -552,7 +820,7 @@ td select { min-width: 170px; }
   .assistant-chat { right: 8px; bottom: 80px; width: calc(100vw - 16px); height: calc(100dvh - 100px); }
 }
 .assistant-chat header { display: flex; align-items: center; gap: 12px; padding: 20px 20px 14px; border-bottom: 1px solid var(--hairline); }
-.assistant-chat-icon { display: grid; place-items: center; flex: none; width: 42px; height: 42px; border-radius: 50%; background: var(--brand-50); color: var(--brand); }
+.assistant-chat-icon { display: grid; place-items: center; flex: none; width: 42px; height: 42px; border-radius: 50%; background: var(--brand-50); color: var(--brand-text); }
 .assistant-chat header div { min-width: 0; }
 .assistant-chat h2 { margin: 0; font-size: 20px; font-weight: 700; }
 .assistant-chat header p { margin: 0; overflow: hidden; color: var(--text-3); font-size: 13.5px; text-overflow: ellipsis; white-space: nowrap; }
@@ -560,22 +828,22 @@ td select { min-width: 170px; }
 .assistant-chat-empty { display: grid; gap: 14px; margin-top: auto; }
 .assistant-chat-empty p { margin: 0; color: var(--text-3); font-size: 14px; line-height: 1.45; }
 .assistant-chat-suggestions { display: grid; gap: 8px; }
-.assistant-chat-suggestions .assistant-suggestion { padding: 11px 14px; border: 1px solid var(--hairline); border-radius: 16px; background: white; color: var(--text-1); font-size: 14px; font-weight: 500; text-align: left; cursor: pointer; }
+.assistant-chat-suggestions .assistant-suggestion { padding: 11px 14px; border: 1px solid var(--hairline); border-radius: 16px; background: var(--surface-raised); color: var(--text-1); font-size: 14px; font-weight: 500; text-align: left; cursor: pointer; }
 .assistant-chat-suggestions .assistant-suggestion:hover { border-color: var(--brand-200); background: var(--brand-50); }
 .assistant-bubble { max-width: 90%; padding: 12px 14px; border-radius: 18px; font-size: 14px; line-height: 1.45; }
 .assistant-bubble p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
-.assistant-bubble.user { align-self: flex-end; border-bottom-right-radius: 6px; background: var(--brand-700); color: white; }
+.assistant-bubble.user { align-self: flex-end; border-bottom-right-radius: 6px; background: var(--brand-fill); color: var(--on-brand); }
 .assistant-bubble.assistant { align-self: flex-start; border-bottom-left-radius: 6px; background: var(--canvas); color: var(--text-1); }
 .assistant-bubble.typing { display: inline-flex; align-items: center; gap: 8px; color: var(--text-3); }
 .assistant-sources { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-.assistant-sources span { padding: 3px 8px; border-radius: 8px; background: white; color: var(--text-3); font-size: 12px; font-weight: 600; }
-.assistant-chat-form { display: flex; align-items: center; gap: 8px; margin: 0 14px 14px; padding: 6px 6px 6px 18px; border: 1.5px solid var(--hairline); border-radius: 999px; }
+.assistant-sources span { padding: 3px 8px; border-radius: 8px; background: var(--surface-raised); color: var(--text-3); font-size: 12px; font-weight: 600; }
+.assistant-chat-form { display: flex; align-items: center; gap: 8px; margin: 0 14px 14px; padding: 6px 6px 6px 18px; border: 1.5px solid var(--field-line); border-radius: 999px; }
 .assistant-chat-form:focus-within { border-color: var(--brand); }
 .assistant-chat-form input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font-size: 15px; }
-.assistant-chat-form button { display: grid; place-items: center; flex: none; width: 40px; height: 40px; border: 0; border-radius: 50%; background: var(--btn); color: white; cursor: pointer; transition: background-color 140ms ease; }
+.assistant-chat-form button { display: grid; place-items: center; flex: none; width: 40px; height: 40px; border: 0; border-radius: 50%; background: var(--btn); color: var(--on-brand); cursor: pointer; transition: background-color 140ms ease; }
 .assistant-chat-form button[type=submit]:hover:not(:disabled) { background: var(--btn-hover); }
 .assistant-chat-form button:disabled { background: var(--pill); color: var(--text-3); cursor: default; }
-.assistant-chat .assistant-bubble.user p { color: white; }
+.assistant-chat .assistant-bubble.user p { color: var(--on-brand); }
 .assistant-chat .assistant-bubble.assistant p { color: var(--text-1); }
 .ingredient-add {
   position: absolute;
@@ -590,18 +858,18 @@ td select { min-width: 170px; }
   padding: 0;
   border: 0;
   border-radius: 50%;
-  background: white;
+  background: var(--surface-raised);
   color: var(--text-1);
   cursor: pointer;
   transition: background-color 140ms ease, transform 140ms ease;
 }
 .ingredient-add svg { grid-area: 1 / 1; }
-.ingredient-add .ingredient-add-plus { transform: translate(5px, -6px); padding: 1px; border-radius: 50%; background: var(--brand); color: white; box-sizing: content-box; }
+.ingredient-add .ingredient-add-plus { transform: translate(5px, -6px); padding: 1px; border-radius: 50%; background: var(--brand-solid); color: var(--on-brand); box-sizing: content-box; }
 .ingredient-add:hover { background: var(--brand-50); transform: scale(1.06); }
 .ingredient-add:disabled { cursor: progress; }
-.ingredient-add.added { background: var(--green); color: white; }
+.ingredient-add.added { background: var(--brand-solid); color: var(--on-brand); }
 .ingredient-add:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
-.ingredient-add.added:hover { background: var(--green); }
+.ingredient-add.added:hover { background: var(--brand-solid); }
 
 /* View transitions: recipe image and title morph between the list and the detail page. */
 :root {
@@ -618,6 +886,21 @@ td select { min-width: 170px; }
 ::view-transition-group(.text-morph) { animation-duration: var(--duration-move); }
 ::view-transition-old(.text-morph) { display: none; }
 ::view-transition-new(.text-morph) { animation: none; object-fit: none; object-position: left top; }
+/* Theme change: the new theme grows as a circle from the switch (--reveal-* are set by switchTheme). The other
+   morph names are dropped meanwhile so the header and recipe images are part of the root snapshot, not separate layers. */
+:root {
+  --theme-reveal-duration: 500ms;
+}
+@keyframes theme-reveal {
+  from { clip-path: circle(0 at var(--reveal-x, 50%) var(--reveal-y, 0)); }
+  to { clip-path: circle(var(--reveal-r, 150vmax) at var(--reveal-x, 50%) var(--reveal-y, 0)); }
+}
+html.theme-vt * { view-transition-name: none !important; }
+html.theme-vt::view-transition-old(root) { animation: none; }
+html.theme-vt::view-transition-new(root) {
+  animation: theme-reveal var(--theme-reveal-duration) ease-out both;
+  mix-blend-mode: normal;
+}
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-old(*),
   ::view-transition-new(*),
@@ -641,9 +924,9 @@ td select { min-width: 170px; }
 .groceries-nav-item strong { font-size: 15.5px; font-weight: 600; }
 .groceries-nav-item small { color: var(--text-3); font-size: 12.5px; }
 .groceries-nav-item em { min-width: 26px; height: 22px; padding: 0 7px; border-radius: 999px; background: var(--canvas); color: var(--text-3); font-size: 12px; font-style: normal; font-weight: 700; line-height: 22px; text-align: center; }
-.groceries-nav-item.on { background: var(--yellow); color: var(--text-1); }
-.groceries-nav-item.on small { color: var(--text-2); }
-.groceries-nav-item.on em { background: var(--text-1); color: white; }
+.groceries-nav-item.on { background: var(--yellow); color: var(--on-yellow); }
+.groceries-nav-item.on small { color: var(--on-yellow-2); }
+.groceries-nav-item.on em { background: var(--toggle-bg); color: var(--toggle-fg); }
 .groceries-nav-item:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 
 .order-card { display: grid; gap: 18px; padding: 26px 28px; border-radius: var(--radius-card); background: var(--surface); }
@@ -658,12 +941,12 @@ td select { min-width: 170px; }
 .order-actions .round-btn:disabled { opacity: 0.45; cursor: default; }
 
 .order-tools { display: grid; gap: 12px; }
-.order-search { display: flex; align-items: center; gap: 10px; height: 46px; padding: 0 16px; border-radius: 999px; background: var(--canvas); color: var(--text-3); }
+.order-search { display: flex; align-items: center; gap: 10px; height: 46px; padding: 0 16px; border-radius: 999px; background: var(--canvas); color: var(--text-3); box-shadow: var(--field-ring); }
 .order-search input { flex: 1; min-width: 0; height: 100%; padding: 0; border: 0; background: transparent; box-shadow: none; outline: none; }
 .order-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .order-chip { height: 36px; padding: 0 14px; border: 0; border-radius: 999px; background: var(--pill); color: var(--text-2); font-size: 14px; font-weight: 600; cursor: pointer; }
 .order-chip:hover { background: var(--pill-hover); }
-.order-chip.on { background: var(--text-1); color: white; }
+.order-chip.on { background: var(--toggle-bg); color: var(--toggle-fg); }
 
 .order-list { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
 .order-row { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto auto; align-items: center; gap: 16px; padding: 10px 0; }
@@ -683,21 +966,21 @@ td select { min-width: 170px; }
 .order-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .order-stat { display: flex; align-items: center; gap: 10px; min-height: 64px; padding: 0 20px; border-radius: 20px; font-size: 15px; font-weight: 600; }
 .order-stat strong { margin-left: auto; font-size: 18px; }
-.order-stat.blue { background: var(--brand-50); color: var(--brand-700); }
-.order-stat.coral { background: #fdeceb; color: #c8433a; }
+.order-stat.blue { background: var(--brand-50); color: var(--brand-ink); }
+.order-stat.coral { background: var(--chip-coral-bg); color: var(--order-coral-fg); }
 
-.order-cta { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 46px; padding: 0 22px; border: 0; border-radius: 999px; background: var(--btn); color: white; font-size: 15px; font-weight: 600; cursor: pointer; transition: background-color 140ms ease; }
+.order-cta { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 46px; padding: 0 22px; border: 0; border-radius: 999px; background: var(--btn); color: var(--on-brand); font-size: 15px; font-weight: 600; cursor: pointer; transition: background-color 140ms ease; }
 .order-cta:hover:not(:disabled) { background: var(--btn-hover); }
 .order-cta:disabled { opacity: 0.45; cursor: default; }
 .order-cta.small { height: 40px; padding: 0 16px; font-size: 14px; }
 
 .planner-row { display: grid; gap: 12px; }
-.planner-field { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 6px 0 14px; border-radius: 999px; background: var(--canvas); color: var(--text-3); font-size: 13.5px; font-weight: 600; }
+.planner-field { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 6px 0 14px; border-radius: 999px; background: var(--canvas); color: var(--text-3); font-size: 13.5px; font-weight: 600; box-shadow: var(--field-ring); }
 .planner-field input { width: 64px; height: 28px; padding: 0 8px; border: 0; border-radius: 999px; background: var(--surface); box-shadow: none; text-align: center; }
 .planner-recipes { display: flex; flex-wrap: wrap; gap: 8px; }
 .planner-recipe { display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 16px; border: 1px solid var(--hairline); border-radius: 999px; background: var(--surface); color: var(--text-2); font-size: 14px; font-weight: 600; cursor: pointer; }
 .planner-recipe:hover { border-color: var(--brand-200); }
-.planner-recipe.on { border-color: var(--brand-700); background: var(--brand-700); color: white; }
+.planner-recipe.on { border-color: var(--brand-fill); background: var(--brand-fill); color: var(--on-brand); }
 .planner-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
 .planner-foot .check { gap: 8px; color: var(--text-2); font-size: 14px; }
 

@@ -25,12 +25,12 @@
   max-width: 100%;
   box-sizing: border-box;
   padding: 6px;
-  border: 1px solid rgb(255 255 255 / 0.75);
+  border: 1px solid var(--glass-border);
   border-radius: 999px;
-  background: rgb(255 255 255 / 0.72);
+  background: var(--glass-bg);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.9), 0 16px 40px -24px rgb(22 23 29 / 0.4);
+  box-shadow: inset 0 1px 0 var(--glass-shine), 0 16px 40px -24px rgb(var(--shadow-rgb) / 0.4);
 }
 
 .nav { display: flex; gap: 4px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
@@ -51,12 +51,42 @@
 }
 .pill svg { flex: none; }
 .pill:active { transform: scale(0.96); }
-.pill.active { background: var(--text-1); color: white; }
+.pill.active { background: var(--toggle-bg); color: var(--toggle-fg); }
 @media (hover: hover) and (pointer: fine) {
-  .pill:not(.active):hover { background: rgb(22 23 29 / 0.06); color: var(--text-1); }
+  .pill:not(.active):hover { background: var(--hover-tint); color: var(--text-1); }
 }
 
 /* ---------- Account ---------- */
+
+/* Theme switch: the sun and moon are stacked; the icon of the current theme is the visible one (html.dark). */
+.theme-toggle {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  /* 44px target inside a 40px-tall pill: the negative margin keeps the topbar's height unchanged. */
+  margin-block: -2px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-1);
+  cursor: pointer;
+}
+.theme-toggle:hover { background: var(--pill); }
+.theme-toggle:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.theme-toggle svg { grid-area: 1 / 1; opacity: 0; transition: opacity 150ms ease; }
+.theme-toggle .theme-icon-sun, html.dark:not(:has([data-theme-lock])) .theme-toggle .theme-icon-moon { opacity: 1; }
+html.dark:not(:has([data-theme-lock])) .theme-toggle .theme-icon-sun { opacity: 0; }
+@media (forced-colors: active) {
+  .theme-toggle { border: 1px solid ButtonText; }
+  .theme-toggle svg { color: currentColor; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .theme-toggle svg { transition: none; }
+}
 
 .user-menu { position: relative; flex: none; }
 .user-chip {
@@ -74,9 +104,9 @@
   transition: background-color 200ms ease, transform 100ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 .user-chip:active { transform: scale(0.97); }
-.user-chip[aria-expanded="true"] { background: rgb(22 23 29 / 0.06); }
+.user-chip[aria-expanded="true"] { background: var(--hover-tint); }
 @media (hover: hover) and (pointer: fine) {
-  .user-chip:hover { background: rgb(22 23 29 / 0.06); }
+  .user-chip:hover { background: var(--hover-tint); }
 }
 .user-text { display: grid; }
 .user-text strong { font-size: 14px; line-height: 20px; font-weight: 600; }
@@ -90,8 +120,8 @@
   width: 40px;
   height: 40px;
   border-radius: 999px;
-  background: var(--brand);
-  color: white;
+  background: var(--brand-solid);
+  color: var(--on-brand);
   font-size: 16px;
   font-weight: 700;
 }
@@ -127,8 +157,8 @@
   .user-popover { transition: opacity 150ms ease; }
 }
 @media (prefers-reduced-transparency: reduce) {
-  .topbar-island, .topbar-account { background: white; backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .topbar-island, .topbar-account { background: var(--surface-raised); backdrop-filter: none; -webkit-backdrop-filter: none; }
 }
 @media (prefers-contrast: more) {
-  .topbar-island, .topbar-account { background: white; backdrop-filter: none; -webkit-backdrop-filter: none; border-color: var(--text-3); }
+  .topbar-island, .topbar-account { background: var(--surface-raised); backdrop-filter: none; -webkit-backdrop-filter: none; border-color: var(--text-3); }
 }

@@ -1,25 +1,9 @@
-import { expect, test as base, type Page } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { sql } from "./database";
+import { expect, test } from "./fixtures";
 
 // The signed-in home, end to end: real UI, real API routes, real Postgres (the e2e copy).
 // Every change is checked three ways: on screen, after a reload, and in the database.
-
-const test = base.extend<{ issues: string[] }>({
-  // Any page error, console error or failed API call fails the test that caused it.
-  issues: [
-    async ({ page }, use) => {
-      const issues: string[] = [];
-      page.on("pageerror", (error) => issues.push(`page error: ${error.message}`));
-      page.on("console", (message) => message.type() === "error" && issues.push(`console: ${message.text().slice(0, 200)}`));
-      page.on("response", (response) => {
-        if (response.url().includes("/api/") && response.status() >= 400) issues.push(`${response.request().method()} ${new URL(response.url()).pathname} → ${response.status()}`);
-      });
-      await use(issues);
-      expect(issues, "console errors or failed API calls").toEqual([]);
-    },
-    { auto: true }
-  ]
-});
 
 test.describe.configure({ mode: "serial" });
 

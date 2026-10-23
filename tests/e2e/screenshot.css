@@ -1,0 +1,4 @@
+/* Passed as `stylePath` to toHaveScreenshot: the Next dev indicator is not part of the app. */
+nextjs-portal {
+  display: none !important;
+}

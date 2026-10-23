@@ -9,8 +9,8 @@
   --home-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --home-ease: cubic-bezier(0.32, 0.72, 0, 1);
   --home-ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
-  --home-line: rgb(22 23 29 / 0.07);
-  --home-muted: #6b6e7a;
+  --home-line: var(--line-faint);
+  --home-muted: var(--text-muted);
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -53,16 +53,16 @@
   border-radius: 999px;
   background: var(--surface);
   color: var(--text-3);
-  box-shadow: 0 1px 2px rgb(22 23 29 / 0.04);
+  box-shadow: 0 1px 2px rgb(22 23 29 / 0.04), var(--field-ring);
   transition: box-shadow 200ms ease;
 }
 .home-search:focus-within { box-shadow: 0 0 0 2px var(--brand), 0 0 0 6px var(--brand-100); }
 .home-search input { flex: 1; min-width: 0; height: 100%; padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--text-1); font: inherit; font-size: 16px; outline: none; }
-.home-search input::placeholder { color: #9a9da7; }
+.home-search input::placeholder { color: var(--placeholder); }
 .home-search-scope { position: relative; }
 .home-search-filter { display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border: 0; border-radius: 999px; background: transparent; color: var(--text-2); cursor: pointer; transition: background-color 200ms ease, color 200ms ease, transform 100ms var(--home-ease-out); }
 .home-search-filter:active { transform: scale(0.92); }
-.home-search-filter.is-on { background: var(--brand-100); color: var(--brand-700); }
+.home-search-filter.is-on { background: var(--brand-100); color: var(--brand-ink); }
 @media (hover: hover) and (pointer: fine) {
   .home-search-filter:not(.is-on):hover { background: var(--canvas); color: var(--text-1); }
 }
@@ -136,7 +136,7 @@
   border: 0;
   border-radius: 999px;
   background: var(--btn);
-  color: white;
+  color: var(--on-brand);
   font: inherit;
   font-size: 15px;
   font-weight: 600;
@@ -145,12 +145,12 @@
   transition: background-color 200ms ease, box-shadow 200ms ease, transform 100ms var(--home-ease-out);
 }
 .home-btn:active { transform: scale(0.97); }
-.home-btn.is-quiet { background: transparent; color: var(--text-1); box-shadow: inset 0 0 0 1.5px rgb(22 23 29 / 0.14); }
-.home-btn.is-soft { background: var(--brand-50); color: var(--brand-700); }
+.home-btn.is-quiet { background: transparent; color: var(--text-1); box-shadow: inset 0 0 0 1.5px var(--line-quiet); }
+.home-btn.is-soft { background: var(--brand-50); color: var(--brand-ink); }
 .home-btn svg { transition: transform 200ms var(--home-ease-out); }
 @media (hover: hover) and (pointer: fine) {
   .home-btn:hover { background: var(--btn-hover); box-shadow: 0 10px 20px -12px rgb(39 72 60 / 0.6); }
-  .home-btn.is-quiet:hover { background: var(--canvas); box-shadow: inset 0 0 0 1.5px rgb(22 23 29 / 0.24); }
+  .home-btn.is-quiet:hover { background: var(--canvas); box-shadow: inset 0 0 0 1.5px var(--line-quiet-hover); }
   .home-btn.is-quiet:hover svg { transform: translateX(3px); }
   .home-btn.is-soft:hover { background: var(--brand-100); box-shadow: none; }
 }
@@ -173,7 +173,7 @@
   transition: background-color 200ms ease, color 200ms ease, transform 100ms var(--home-ease-out);
 }
 .home-icon-btn:active { transform: scale(0.94); }
-.home-icon-btn.is-on { background: var(--text-1); color: white; }
+.home-icon-btn.is-on { background: var(--toggle-bg); color: var(--toggle-fg); }
 @media (hover: hover) and (pointer: fine) {
   .home-icon-btn:not(.is-on):hover { background: var(--pill-hover); color: var(--text-1); }
 }
@@ -181,11 +181,11 @@
 /* ---------- Tags and ingredient chips ---------- */
 
 .home-tag { padding: 2px 10px; border-radius: 999px; font-size: 13px; line-height: 20px; font-weight: 600; }
-.home-tag.tone-teal { background: #dff6f2; color: #0b6f65; }
-.home-tag.tone-coral { background: #ffe4de; color: #b2361d; }
-.home-tag.tone-green { background: var(--brand-100); color: var(--brand-700); }
-.home-tag.tone-orange { background: #ffecd6; color: #9a4a00; }
-.home-tag.tone-blue { background: #e1efff; color: #1b5fae; }
+.home-tag.tone-teal { background: var(--chip-teal-bg); color: var(--tag-teal-fg); }
+.home-tag.tone-coral { background: var(--tag-coral-bg); color: var(--tag-coral-fg); }
+.home-tag.tone-green { background: var(--brand-100); color: var(--brand-ink); }
+.home-tag.tone-orange { background: var(--tag-orange-bg); color: var(--tag-orange-fg); }
+.home-tag.tone-blue { background: var(--tag-blue-bg); color: var(--tag-blue-fg); }
 .home-ingredients { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0; padding: 0; list-style: none; }
 .home-ingredients li {
   display: inline-flex;
@@ -201,7 +201,7 @@
   line-height: 20px;
   font-weight: 500;
 }
-.home-ingredients img { width: 28px; height: 28px; padding: 2px; box-sizing: border-box; border-radius: 999px; background: white; object-fit: contain; }
+.home-ingredients img { width: 28px; height: 28px; padding: 2px; box-sizing: border-box; border-radius: 999px; background: var(--icon-disc); object-fit: contain; }
 .home-ingredients small { color: var(--home-muted); font-size: 13px; }
 /* Long names from the PDF truncate on one line; the amount always stays whole beside them. */
 .home-ingredients li span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -226,10 +226,11 @@
 }
 .home-strip-pill.is-on { opacity: 1; }
 .home-strip-pill .home-chev { visibility: hidden; }
-.home-strip-pill .home-daypill { background: var(--yellow); color: var(--text-1); }
+.home-strip-pill .home-daypill { background: var(--yellow); color: var(--on-yellow); }
 .home-strip-pill .home-daypill b { font-weight: 700; }
 /* Until the pill is measured (first paint), the selected day carries the yellow itself. */
-.home-strip:not(.is-ready) .home-strip-days .home-daypill.is-selected { background: var(--yellow); color: var(--text-1); }
+.home-strip:not(.is-ready) .home-strip-days .home-daypill.is-selected { background: var(--yellow); color: var(--on-yellow); }
+.home-strip:not(.is-ready) .home-strip-days .home-daypill.is-selected b { color: var(--on-yellow); }
 .home-chev {
   display: grid;
   place-items: center;
@@ -273,8 +274,10 @@
 .home-daypill small { font-size: 12px; line-height: 16px; font-weight: 500; }
 .home-daypill b { font-size: 20px; line-height: 28px; font-weight: 600; color: var(--text-1); font-variant-numeric: tabular-nums; }
 .home-daypill:active { transform: scale(0.96); }
-.home-daypill.is-today b { color: var(--brand-600); font-weight: 700; }
+.home-daypill.is-today b { color: var(--brand-accent); font-weight: 700; }
 .home-daypill.is-selected b { color: var(--text-1); font-weight: 700; }
+/* The yellow copy of the strip: every day in it sits on yellow, so its text is the dark one. */
+.home-strip-pill .home-daypill b, .home-strip-pill .home-daypill.is-today b, .home-strip-pill .home-daypill.is-selected b { color: var(--on-yellow); }
 @media (hover: hover) and (pointer: fine) {
   .home-daypill:not(.is-selected):hover { background: var(--pill-hover); }
 }
@@ -313,7 +316,7 @@
   left: 25px;
   top: 44px;
   bottom: -16px;
-  border-left: 2px dashed #d9dbe2;
+  border-left: 2px dashed var(--spine-line);
 }
 .home-timeline > li:not(:last-child)::before {
   content: "";
@@ -337,7 +340,7 @@
 .home-meal-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin-top: 4px; color: var(--home-muted); font-size: 13px; line-height: 20px; }
 .home-meal-meta > span:not(.home-tag) { display: inline-flex; align-items: center; gap: 4px; }
 .home-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px; border-radius: 999px; background: var(--canvas); color: var(--text-2); font-size: 13px; line-height: 20px; font-weight: 600; }
-.home-now-flag { margin-left: 8px; padding: 1px 8px; border-radius: 999px; background: var(--yellow); color: var(--text-1); font-size: 11px; line-height: 18px; font-weight: 700; }
+.home-now-flag { margin-left: 8px; padding: 1px 8px; border-radius: 999px; background: var(--yellow); color: var(--on-yellow); font-size: 11px; line-height: 18px; font-weight: 700; }
 /* The next meal opens up in place. Every row of today carries its details folded (0fr); the next one unfolds (1fr),
    so a check-off folds one row while the next opens in the same 250ms instead of the list jumping. */
 .home-next-wrap { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 250ms var(--home-ease-out); }
@@ -346,7 +349,7 @@
 .home-timeline > li.is-next .home-next-wrap { grid-template-rows: 1fr; }
 .home-timeline > li.is-next .home-next { opacity: 1; transform: none; }
 .home-next .home-ingredients { margin: 0; }
-.home-next .home-ingredients li { background: white; }
+.home-next .home-ingredients li { background: var(--surface-raised); }
 .home-next-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .home-next-actions .home-btn { min-height: 40px; padding: 6px 16px; font-size: 14px; }
 
@@ -358,15 +361,15 @@
   width: 28px;
   height: 28px;
   padding: 0;
-  border: 2px solid #cfd2da;
+  border: 2px solid var(--check-border);
   border-radius: 999px;
-  background: white;
-  color: white;
+  background: var(--surface-raised);
+  color: var(--on-brand);
   cursor: pointer;
   transition: background-color 200ms var(--home-ease-out), border-color 200ms var(--home-ease-out), transform 100ms var(--home-ease-out);
 }
 .home-check:active:not(:disabled) { transform: scale(0.88); }
-.home-check[aria-checked="true"] { border-color: var(--brand); background: var(--brand); }
+.home-check[aria-checked="true"] { border-color: var(--brand-solid); background: var(--brand-solid); }
 .home-check:disabled { cursor: not-allowed; opacity: 0.45; }
 .home-check svg { transition: transform 200ms var(--home-ease-out), opacity 200ms var(--home-ease-out); }
 @starting-style {
@@ -375,8 +378,8 @@
 @media (hover: hover) and (pointer: fine) {
   .home-check:hover:not(:disabled) { border-color: var(--brand); }
 }
-.home-time-input { width: 128px; height: 32px; padding: 0 8px; border: 1px solid #d9dbe2; border-radius: 8px; font: inherit; font-size: 14px; color: var(--text-1); background: white; }
-.home-time-input:focus { outline: 2px solid var(--brand-100); border-color: var(--brand); }
+.home-time-input { width: 128px; height: 32px; padding: 0 8px; border: 1px solid var(--line-strong); border-radius: 8px; font: inherit; font-size: 14px; color: var(--text-1); background: var(--field-bg); }
+.home-time-input:focus { outline: 2px solid var(--focus-halo); border-color: var(--brand); }
 
 .home-empty { flex: 1; display: grid; place-items: center; align-content: center; gap: 12px; padding: 32px 16px; text-align: center; color: var(--home-muted); }
 .home-empty p { margin: 0; max-width: 320px; color: inherit; }
@@ -391,7 +394,7 @@
 .home-cups { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 4px; }
 .home-cup { position: relative; display: grid; place-items: center; height: 40px; padding: 0; border: 0; border-radius: 8px; background: transparent; cursor: pointer; transition: transform 100ms var(--home-ease-out); }
 .home-cup svg { width: 100%; max-width: 28px; height: 100%; overflow: visible; }
-.home-cup-glass { fill: #f3f9ff; stroke: #a9d0f5; stroke-width: 1.6; stroke-linejoin: round; transition: stroke 200ms ease; }
+.home-cup-glass { fill: var(--cup-glass-fill); stroke: var(--cup-glass-stroke); stroke-width: 1.6; stroke-linejoin: round; transition: stroke 200ms ease; }
 /* Water rises from the bottom; neighbours follow 30ms apart so a long jump pours across. */
 .home-cup-water { fill: #4ea2ef; transform: scaleY(0); transform-origin: 50% 100%; transform-box: fill-box; transition: transform 250ms var(--home-ease-out); transition-delay: calc(var(--i, 0) * 30ms); }
 .home-cup.is-full .home-cup-water { transform: scaleY(1); }
@@ -399,7 +402,7 @@
 .home-cup:active:not(:disabled) { transform: scale(0.92); }
 .home-cup:disabled { cursor: not-allowed; opacity: 0.5; }
 .home-cup:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
-.home-cup-plus { position: absolute; left: 50%; top: 55%; display: grid; place-items: center; width: 18px; height: 18px; border-radius: 999px; background: #4ea2ef; color: white; transform: translate(-50%, -50%); }
+.home-cup-plus { position: absolute; left: 50%; top: 55%; display: grid; place-items: center; width: 18px; height: 18px; border-radius: 999px; background: var(--cup-plus-bg); color: var(--on-brand); transform: translate(-50%, -50%); }
 @media (hover: hover) and (pointer: fine) {
   .home-cup:not(.is-full):not(:disabled):hover .home-cup-glass { stroke: #4ea2ef; }
 }
@@ -410,7 +413,7 @@
 .home-intake-list li { position: relative; display: grid; place-items: center; aspect-ratio: 1; max-height: 112px; min-width: 0; padding-top: 6px; }
 .home-intake-list svg { position: absolute; inset: 6px 0 0; width: 100%; height: calc(100% - 6px); }
 .home-intake-list path { fill: none; stroke-width: 8; stroke-linecap: round; }
-.home-intake-track { stroke: color-mix(in srgb, var(--group) 18%, white); }
+.home-intake-track { stroke: color-mix(in srgb, var(--group) 18%, var(--track-base)); }
 .home-intake-bar { stroke: var(--group); transition: stroke-dashoffset 600ms var(--home-ease-out); }
 @starting-style {
   .home-intake-bar { stroke-dashoffset: 100; }
@@ -439,10 +442,10 @@
 }
 /* A tile with an open popover rises above its neighbours so the popover is never covered. */
 .home-tile:has(.home-popover) { z-index: 5; }
-.home-tile.tone-weight { background: #fdf5e2; }
-.home-tile.tone-activity { background: #eef6dd; }
-.home-tile.tone-water { overflow: hidden; background: #eaf4ff; }
-.home-tile.tone-meals { background: #fdeef0; }
+.home-tile.tone-weight { background: var(--tile-weight); }
+.home-tile.tone-activity { background: var(--tile-activity); }
+.home-tile.tone-water { overflow: hidden; background: var(--tile-water); }
+.home-tile.tone-meals { background: var(--tile-meals); }
 .home-tile-label { position: relative; z-index: 1; color: var(--text-1); font-size: 15px; line-height: 20px; font-weight: 700; }
 .home-tile-value { position: relative; z-index: 1; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 8px; margin: 0; }
 .home-tile-value b { color: var(--text-1); font-size: 24px; line-height: 32px; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -455,7 +458,7 @@
 @container (max-width: 200px) {
   .home-tile-badge { display: none; }
 }
-.home-tile-badge { padding: 2px 8px; border-radius: 999px; background: rgb(255 255 255 / 0.7); color: #8a5a00; font-size: 12px; line-height: 18px; font-weight: 600; }
+.home-tile-badge { padding: 2px 8px; border-radius: 999px; background: var(--tile-badge-bg); color: var(--tile-badge-fg); font-size: 12px; line-height: 18px; font-weight: 600; }
 
 
 /* The weight tile is one big button (an invisible layer under the content) that opens its popover. */
@@ -463,7 +466,7 @@
 .home-tile:has(.home-tile-hit:active) { transform: scale(0.98); transition: transform 100ms var(--home-ease-out); }
 .home-tile-hit:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; }
 @media (hover: hover) and (pointer: fine) {
-  .home-tile-hit:hover { background: rgb(255 255 255 / 0.35); }
+  .home-tile-hit:hover { background: var(--tile-hit-hover); }
 }
 .home-tile.tone-weight > :not(.home-tile-hit, .home-popover) { pointer-events: none; }
 
@@ -472,30 +475,30 @@
 .home-gauge path { fill: none; stroke-width: 12; stroke-linecap: round; }
 .home-gauge-bar { transition: stroke-dasharray 400ms var(--home-ease-out); }
 .home-gauge-arm { transform-box: view-box; transform-origin: 60px 58px; transition: transform 400ms var(--home-ease-out); }
-.home-gauge-knob { fill: white; stroke-width: 4; }
+.home-gauge-knob { fill: var(--surface-raised); stroke-width: 4; }
 .home-gauge-icon { position: absolute; bottom: 4px; left: 50%; display: grid; place-items: center; transform: translateX(-50%); }
-.home-gauge.tone-weight .home-gauge-track { stroke: #f7e6c0; }
+.home-gauge.tone-weight .home-gauge-track { stroke: var(--gauge-weight-track); }
 .home-gauge.tone-weight .home-gauge-from { stop-color: #e6735c; }
-.home-gauge.tone-weight .home-gauge-to { stop-color: #f6d55c; }
+.home-gauge.tone-weight .home-gauge-to { stop-color: var(--gauge-weight-to); }
 .home-gauge.tone-weight .home-gauge-knob { stroke: #eaa04f; }
-.home-gauge.tone-meals .home-gauge-track { stroke: #f8d3d8; }
+.home-gauge.tone-meals .home-gauge-track { stroke: var(--gauge-meals-track); }
 .home-gauge.tone-meals .home-gauge-from { stop-color: #e5604f; }
 .home-gauge.tone-meals .home-gauge-to { stop-color: #f08a7c; }
 .home-gauge.tone-meals .home-gauge-icon { color: #e5604f; }
 
 /* Weekly water: the wave rises with the week's total. */
-.home-wave { position: absolute; inset: 24% 0 0; z-index: 0; display: block; background: #8cc3f7; transition: transform 400ms var(--home-ease-out); }
+.home-wave { position: absolute; inset: 24% 0 0; z-index: 0; display: block; background: var(--wave-front); transition: transform 400ms var(--home-ease-out); }
 .home-wave svg { position: absolute; left: 0; bottom: 100%; width: 100%; height: 24px; }
-.home-wave-back { fill: #b7dafb; }
-.home-wave-front { fill: #8cc3f7; }
-.home-tile.tone-water .home-tile-value b, .home-tile.tone-water .home-tile-value > small { color: white; text-shadow: 0 1px 2px rgb(23 92 160 / 0.25); }
+.home-wave-back { fill: var(--wave-back); }
+.home-wave-front { fill: var(--wave-front); }
+.home-tile.tone-water .home-tile-value b, .home-tile.tone-water .home-tile-value > small { color: var(--on-brand); text-shadow: 0 1px 2px rgb(23 92 160 / 0.25); }
 
 /* Activity: the week as seven dots, and today's toggle. */
 .home-activity-days { position: relative; z-index: 1; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin: 0; padding: 0; list-style: none; }
 .home-activity-days li { display: grid; justify-items: center; gap: 4px; }
 .home-activity-days i { width: 100%; max-width: 20px; aspect-ratio: 1; border-radius: 999px; background: rgb(101 163 13 / 0.16); transition: background-color 250ms var(--home-ease-out), transform 250ms var(--home-ease-out); }
-.home-activity-days li.is-done i { background: #65a30d; }
-.home-activity-days li.is-today i { box-shadow: 0 0 0 2px #eef6dd, 0 0 0 4px rgb(101 163 13 / 0.5); }
+.home-activity-days li.is-done i { background: var(--activity-fill); }
+.home-activity-days li.is-today i { box-shadow: 0 0 0 2px var(--tile-activity), 0 0 0 4px rgb(101 163 13 / 0.5); }
 .home-activity-days li.is-future i { background: rgb(101 163 13 / 0.07); }
 .home-activity-days small { color: var(--home-muted); font-size: 11px; line-height: 14px; font-weight: 600; }
 .home-activity-toggle {
@@ -509,8 +512,8 @@
   padding: 6px 12px;
   border: 0;
   border-radius: 999px;
-  background: white;
-  color: #3f6212;
+  background: var(--surface-raised);
+  color: var(--activity-ink);
   font: inherit;
   font-size: 13px;
   font-weight: 700;
@@ -518,16 +521,16 @@
   transition: background-color 200ms ease, color 200ms ease, transform 100ms var(--home-ease-out);
 }
 .home-activity-toggle:active { transform: scale(0.96); }
-.home-activity-toggle.is-on { background: #65a30d; color: white; }
+.home-activity-toggle.is-on { background: var(--activity-fill); color: var(--activity-on-fg); }
 .home-activity-toggle svg { transition: transform 200ms var(--home-ease-out), opacity 200ms var(--home-ease-out); }
 @starting-style {
   .home-activity-toggle svg { transform: scale(0.6); opacity: 0; }
 }
 .home-activity-toggle:focus-visible, .home-tile-link:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 @media (hover: hover) and (pointer: fine) {
-  .home-activity-toggle:not(.is-on):hover { background: #f7fbef; }
+  .home-activity-toggle:not(.is-on):hover { background: var(--activity-hover); }
 }
-.home-tile-link { padding: 0; border: 0; background: none; color: #4d7c0f; font: inherit; font-size: 13px; line-height: 20px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: rgb(77 124 15 / 0.35); cursor: pointer; }
+.home-tile-link { padding: 0; border: 0; background: none; color: var(--activity-link); font: inherit; font-size: 13px; line-height: 20px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: color-mix(in srgb, var(--activity-link) 35%, transparent); cursor: pointer; }
 
 /* Popovers grow out of the tile that opened them. */
 .home-popover {
@@ -540,8 +543,8 @@
   width: min(260px, calc(100vw - 48px));
   padding: 16px;
   border-radius: 18px;
-  background: white;
-  box-shadow: 0 24px 60px -18px rgb(22 23 29 / 0.35), 0 0 0 1px rgb(22 23 29 / 0.06);
+  background: var(--surface-raised);
+  box-shadow: 0 24px 60px -18px rgb(22 23 29 / 0.35), 0 0 0 1px var(--popover-ring-home);
   transform-origin: top left;
   transition: opacity 180ms var(--home-ease-out), transform 180ms var(--home-ease-out);
 }
@@ -550,11 +553,11 @@
 }
 .home-popover.is-small { top: auto; bottom: calc(100% + 8px); left: auto; right: -8px; width: auto; transform-origin: bottom right; justify-items: center; }
 .home-popover label { display: grid; gap: 6px; color: var(--text-2); font-size: 13px; font-weight: 600; }
-.home-input { display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 12px; border: 1px solid #dfe1e7; border-radius: 12px; background: white; transition: border-color 200ms ease, box-shadow 200ms ease; }
-.home-input:focus-within { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-100); }
+.home-input { display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 12px; border: 1px solid var(--field-border); border-radius: 12px; background: var(--field-bg); transition: border-color 200ms ease, box-shadow 200ms ease; }
+.home-input:focus-within { border-color: var(--brand); box-shadow: 0 0 0 3px var(--focus-halo); }
 .home-input input { flex: 1; min-width: 0; height: 100%; padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--text-1); font: inherit; font-size: 16px; font-weight: 600; outline: none; }
 .home-input small { color: var(--home-muted); font-size: 13px; }
-.home-popover-error { margin: 0; color: #a5301a; font-size: 13px; line-height: 18px; }
+.home-popover-error { margin: 0; color: var(--danger-ink-strong); font-size: 13px; line-height: 18px; }
 .home-popover-actions { display: flex; justify-content: flex-end; gap: 8px; }
 .home-popover-actions .home-btn { min-height: 38px; padding: 6px 14px; font-size: 14px; }
 .home-popover > span { color: var(--text-2); font-size: 13px; font-weight: 600; white-space: nowrap; }
@@ -581,15 +584,15 @@
   width: 24px;
   height: 24px;
   padding: 0;
-  border: 2px solid #cfd2da;
+  border: 2px solid var(--check-border);
   border-radius: 7px;
-  background: white;
-  color: white;
+  background: var(--surface-raised);
+  color: var(--on-brand);
   cursor: pointer;
   transition: background-color 200ms var(--home-ease-out), border-color 200ms var(--home-ease-out), transform 100ms var(--home-ease-out);
 }
 .home-box:active { transform: scale(0.88); }
-.home-box[aria-checked="true"] { border-color: var(--brand); background: var(--brand); }
+.home-box[aria-checked="true"] { border-color: var(--brand-solid); background: var(--brand-solid); }
 .home-box svg { transition: transform 200ms var(--home-ease-out), opacity 200ms var(--home-ease-out); }
 @starting-style {
   .home-box svg { transform: scale(0.5); opacity: 0; }
@@ -600,13 +603,13 @@
   .home-box:not(.is-placeholder):hover { border-color: var(--brand); }
 }
 .home-shop .home-btn { flex: none; width: 100%; }
-.home-btn.is-yellow { background: var(--yellow); color: var(--text-1); }
+.home-btn.is-yellow { background: var(--yellow); color: var(--on-yellow); }
 @media (hover: hover) and (pointer: fine) {
   .home-btn.is-yellow:hover { background: var(--yellow-hover); box-shadow: 0 10px 20px -12px rgb(161 120 0 / 0.55); }
 }
-.home-icon-btn.is-dark { background: var(--text-1); color: white; }
+.home-icon-btn.is-dark { background: var(--toggle-bg); color: var(--toggle-fg); }
 @media (hover: hover) and (pointer: fine) {
-  .home-icon-btn.is-dark:hover { background: #2c2e36; color: white; }
+  .home-icon-btn.is-dark:hover { background: var(--toggle-hover); color: var(--toggle-fg); }
 }
 
 /* ---------- Plan banner ---------- */
@@ -620,7 +623,7 @@
   overflow: hidden;
   border-radius: 28px;
   background: var(--brand-800);
-  color: white;
+  color: var(--on-brand);
 }
 .home-promo-layout {
   flex: 1;
@@ -649,10 +652,10 @@
 .home-promo-float.f0 { bottom: 66%; left: 64%; width: 44px; height: 44px; rotate: 14deg; }
 .home-promo-float.f1 { bottom: 54%; left: 6%; width: 34px; height: 34px; rotate: -12deg; }
 .home-promo-copy { display: grid; gap: 8px; min-width: 0; }
-.home-promo h2 { margin: 0; color: white; font-size: 28px; line-height: 34px; font-weight: 700; letter-spacing: -0.025em; text-wrap: balance; }
-.home-promo p { margin: 0; color: rgb(255 255 255 / 0.82); font-size: 15px; line-height: 22px; text-wrap: pretty; }
+.home-promo h2 { margin: 0; color: var(--on-brand); font-size: 28px; line-height: 34px; font-weight: 700; letter-spacing: -0.025em; text-wrap: balance; }
+.home-promo p { margin: 0; color: color-mix(in srgb, var(--on-brand) 82%, transparent); font-size: 15px; line-height: 22px; text-wrap: pretty; }
 .home-promo-tags { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 0; padding: 0; list-style: none; }
-.home-promo-tags li { padding: 4px 12px; border-radius: 10px; background: rgb(255 255 255 / 0.14); color: white; font-size: 13px; line-height: 20px; font-weight: 600; }
+.home-promo-tags li { padding: 4px 12px; border-radius: 10px; background: color-mix(in srgb, var(--on-brand) 14%, transparent); color: var(--on-brand); font-size: 13px; line-height: 20px; font-weight: 600; }
 .home-promo-btn {
   display: inline-flex;
   align-items: center;
@@ -662,8 +665,8 @@
   padding: 0 24px;
   border: 0;
   border-radius: 999px;
-  background: white;
-  color: var(--text-1);
+  background: var(--promo-btn-bg);
+  color: var(--promo-btn-fg);
   font: inherit;
   font-size: 16px;
   font-weight: 700;
@@ -673,9 +676,9 @@
   transition: background-color 200ms ease, box-shadow 200ms ease, transform 100ms var(--home-ease-out);
 }
 .home-promo-btn:active { transform: scale(0.97); }
-.home-promo-btn:focus-visible { outline: 2px solid white; outline-offset: 3px; }
+.home-promo-btn:focus-visible { outline: 2px solid var(--on-brand); outline-offset: 3px; }
 @media (hover: hover) and (pointer: fine) {
-  .home-promo-btn:hover { background: var(--brand-50); box-shadow: 0 16px 28px -14px rgb(0 0 0 / 0.55); }
+  .home-promo-btn:hover { background: var(--promo-btn-hover); box-shadow: 0 16px 28px -14px rgb(0 0 0 / 0.55); }
   /* The dish leans in when the banner is under the pointer; small and quick, since this page opens often. */
   .home-promo:hover .home-promo-dish { transform: rotate(-3deg) scale(1.04); }
   .home-promo:hover .home-promo-float.f0 { transform: translateY(-3px); }
