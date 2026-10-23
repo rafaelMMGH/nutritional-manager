@@ -2,10 +2,10 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-/* Dark only on screen: print always gets the light theme. */
+/* Dark only on screen (print always gets the light theme) and never inside a light-locked page (landing, legal, 404). */
 @custom-variant dark {
   @media screen {
-    &:is(.dark *) {
+    &:is(html.dark:not(:has([data-theme-lock])) *) {
       @slot;
     }
   }
@@ -447,7 +447,7 @@ td select { min-width: 170px; }
 
 /* Dark theme (screen only, so print resolves to the light tokens above). Only the base tokens for now. */
 @media screen {
-  html.dark {
+  html.dark:not(:has([data-theme-lock])) {
     color-scheme: dark;
     --canvas: #0a100d;
     --surface: #101714;
@@ -458,6 +458,9 @@ td select { min-width: 170px; }
     --foreground: var(--text-1);
   }
 }
+
+/* Light-locked pages beat the inline color-scheme the init script sets before the app knows the page is locked. */
+html:has([data-theme-lock]) { color-scheme: light !important; }
 
 /* The init script sets an inline color-scheme (needed before CSS and hydration); print must stay light anyway. */
 @media print {

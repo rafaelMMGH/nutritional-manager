@@ -32,4 +32,8 @@ export const themeInitScript = `(function () {
   meta.name = "theme-color";
   meta.content = colors[theme];
   document.head.appendChild(meta);
+  // A light-locked page is only known once its markup is parsed; the lock's CSS already forces color-scheme.
+  document.addEventListener("DOMContentLoaded", function () {
+    if (document.querySelector(${JSON.stringify(`[${THEME_LOCK_ATTRIBUTE}]`)})) meta.content = colors.light;
+  });
 })();`;

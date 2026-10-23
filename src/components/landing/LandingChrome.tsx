@@ -38,10 +38,11 @@ export function LandingFooter() {
   );
 }
 
-// Simple centered frame for the legal pages and the 404.
+// Simple centered frame for the legal pages and the 404. These pages always render light (data-theme-lock),
+// which is why the attribute is on this root only and never on the footer or mark that /login also renders.
 export function LandingPlainPage({ children }: { children: React.ReactNode }) {
   return (
-    <div className={`lp lp-js ${manrope.variable}`}>
+    <div className={`lp lp-js ${manrope.variable}`} data-theme-lock="light">
       <a className="lp-skip" href="#contenido">
         Saltar al contenido
       </a>
