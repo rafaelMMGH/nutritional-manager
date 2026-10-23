@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test";
-import { expect, test, watch } from "./fixtures";
+import { expect, expectIssues, test, watch } from "./fixtures";
 import { expectThemeMeta, lightLockedPages, seedTheme, softNavMarker, THEME_KEY, type Theme } from "./theme-helpers";
 
 // US4 (REQ-14): the landing, the legal pages and the root not-found page always render light, and the theme comes
@@ -13,7 +13,6 @@ const appIs = async (page: Page, theme: Theme) => {
   await expect(page.locator(".topbar .theme-toggle")).toBeVisible();
   await expectThemeMeta(page, theme);
 };
-const slug = (name: string) => name.replace(/\s+/g, "-");
 
 test.describe("light-locked pages, signed out", () => {
   test.use({ storageState: { cookies: [], origins: [] } });
@@ -21,7 +20,7 @@ test.describe("light-locked pages, signed out", () => {
   for (const [label, seed, os] of [["a stored dark choice", "dark", "light"], ["no choice and a dark OS", null, "dark"]] as const) {
     for (const { name, path } of lightLockedPages) {
       test.describe(`${name} with ${label}`, () => {
-        test.use({ expectedIssues: path === "/no-existe" ? NOT_FOUND : [] });
+        test.use({ expectedIssues: expectIssues(...(path === "/no-existe" ? NOT_FOUND : [])) });
 
         test("renders light, locked, and leaves storage alone", async ({ page }) => {
           await page.emulateMedia({ colorScheme: os });
@@ -29,17 +28,11 @@ test.describe("light-locked pages, signed out", () => {
           await page.goto(path);
           await page.waitForLoadState("networkidle");
 
-          await expect(page.locator(LOCK)).toHaveCount(1);
           expect(await colorScheme(page)).toBe("light");
           await expectThemeMeta(page, "light");
+          await expect(page.locator(LOCK)).toHaveCount(1);
           expect(await stored(page)).toBe(seed);
-          // Same pixels as the light baseline of a-theme-visual. Playwright keeps snapshots per spec file, so the
-          // local, gitignored public-*.png baselines are copied from a-theme-visual.spec.ts-snapshots (see T041).
-          await expect(page).toHaveScreenshot(`public-${slug(name)}.png`, {
-            maxDiffPixelRatio: 0.01,
-            stylePath: "./tests/e2e/screenshot.css",
-            fullPage: true
-          });
+          // The pixels of these pages are asserted in a-theme-visual.spec.ts (same baselines, three scenarios).
         });
       });
     }
@@ -137,7 +130,7 @@ test.describe("moving between the app and locked pages without a reload", () => 
   });
 
   test.describe("not found", () => {
-    test.use({ expectedIssues: NOT_FOUND });
+    test.use({ expectedIssues: expectIssues(...NOT_FOUND) });
 
     test("'Volver al inicio' from the light-locked 404 lands in the dark app", async ({ page }) => {
       await page.goto("/no-existe");

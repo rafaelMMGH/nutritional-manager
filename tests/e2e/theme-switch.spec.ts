@@ -170,6 +170,11 @@ test.describe("REQ-3: the choice persists", () => {
     await blockThemeStorage(page);
 
     await open(page);
+    // Two OS flips before any click: each one reads the blocked storage again.
+    await page.emulateMedia({ colorScheme: "dark" });
+    await expectTheme(page, "dark");
+    await page.emulateMedia({ colorScheme: "light" });
+    await expectTheme(page, "light");
     await switchOf(page).click();
     await expectTheme(page, "dark");
     await expect.poll(() => warnings.filter((text) => /theme/i.test(text)).length).toBeGreaterThan(0);
@@ -179,6 +184,15 @@ test.describe("REQ-3: the choice persists", () => {
     await page.emulateMedia({ colorScheme: "light" });
     await page.waitForTimeout(300);
     await expectTheme(page, "dark");
+
+    // Every read failed (initial render, two OS flips), yet the runtime warns once per page. The blocking init script
+    // in <head> warns once by itself, so exactly two read warnings are expected in total. The toggles below do no
+    // storage reads (an explicit choice short-circuits), so they only guard against a new read being added there.
+    await switchOf(page).click();
+    await expectTheme(page, "light");
+    await switchOf(page).click();
+    await expectTheme(page, "dark");
+    expect(warnings.filter((text) => /could not read the saved choice/.test(text))).toHaveLength(2);
 
     await page.reload();
     await expectTheme(page, "light");

@@ -7,9 +7,17 @@ type Options = {
    * Issues this test is expected to cause (a mocked failure, for example). The list is a multiset: each entry is
    * consumed by exactly one matching issue. A matching issue beyond the declared count fails the test, and so does
    * an entry nothing consumed.
+   *
+   * Do not pass an array of two or more RegExps to `test.use` directly: Playwright 1.63 (isFixtureTuple) reads an
+   * array whose second item is an object as `[value, options]`, and a RegExp is an object. Wrap it with `expectIssues`.
    */
   expectedIssues: RegExp[];
 };
+
+/** Builds the `expectedIssues` value for `test.use`, in the tuple form that is never misread as `[value, options]`. */
+export function expectIssues(...patterns: RegExp[]): RegExp[] {
+  return [patterns, {}] as unknown as RegExp[];
+}
 
 /** Records page errors, console errors and failed API calls of `page` into `issues`. Use it for pages the test opens itself. */
 export function watch(page: Page, issues: string[]) {
