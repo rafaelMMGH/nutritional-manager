@@ -230,6 +230,49 @@ test.describe("shopping", () => {
   });
 });
 
+test.describe("cart and deleted recipes", () => {
+  test("a recipe in the Papelera leaves the cart, and counts again once restored", async ({ page }) => {
+    type CartData = { sources: { id: string; source_id: string }[]; ingredients: { sources: { source_name: string }[] }[] };
+    const call = (method: string, url: string, body?: unknown) =>
+      page.evaluate(
+        async ([method, url, body]) => {
+          const response = await fetch(url as string, { method: method as string, headers: { "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : undefined });
+          return { status: response.status, data: await response.json() };
+        },
+        [method, url, body]
+      );
+    const cart = async () => (await call("GET", "/api/cart")).data as CartData;
+    const contributions = (data: CartData, name: string) => data.ingredients.flatMap((ingredient) => ingredient.sources).filter((source) => source.source_name === name).length;
+
+    const inCart = new Set((await cart()).sources.map((source) => source.source_id));
+    const recipes = (await call("GET", "/api/recipes")).data.recipes as { id: string; name: string }[];
+    const recipe = recipes.find((entry) => !inCart.has(entry.id));
+    test.skip(!recipe, "every recipe is already in the cart");
+
+    const added = await call("POST", "/api/cart/items", { source_type: "recipe", source_id: recipe!.id, include_add_ons: false });
+    expect(added.status).toBeLessThan(400);
+    const itemId = added.data.item.id as string;
+    try {
+      const before = await cart();
+      expect(before.sources.map((source) => source.source_id)).toContain(recipe!.id);
+      expect(contributions(before, recipe!.name), "the recipe adds ingredients while it is live").toBeGreaterThan(0);
+
+      expect((await call("DELETE", `/api/recipes/${recipe!.id}`)).status).toBeLessThan(400);
+      const deleted = await cart();
+      expect(deleted.sources.map((source) => source.source_id)).not.toContain(recipe!.id);
+      expect(contributions(deleted, recipe!.name)).toBe(0);
+
+      expect((await call("POST", `/api/trash/recipe/${recipe!.id}/restore`)).status).toBeLessThan(400);
+      const restored = await cart();
+      expect(restored.sources.map((source) => source.source_id)).toContain(recipe!.id);
+      expect(contributions(restored, recipe!.name)).toBe(contributions(before, recipe!.name));
+    } finally {
+      await call("POST", `/api/trash/recipe/${recipe!.id}/restore`);
+      await call("DELETE", `/api/cart/items/${itemId}`);
+    }
+  });
+});
+
 test.describe("assistant and upload", () => {
   test("the search sends the question to the assistant, which answers", async ({ page }) => {
     const search = page.locator(".home-search input");

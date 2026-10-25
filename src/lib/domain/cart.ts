@@ -25,7 +25,9 @@ export function consolidateCart(db: AppDb, userId: string) {
     let sourceName: string = item.source_type;
     if (item.source_type === "recipe") {
       const recipe = db.recipes.find((entry) => entry.id === item.source_id);
-      sourceName = recipe?.name || sourceName;
+      // Read-time filter: the item stays, so restoring the recipe from the Papelera counts it again.
+      if (!recipe || recipe.deleted_at) continue;
+      sourceName = recipe.name || sourceName;
       usages = db.ingredientUsages.filter((usage) => usage.source_type === "recipe" && usage.source_id === item.source_id && !usage.deleted_at);
       if (item.include_add_ons) usages = usages.concat(addOnUsages(db, userId, item.source_id));
     } else if (item.source_type === "manual") {
