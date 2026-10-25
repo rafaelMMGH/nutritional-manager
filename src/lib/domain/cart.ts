@@ -25,7 +25,7 @@ function addOnEntries(db: AppDb, userId: string, items: AppDb["cartItems"]) {
     const multiplier = mealMultiplier.get(addOn.meal_type_id as string);
     if (!multiplier || addOn.required === false || addOn.deleted_at) continue;
     for (const usage of db.ingredientUsages) {
-      if (usage.source_type === "add_on" && usage.source_id === addOn.id && !usage.deleted_at) entries.push({ usage, name: addOn.name as string, multiplier });
+      if (usage.source_type === "add_on" && usage.source_id === addOn.id && !usage.deleted_at) entries.push({ usage, name: (addOn.name as string) || "Complemento", multiplier });
     }
   }
   return entries;

@@ -312,11 +312,17 @@ test.describe("cart and deleted recipes", () => {
         and (select count(*) from plan_version_recipes o where o.recipe_id = r.id and o.plan_version_id = pv.id and o.deleted_at is null) = 1
         and exists (select 1 from shared_add_ons a join ingredient_usages u on u.source_type = 'add_on' and u.source_id = a.id and u.deleted_at is null
                     where a.meal_type_id = mt.id and a.required is not false and a.deleted_at is null)
+        -- A live add-ons item already in the active cart puts this meal's add-on in the baseline with its own multiplier.
+        and not exists (select 1 from cart_items ci
+                        join carts c on c.id = ci.cart_id and c.status = 'active' and c.deleted_at is null
+                        join plan_version_recipes l2 on l2.recipe_id = ci.source_id and l2.meal_type_id = mt.id and l2.plan_version_id = pv.id and l2.deleted_at is null
+                        where ci.source_type = 'recipe' and ci.include_add_ons and ci.deleted_at is null)
       group by mt.id, mt.seq having count(*) >= 2 order by mt.seq limit 1`).split("|");
     expect(mealId, "the clone has an active-plan meal with 2+ options and a required add-on with ingredients").toBeTruthy();
 
     const addOnIds = sql(`select id from shared_add_ons where meal_type_id = '${mealId}' and required is not false and deleted_at is null`).split("\n");
     const addOns = usagesOf("add_on", addOnIds);
+    const addOnNames = sql(`select name from shared_add_ons where id in (${addOnIds.map((value) => `'${value}'`).join(",")})`).split("\n");
     const own = (recipeId: string, factor: number) => scaled(usagesOf("recipe", [recipeId]), factor);
     expect(addOns.length).toBeGreaterThan(0);
 
@@ -337,14 +343,25 @@ test.describe("cart and deleted recipes", () => {
     };
 
     const reset = async () => {
-      for (const itemId of itemIds.splice(0)) expect((await apiCall(page, "DELETE", `/api/cart/items/${itemId}`)).status).toBeLessThan(400);
+      // An id leaves the list only once its DELETE succeeded, so the finally block still cleans up after a failure.
+      for (const itemId of [...itemIds]) {
+        expect((await apiCall(page, "DELETE", `/api/cart/items/${itemId}`)).status).toBeLessThan(400);
+        itemIds.splice(itemIds.indexOf(itemId), 1);
+      }
     };
 
     try {
       // Options are alternatives: the add-on follows the largest multiplier, not the sum (4 + 3).
       await addOption(optionA, 4, true);
       await addOption(optionB, 3, true);
-      expectAddOns(await readCart(page), 4, [[optionA, 4], [optionB, 3]]);
+      const both = await readCart(page);
+      expectAddOns(both, 4, [[optionA, 4], [optionB, 3]]);
+      // Add-ons are attributed by name in each ingredient's sources, and are not cart items themselves.
+      for (const addOn of addOns) {
+        const sourceNames = both.ingredients.find((ingredient) => ingredient.name === addOn.name && ingredient.unit === addOn.unit)?.sources.map((source) => source.source_name) ?? [];
+        expect(addOnNames.filter((name) => sourceNames.includes(name)), `${addOn.name} has an add-on source`).not.toHaveLength(0);
+      }
+      expect(both.sources.map((source) => source.source_id).filter((sourceId) => addOnIds.includes(sourceId))).toEqual([]);
       await reset();
 
       // Two options at the default multiplier still need the add-on once.
