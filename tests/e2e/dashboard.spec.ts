@@ -230,45 +230,72 @@ test.describe("shopping", () => {
   });
 });
 
+type CartData = { sources: { id: string; source_id: string }[]; ingredients: { name: string; unit: string; quantity: number; sources: { source_name: string }[] }[] };
+type Usage = { name: string; unit: string; quantity: number };
+
+const apiCall = (page: Page, method: string, url: string, body?: unknown) =>
+  page.evaluate(
+    async ([method, url, body]) => {
+      const response = await fetch(url as string, { method: method as string, headers: { "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : undefined });
+      return { status: response.status, data: await response.json() };
+    },
+    [method, url, body]
+  );
+const readCart = async (page: Page) => (await apiCall(page, "GET", "/api/cart")).data as CartData;
+/** What the cart shows for one ingredient (name and unit as consolidateCart groups them). */
+const cartQuantity = (data: CartData, { name, unit }: Usage) => data.ingredients.find((ingredient) => ingredient.name === name && ingredient.unit === unit)?.quantity ?? 0;
+/** Sums usages that share a name and unit, with the same quantity/unit fallbacks as consolidateCart. */
+const usagesOf = (sourceType: "recipe" | "add_on", sourceIds: string[]) => {
+  const rows = sql(`select i.canonical_name, coalesce(nullif(u.practical_unit, ''), u.unit, ''), coalesce(nullif(u.practical_quantity, 0), nullif(u.quantity, 0), 1)
+    from ingredient_usages u join ingredients i on i.id = u.ingredient_id
+    where u.source_type = '${sourceType}' and u.source_id in (${sourceIds.map((value) => `'${value}'`).join(",") || "null"}) and u.deleted_at is null`);
+  const totals = new Map<string, Usage>();
+  for (const row of rows ? rows.split("\n") : []) {
+    const [name, unit, quantity] = row.split("|");
+    const entry = totals.get(`${name}|${unit}`) ?? { name, unit, quantity: 0 };
+    entry.quantity += Number(quantity);
+    totals.set(`${name}|${unit}`, entry);
+  }
+  return Array.from(totals.values());
+};
+const scaled = (usages: Usage[], factor: number) => usages.map((usage) => ({ ...usage, quantity: usage.quantity * factor }));
+/** Live recipes with ingredients that are not in the cart yet. */
+const recipesWithIngredients = () =>
+  sql(`select r.id from recipes r where r.deleted_at is null and exists (select 1 from ingredient_usages u where u.source_type = 'recipe' and u.source_id = r.id and u.deleted_at is null) order by r.seq`).split("\n").filter(Boolean);
+
 test.describe("cart and deleted recipes", () => {
   test("a recipe in the Papelera leaves the cart, and counts again once restored", async ({ page }) => {
-    type CartData = { sources: { id: string; source_id: string }[]; ingredients: { sources: { source_name: string }[] }[] };
-    const call = (method: string, url: string, body?: unknown) =>
-      page.evaluate(
-        async ([method, url, body]) => {
-          const response = await fetch(url as string, { method: method as string, headers: { "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : undefined });
-          return { status: response.status, data: await response.json() };
-        },
-        [method, url, body]
-      );
-    const cart = async () => (await call("GET", "/api/cart")).data as CartData;
-    const contributions = (data: CartData, name: string) => data.ingredients.flatMap((ingredient) => ingredient.sources).filter((source) => source.source_name === name).length;
+    const baseline = await readCart(page);
+    const inCart = new Set(baseline.sources.map((source) => source.source_id));
+    const recipeId = recipesWithIngredients().find((id) => !inCart.has(id));
+    test.skip(!recipeId, "every recipe with ingredients is already in the cart");
+    const usages = usagesOf("recipe", [recipeId!]);
 
-    const inCart = new Set((await cart()).sources.map((source) => source.source_id));
-    const recipes = (await call("GET", "/api/recipes")).data.recipes as { id: string; name: string }[];
-    const recipe = recipes.find((entry) => !inCart.has(entry.id));
-    test.skip(!recipe, "every recipe is already in the cart");
+    // Attributed by ingredient: each ingredient's cart quantity moves by exactly this recipe's usage, whatever else is in the cart.
+    const expectDelta = (data: CartData, factor: number) => {
+      for (const usage of scaled(usages, factor)) expect(cartQuantity(data, usage), `${usage.name} (${usage.unit})`).toBeCloseTo(cartQuantity(baseline, usage) + usage.quantity, 5);
+    };
 
-    const added = await call("POST", "/api/cart/items", { source_type: "recipe", source_id: recipe!.id, include_add_ons: false });
+    const added = await apiCall(page, "POST", "/api/cart/items", { source_type: "recipe", source_id: recipeId, include_add_ons: false });
     expect(added.status).toBeLessThan(400);
     const itemId = added.data.item.id as string;
     try {
-      const before = await cart();
-      expect(before.sources.map((source) => source.source_id)).toContain(recipe!.id);
-      expect(contributions(before, recipe!.name), "the recipe adds ingredients while it is live").toBeGreaterThan(0);
+      const before = await readCart(page);
+      expect(before.sources.map((source) => source.source_id)).toContain(recipeId);
+      expectDelta(before, 1);
 
-      expect((await call("DELETE", `/api/recipes/${recipe!.id}`)).status).toBeLessThan(400);
-      const deleted = await cart();
-      expect(deleted.sources.map((source) => source.source_id)).not.toContain(recipe!.id);
-      expect(contributions(deleted, recipe!.name)).toBe(0);
+      expect((await apiCall(page, "DELETE", `/api/recipes/${recipeId}`)).status).toBeLessThan(400);
+      const deleted = await readCart(page);
+      expect(deleted.sources.map((source) => source.source_id)).not.toContain(recipeId);
+      expectDelta(deleted, 0);
 
-      expect((await call("POST", `/api/trash/recipe/${recipe!.id}/restore`)).status).toBeLessThan(400);
-      const restored = await cart();
-      expect(restored.sources.map((source) => source.source_id)).toContain(recipe!.id);
-      expect(contributions(restored, recipe!.name)).toBe(contributions(before, recipe!.name));
+      expect((await apiCall(page, "POST", `/api/trash/recipe/${recipeId}/restore`)).status).toBeLessThan(400);
+      const restored = await readCart(page);
+      expect(restored.sources.map((source) => source.source_id)).toContain(recipeId);
+      expectDelta(restored, 1);
     } finally {
-      await call("POST", `/api/trash/recipe/${recipe!.id}/restore`);
-      await call("DELETE", `/api/cart/items/${itemId}`);
+      await apiCall(page, "POST", `/api/trash/recipe/${recipeId}/restore`);
+      await apiCall(page, "DELETE", `/api/cart/items/${itemId}`);
     }
   });
 });
