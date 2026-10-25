@@ -298,6 +298,69 @@ test.describe("cart and deleted recipes", () => {
       await apiCall(page, "DELETE", `/api/cart/items/${itemId}`);
     }
   });
+
+  test("a meal's required add-ons count once, scaled by the largest multiplier among its options", async ({ page }) => {
+    // The active plan's first meal with two options that appear in no other meal, and a required add-on with ingredients.
+    const [mealId, optionA, optionB] = sql(`
+      select mt.id, (array_agg(r.id order by l.seq))[1], (array_agg(r.id order by l.seq))[2]
+      from plans p
+      join plan_versions pv on pv.plan_id = p.id and pv.is_current and pv.deleted_at is null
+      join meal_types mt on mt.plan_version_id = pv.id
+      join plan_version_recipes l on l.meal_type_id = mt.id and l.plan_version_id = pv.id and l.deleted_at is null
+      join recipes r on r.id = l.recipe_id and r.deleted_at is null
+      where p.status = 'active' and p.deleted_at is null
+        and (select count(*) from plan_version_recipes o where o.recipe_id = r.id and o.plan_version_id = pv.id and o.deleted_at is null) = 1
+        and exists (select 1 from shared_add_ons a join ingredient_usages u on u.source_type = 'add_on' and u.source_id = a.id and u.deleted_at is null
+                    where a.meal_type_id = mt.id and a.required is not false and a.deleted_at is null)
+      group by mt.id, mt.seq having count(*) >= 2 order by mt.seq limit 1`).split("|");
+    expect(mealId, "the clone has an active-plan meal with 2+ options and a required add-on with ingredients").toBeTruthy();
+
+    const addOnIds = sql(`select id from shared_add_ons where meal_type_id = '${mealId}' and required is not false and deleted_at is null`).split("\n");
+    const addOns = usagesOf("add_on", addOnIds);
+    const own = (recipeId: string, factor: number) => scaled(usagesOf("recipe", [recipeId]), factor);
+    expect(addOns.length).toBeGreaterThan(0);
+
+    const baseline = await readCart(page);
+    const itemIds: string[] = [];
+    const addOption = async (recipeId: string, multiplier: number, includeAddOns: boolean) => {
+      const added = await apiCall(page, "POST", "/api/cart/items", { source_type: "recipe", source_id: recipeId, quantity_multiplier: multiplier, include_add_ons: includeAddOns });
+      expect(added.status).toBeLessThan(400);
+      itemIds.push(added.data.item.id);
+      return added.data.item.id as string;
+    };
+    // Expected cart quantity of every add-on ingredient: baseline + the recipes' own usages + the add-ons, however many options were added.
+    const expectAddOns = (data: CartData, addOnFactor: number, recipes: [string, number][]) => {
+      for (const addOn of scaled(addOns, addOnFactor)) {
+        const fromRecipes = recipes.flatMap(([recipeId, factor]) => own(recipeId, factor)).filter((usage) => usage.name === addOn.name && usage.unit === addOn.unit).reduce((sum, usage) => sum + usage.quantity, 0);
+        expect(cartQuantity(data, addOn), `${addOn.name} (${addOn.unit})`).toBeCloseTo(cartQuantity(baseline, addOn) + fromRecipes + addOn.quantity, 5);
+      }
+    };
+
+    const reset = async () => {
+      for (const itemId of itemIds.splice(0)) expect((await apiCall(page, "DELETE", `/api/cart/items/${itemId}`)).status).toBeLessThan(400);
+    };
+
+    try {
+      // Options are alternatives: the add-on follows the largest multiplier, not the sum (4 + 3).
+      await addOption(optionA, 4, true);
+      await addOption(optionB, 3, true);
+      expectAddOns(await readCart(page), 4, [[optionA, 4], [optionB, 3]]);
+      await reset();
+
+      // Two options at the default multiplier still need the add-on once.
+      await addOption(optionA, 1, true);
+      await addOption(optionB, 1, true);
+      expectAddOns(await readCart(page), 1, [[optionA, 1], [optionB, 1]]);
+      await reset();
+
+      // An option without add-ons contributes none: the add-on follows the remaining option.
+      await addOption(optionA, 4, false);
+      await addOption(optionB, 3, true);
+      expectAddOns(await readCart(page), 3, [[optionA, 4], [optionB, 3]]);
+    } finally {
+      for (const itemId of itemIds) await apiCall(page, "DELETE", `/api/cart/items/${itemId}`);
+    }
+  });
 });
 
 test.describe("assistant and upload", () => {

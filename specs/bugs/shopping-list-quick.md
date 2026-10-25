@@ -1,6 +1,6 @@
 # Bug: shopping cart counts deleted recipes and repeats meal add-ons
 
-**Status:** open · **Branch:** fix/shopping-list-quick
+**Status:** fixed · **Branch:** fix/shopping-list-quick
 
 Source: `specs/bugs/shopping-list-findings.md` #2 and #5. #11 (deleted lists / templates) moved to the spec-change backlog item (2026-10-24).
 
@@ -22,8 +22,13 @@ Source: `specs/bugs/shopping-list-findings.md` #2 and #5. #11 (deleted lists / t
 ## Fix (decided)
 
 - **#2** Read-time filter in `consolidateCart`: skip recipe items whose recipe is missing or has `deleted_at` (not in `sources`, no usages). Restore makes the recipe count again. Cart items are not modified.
-- **#5** Add-ons count once per meal (`meal_type_id`) across the whole cart. Multiplier for a meal's add-ons = **sum** of the multipliers (`quantity_multiplier || period_days || 1`) of the live recipe items with `include_add_ons` that belong to that meal in the active plan. Example: planner 4+3 → ×7. A recipe in two meals contributes to both. Items with `include_add_ons` false contribute nothing. Recipes not in the active plan get no add-ons (unchanged). Deleted recipes (#2) contribute nothing.
+- **#5** (revised 2026-10-24) Options of a meal are treated as **alternatives**. Each meal's (`meal_type_id`) add-ons are counted once across the cart, multiplied by the **largest** multiplier (`quantity_multiplier || period_days || 1`) among the live recipe items with `include_add_ons` that belong to that meal in the active plan. Examples: two options ×1 → ×1; planner 4+3 → ×4. A recipe in two meals contributes to both. Items with `include_add_ons` false, deleted recipes and recipes not in the active plan contribute nothing.
+  - Known trade-off, accepted by the user: a planner rotation (4+3) now gets the add-on for the longest option only, not all 7 days. Exact counts need the day-by-day meal-slot feature (backlog).
+  - Rejected: "sum of multipliers". That equals the pre-fix arithmetic, so it fixed nothing.
 
 ## Regression test
 
-TBD by code-writer: e2e, fails before the fix and passes after, one per finding.
+E2E, `tests/e2e/dashboard.spec.ts`, both fail before their fix and pass after:
+
+- #2: "a recipe in the Papelera leaves the cart, and counts again once restored"
+- #5: "a meal's required add-ons count once, scaled by the largest multiplier among its options" (options ×4 and ×3 → ×4; ×1 and ×1 → ×1; larger option without add-ons → follows the remaining option's ×3)

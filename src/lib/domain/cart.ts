@@ -2,17 +2,33 @@ import type { AppDb } from "@/lib/types";
 import { activePlan } from "@/lib/domain/plans";
 import { categoryFor, ensureIngredientUsage, formatQty, id, ingredientKey, now } from "@/lib/domain/nutrition";
 
-// Required complements ("Acompañar tus desayunos con…") of every meal where the recipe appears in the active plan.
-function addOnUsages(db: AppDb, userId: string, recipeId: string | null) {
+const multiplierOf = (item: AppDb["cartItems"][number]) => Number(item.quantity_multiplier || item.period_days || 1);
+
+// Required complements ("Acompañar tus desayunos con…") count once per meal. The options of a meal are alternatives,
+// so each meal's add-ons are scaled by the largest multiplier among its live recipe items in the active plan.
+function addOnEntries(db: AppDb, userId: string, items: AppDb["cartItems"]) {
   const version = activePlan(db, userId)?.current_version;
-  if (!version || !recipeId) return [];
-  const mealTypeIds = new Set(
-    db.planVersionRecipes.filter((link) => link.recipe_id === recipeId && link.plan_version_id === version.id && !link.deleted_at).map((link) => link.meal_type_id)
-  );
-  const addOnIds = new Set(
-    db.sharedAddOns.filter((addOn) => mealTypeIds.has(addOn.meal_type_id as string) && addOn.required !== false && !addOn.deleted_at).map((addOn) => addOn.id as string)
-  );
-  return db.ingredientUsages.filter((usage) => usage.source_type === "add_on" && addOnIds.has(usage.source_id) && !usage.deleted_at);
+  if (!version) return [];
+  const mealMultiplier = new Map<string, number>();
+  for (const item of items) {
+    if (item.source_type !== "recipe" || !item.include_add_ons) continue;
+    const recipe = db.recipes.find((entry) => entry.id === item.source_id);
+    if (!recipe || recipe.deleted_at) continue;
+    for (const link of db.planVersionRecipes) {
+      if (link.recipe_id !== item.source_id || link.plan_version_id !== version.id || link.deleted_at) continue;
+      const mealId = link.meal_type_id as string;
+      mealMultiplier.set(mealId, Math.max(mealMultiplier.get(mealId) ?? 0, multiplierOf(item)));
+    }
+  }
+  const entries: { usage: AppDb["ingredientUsages"][number]; name: string; multiplier: number }[] = [];
+  for (const addOn of db.sharedAddOns) {
+    const multiplier = mealMultiplier.get(addOn.meal_type_id as string);
+    if (!multiplier || addOn.required === false || addOn.deleted_at) continue;
+    for (const usage of db.ingredientUsages) {
+      if (usage.source_type === "add_on" && usage.source_id === addOn.id && !usage.deleted_at) entries.push({ usage, name: addOn.name as string, multiplier });
+    }
+  }
+  return entries;
 }
 
 export function consolidateCart(db: AppDb, userId: string) {
@@ -20,6 +36,18 @@ export function consolidateCart(db: AppDb, userId: string) {
   const items = db.cartItems.filter((item) => item.cart_id === cart?.id && !item.deleted_at);
   const bucket = new Map<string, { name: string; category: string; unit: string; quantity: number; sources: unknown[] }>();
   const sources = [];
+  const add = (usage: AppDb["ingredientUsages"][number], sourceName: string, multiplier: number, fallbackName?: string | null) => {
+    const ingredient = db.ingredients.find((entry) => entry.id === usage.ingredient_id);
+    const name = ingredient?.canonical_name || usage.name_snapshot || fallbackName || "Ingrediente";
+    const category = ingredient?.category || usage.category_snapshot || categoryFor(name);
+    const unit = usage.practical_unit || usage.unit || "";
+    const quantity = Number(usage.practical_quantity || usage.quantity || 1) * multiplier;
+    const key = `${ingredientKey(name)}|${unit}`;
+    const current = bucket.get(key) || { name, category, unit, quantity: 0, sources: [] };
+    current.quantity += quantity;
+    current.sources.push({ source_name: sourceName, quantity, unit });
+    bucket.set(key, current);
+  };
   for (const item of items) {
     let usages: AppDb["ingredientUsages"] = [];
     let sourceName: string = item.source_type;
@@ -29,7 +57,6 @@ export function consolidateCart(db: AppDb, userId: string) {
       if (!recipe || recipe.deleted_at) continue;
       sourceName = recipe.name || sourceName;
       usages = db.ingredientUsages.filter((usage) => usage.source_type === "recipe" && usage.source_id === item.source_id && !usage.deleted_at);
-      if (item.include_add_ons) usages = usages.concat(addOnUsages(db, userId, item.source_id));
     } else if (item.source_type === "manual") {
       usages = [{ ingredient_id: item.manual_ingredient_id || null, quantity: item.manual_quantity || 1, unit: item.manual_unit || "", source_type: "manual", source_id: item.id } as AppDb["ingredientUsages"][number]];
       sourceName = item.manual_name || sourceName;
@@ -39,19 +66,9 @@ export function consolidateCart(db: AppDb, userId: string) {
       sourceName = db.shoppingLists.find((entry) => entry.id === item.source_id)?.name || sourceName;
     }
     sources.push({ ...item, source_name: sourceName });
-    for (const usage of usages) {
-      const ingredient = db.ingredients.find((entry) => entry.id === usage.ingredient_id);
-      const name = ingredient?.canonical_name || usage.name_snapshot || item.manual_name || "Ingrediente";
-      const category = ingredient?.category || usage.category_snapshot || categoryFor(name);
-      const unit = usage.practical_unit || usage.unit || "";
-      const quantity = Number(usage.practical_quantity || usage.quantity || 1) * Number(item.quantity_multiplier || item.period_days || 1);
-      const key = `${ingredientKey(name)}|${unit}`;
-      const current = bucket.get(key) || { name, category, unit, quantity: 0, sources: [] };
-      current.quantity += quantity;
-      current.sources.push({ source_name: sourceName, quantity, unit });
-      bucket.set(key, current);
-    }
+    for (const usage of usages) add(usage, sourceName, multiplierOf(item), item.manual_name);
   }
+  for (const entry of addOnEntries(db, userId, items)) add(entry.usage, entry.name, entry.multiplier);
   return { cart, sources, ingredients: Array.from(bucket.values()).sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name)) };
 }
 
