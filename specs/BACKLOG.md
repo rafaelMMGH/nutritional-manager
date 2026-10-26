@@ -6,7 +6,7 @@ _Last updated: 2026-10-26_
 
 ## In progress
 
-- [ ] **E2E run guard**, branch `fix/e2e-run-guard` (built on `feature/theme-switcher`, no commits of its own yet). The bug note is `specs/bugs/e2e-run-guard.md`.
+- [ ] **E2E run guard**, branch `fix/e2e-run-guard` (no commits of its own yet; its base, `feature/theme-switcher`, is merged into `main`, so the PR can target `main`). The bug note is `specs/bugs/e2e-run-guard.md`.
   - **⚠️ The code is in `stash@{0}`, not in the working tree.** On 2026-10-24 at 18:27 another Claude session stashed it ("fix/e2e-run-guard WIP: run guard + local server.js/package.json changes") and switched to `fix/shopping-list-quick`.
   - **The stash also holds the user's own unrelated changes:** the `src/server.js` deletion and `package.json` dropping `legacy:dev`. To resume:
     1. Wait until no other session is working in this folder.
@@ -19,20 +19,14 @@ _Last updated: 2026-10-26_
     3. **Minor:** create the lock atomically already filled in (write a temp file, then `linkSync`); ignore ENOENT and re-check the holder before removing a stale lock; include the lock path and "delete it if no Playwright run is active" in the error; treat `holder.pid === process.pid` as stale; say "unreadable lock" for an empty file.
   - **Root cause wording to put in the bug note:** see the reviewer's version. A second run always wiped `test-results/`. If it got past the port check, its globalSetup re-cloned the database with `DROP … WITH (FORCE)`, and its teardown dropped the shared database. Nothing reported load.
   - **Resolved:** the two tests that failed under heavy load ("privacidad, stored dark, light OS" and "Marcar como hecha") passed at normal load. They were load-related, not bugs.
-  - **Still needed:** one clean full suite (173 tests) on a quiet machine with no other session running e2e. Then commit path-limited with the bug note `specs/bugs/e2e-run-guard.md` (the backlog and shopping-list findings are already in the docs PR), and push only with the user's yes.
+  - **Still needed:** one clean full suite (173 tests) on a quiet machine with no other session running e2e. Then commit path-limited with the bug note `specs/bugs/e2e-run-guard.md` (still untracked in the working tree), and push only with the user's yes.
 
 ## Needs the user
 
-- [ ] **Review and merge PR #2** (shopping cart fixes #2 and #5): https://github.com/rafaelMMGH/nutritional-manager/pull/2
-- [ ] **Review and merge the docs PR** (`docs/agent-workflow`: `CLAUDE.md`, `CONSTITUTION.md`, `docs/agent-workflow.md`, this backlog and the shopping-list findings).
-
-- [ ] **Push `feature/theme-switcher` and open its PR.** Checked 2026-10-26: the branch is **not** on `origin` (only `main` and `fix/shopping-list-quick` are), so it still needs a push. Its untracked visual snapshots (`tests/e2e/a-theme-visual.spec.ts-snapshots/`) should be committed on that branch, since the test exists only there. The spec is `specs/theme-switcher/spec.md` (v1.6, implemented, 16/16 requirements met).
-- [ ] **Push `fix/e2e-run-guard` and open its PR** after the commit. Set the PR base to `feature/theme-switcher`, or merge that one first.
+- [ ] **Push `fix/e2e-run-guard` and open its PR** after the commit, with base `main`.
 - [ ] **Restart Claude Code** so the new speed rules load. These are scout and size triage before grilling, sub-batches of about 300 lines, running only the affected tests while iterating plus one full run per batch, tests shown failing on purpose, and minor findings folded into the next batch. They live in `.claude/agents/*.md`, which is gitignored and local only, and in `docs/agent-workflow.md`.
 - [ ] **Decide on uncommitted local changes** that have been kept out of every commit so far:
-  - the staged deletion of `src/server.js`
-  - `package.json` dropping the `legacy:dev` script
-  - (`CLAUDE.md`, `CONSTITUTION.md` and `docs/agent-workflow.md` are now committed on `docs/agent-workflow`.)
+  - the deletion of `src/server.js` and `package.json` dropping the `legacy:dev` script (both currently inside `stash@{0}`, see the run guard above)
   - `.claude/`, which is gitignored; un-ignore it to share the agents with the repo
 
 ## Shopping list
@@ -57,6 +51,7 @@ Findings, with file:line references: `specs/bugs/shopping-list-findings.md`.
 
 ## Done
 
-- 2026-10-23: **Theme switcher (light/dark)**, `feature/theme-switcher` (24 commits, pushed). It took about 8 h of agent time and about 2.3M subagent tokens. The retrospective led to the speed rules above.
+- 2026-10-23: **Theme switcher (light/dark)**, `feature/theme-switcher` (24 commits), merged as PR #1. Its visual snapshots (`tests/e2e/*-snapshots/`) are gitignored on purpose and stay local. It took about 8 h of agent time and about 2.3M subagent tokens. The retrospective led to the speed rules above.
 - 2026-10-24: Speed rules added to the agent definitions and `docs/agent-workflow.md`, including small-feature limits in `verifier-spec` analyze mode.
-- 2026-10-26: **Shopping cart quick fixes**, `fix/shopping-list-quick`, pushed as PR #2. #2: soft-deleted recipes no longer count (restore brings them back). #5: a meal's add-ons count once, scaled by its largest option (planner 4+3 → ×4, accepted trade-off), plus the test hardening from review. Note: `specs/bugs/shopping-list-quick.md`.
+- 2026-10-26: **Shopping cart quick fixes**, `fix/shopping-list-quick`, merged as PR #2. #2: soft-deleted recipes no longer count (restore brings them back). #5: a meal's add-ons count once, scaled by its largest option (planner 4+3 → ×4, accepted trade-off), plus the test hardening from review. Note: `specs/bugs/shopping-list-quick.md`.
+- 2026-10-26: **Project docs**, `docs/agent-workflow`, merged as PR #3: `CLAUDE.md`, `CONSTITUTION.md`, `docs/agent-workflow.md`, this backlog and `specs/bugs/shopping-list-findings.md`.
