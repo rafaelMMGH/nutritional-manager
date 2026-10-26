@@ -214,6 +214,156 @@ test.describe("shopping", () => {
   });
 });
 
+type CartData = { sources: { id: string; source_id: string }[]; ingredients: { name: string; unit: string; quantity: number; sources: { source_name: string }[] }[] };
+type Usage = { name: string; unit: string; quantity: number };
+
+const apiCall = (page: Page, method: string, url: string, body?: unknown) =>
+  page.evaluate(
+    async ([method, url, body]) => {
+      const response = await fetch(url as string, { method: method as string, headers: { "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : undefined });
+      return { status: response.status, data: await response.json() };
+    },
+    [method, url, body]
+  );
+const readCart = async (page: Page) => (await apiCall(page, "GET", "/api/cart")).data as CartData;
+/** What the cart shows for one ingredient (name and unit as consolidateCart groups them). */
+const cartQuantity = (data: CartData, { name, unit }: Usage) => data.ingredients.find((ingredient) => ingredient.name === name && ingredient.unit === unit)?.quantity ?? 0;
+/** Sums usages that share a name and unit, with the same quantity/unit fallbacks as consolidateCart. */
+const usagesOf = (sourceType: "recipe" | "add_on", sourceIds: string[]) => {
+  const rows = sql(`select i.canonical_name, coalesce(nullif(u.practical_unit, ''), u.unit, ''), coalesce(nullif(u.practical_quantity, 0), nullif(u.quantity, 0), 1)
+    from ingredient_usages u join ingredients i on i.id = u.ingredient_id
+    where u.source_type = '${sourceType}' and u.source_id in (${sourceIds.map((value) => `'${value}'`).join(",") || "null"}) and u.deleted_at is null`);
+  const totals = new Map<string, Usage>();
+  for (const row of rows ? rows.split("\n") : []) {
+    const [name, unit, quantity] = row.split("|");
+    const entry = totals.get(`${name}|${unit}`) ?? { name, unit, quantity: 0 };
+    entry.quantity += Number(quantity);
+    totals.set(`${name}|${unit}`, entry);
+  }
+  return Array.from(totals.values());
+};
+const scaled = (usages: Usage[], factor: number) => usages.map((usage) => ({ ...usage, quantity: usage.quantity * factor }));
+/** Live recipes with ingredients that are not in the cart yet. */
+const recipesWithIngredients = () =>
+  sql(`select r.id from recipes r where r.deleted_at is null and exists (select 1 from ingredient_usages u where u.source_type = 'recipe' and u.source_id = r.id and u.deleted_at is null) order by r.seq`).split("\n").filter(Boolean);
+
+test.describe("cart and deleted recipes", () => {
+  test("a recipe in the Papelera leaves the cart, and counts again once restored", async ({ page }) => {
+    const baseline = await readCart(page);
+    const inCart = new Set(baseline.sources.map((source) => source.source_id));
+    const recipeId = recipesWithIngredients().find((id) => !inCart.has(id));
+    test.skip(!recipeId, "every recipe with ingredients is already in the cart");
+    const usages = usagesOf("recipe", [recipeId!]);
+
+    // Attributed by ingredient: each ingredient's cart quantity moves by exactly this recipe's usage, whatever else is in the cart.
+    const expectDelta = (data: CartData, factor: number) => {
+      for (const usage of scaled(usages, factor)) expect(cartQuantity(data, usage), `${usage.name} (${usage.unit})`).toBeCloseTo(cartQuantity(baseline, usage) + usage.quantity, 5);
+    };
+
+    const added = await apiCall(page, "POST", "/api/cart/items", { source_type: "recipe", source_id: recipeId, include_add_ons: false });
+    expect(added.status).toBeLessThan(400);
+    const itemId = added.data.item.id as string;
+    try {
+      const before = await readCart(page);
+      expect(before.sources.map((source) => source.source_id)).toContain(recipeId);
+      expectDelta(before, 1);
+
+      expect((await apiCall(page, "DELETE", `/api/recipes/${recipeId}`)).status).toBeLessThan(400);
+      const deleted = await readCart(page);
+      expect(deleted.sources.map((source) => source.source_id)).not.toContain(recipeId);
+      expectDelta(deleted, 0);
+
+      expect((await apiCall(page, "POST", `/api/trash/recipe/${recipeId}/restore`)).status).toBeLessThan(400);
+      const restored = await readCart(page);
+      expect(restored.sources.map((source) => source.source_id)).toContain(recipeId);
+      expectDelta(restored, 1);
+    } finally {
+      await apiCall(page, "POST", `/api/trash/recipe/${recipeId}/restore`);
+      await apiCall(page, "DELETE", `/api/cart/items/${itemId}`);
+    }
+  });
+
+  test("a meal's required add-ons count once, scaled by the largest multiplier among its options", async ({ page }) => {
+    // The active plan's first meal with two options that appear in no other meal, and a required add-on with ingredients.
+    const [mealId, optionA, optionB] = sql(`
+      select mt.id, (array_agg(r.id order by l.seq))[1], (array_agg(r.id order by l.seq))[2]
+      from plans p
+      join plan_versions pv on pv.plan_id = p.id and pv.is_current and pv.deleted_at is null
+      join meal_types mt on mt.plan_version_id = pv.id
+      join plan_version_recipes l on l.meal_type_id = mt.id and l.plan_version_id = pv.id and l.deleted_at is null
+      join recipes r on r.id = l.recipe_id and r.deleted_at is null
+      where p.status = 'active' and p.deleted_at is null
+        and (select count(*) from plan_version_recipes o where o.recipe_id = r.id and o.plan_version_id = pv.id and o.deleted_at is null) = 1
+        and exists (select 1 from shared_add_ons a join ingredient_usages u on u.source_type = 'add_on' and u.source_id = a.id and u.deleted_at is null
+                    where a.meal_type_id = mt.id and a.required is not false and a.deleted_at is null)
+        -- A live add-ons item already in the active cart puts this meal's add-on in the baseline with its own multiplier.
+        and not exists (select 1 from cart_items ci
+                        join carts c on c.id = ci.cart_id and c.status = 'active' and c.deleted_at is null
+                        join plan_version_recipes l2 on l2.recipe_id = ci.source_id and l2.meal_type_id = mt.id and l2.plan_version_id = pv.id and l2.deleted_at is null
+                        where ci.source_type = 'recipe' and ci.include_add_ons and ci.deleted_at is null)
+      group by mt.id, mt.seq having count(*) >= 2 order by mt.seq limit 1`).split("|");
+    expect(mealId, "the clone has an active-plan meal with 2+ options and a required add-on with ingredients").toBeTruthy();
+
+    const addOnIds = sql(`select id from shared_add_ons where meal_type_id = '${mealId}' and required is not false and deleted_at is null`).split("\n");
+    const addOns = usagesOf("add_on", addOnIds);
+    const addOnNames = sql(`select name from shared_add_ons where id in (${addOnIds.map((value) => `'${value}'`).join(",")})`).split("\n");
+    const own = (recipeId: string, factor: number) => scaled(usagesOf("recipe", [recipeId]), factor);
+    expect(addOns.length).toBeGreaterThan(0);
+
+    const baseline = await readCart(page);
+    const itemIds: string[] = [];
+    const addOption = async (recipeId: string, multiplier: number, includeAddOns: boolean) => {
+      const added = await apiCall(page, "POST", "/api/cart/items", { source_type: "recipe", source_id: recipeId, quantity_multiplier: multiplier, include_add_ons: includeAddOns });
+      expect(added.status).toBeLessThan(400);
+      itemIds.push(added.data.item.id);
+      return added.data.item.id as string;
+    };
+    // Expected cart quantity of every add-on ingredient: baseline + the recipes' own usages + the add-ons, however many options were added.
+    const expectAddOns = (data: CartData, addOnFactor: number, recipes: [string, number][]) => {
+      for (const addOn of scaled(addOns, addOnFactor)) {
+        const fromRecipes = recipes.flatMap(([recipeId, factor]) => own(recipeId, factor)).filter((usage) => usage.name === addOn.name && usage.unit === addOn.unit).reduce((sum, usage) => sum + usage.quantity, 0);
+        expect(cartQuantity(data, addOn), `${addOn.name} (${addOn.unit})`).toBeCloseTo(cartQuantity(baseline, addOn) + fromRecipes + addOn.quantity, 5);
+      }
+    };
+
+    const reset = async () => {
+      // An id leaves the list only once its DELETE succeeded, so the finally block still cleans up after a failure.
+      for (const itemId of [...itemIds]) {
+        expect((await apiCall(page, "DELETE", `/api/cart/items/${itemId}`)).status).toBeLessThan(400);
+        itemIds.splice(itemIds.indexOf(itemId), 1);
+      }
+    };
+
+    try {
+      // Options are alternatives: the add-on follows the largest multiplier, not the sum (4 + 3).
+      await addOption(optionA, 4, true);
+      await addOption(optionB, 3, true);
+      const both = await readCart(page);
+      expectAddOns(both, 4, [[optionA, 4], [optionB, 3]]);
+      // Add-ons are attributed by name in each ingredient's sources, and are not cart items themselves.
+      for (const addOn of addOns) {
+        const sourceNames = both.ingredients.find((ingredient) => ingredient.name === addOn.name && ingredient.unit === addOn.unit)?.sources.map((source) => source.source_name) ?? [];
+        expect(addOnNames.filter((name) => sourceNames.includes(name)), `${addOn.name} has an add-on source`).not.toHaveLength(0);
+      }
+      expect(both.sources.map((source) => source.source_id).filter((sourceId) => addOnIds.includes(sourceId))).toEqual([]);
+      await reset();
+
+      // Two options at the default multiplier still need the add-on once.
+      await addOption(optionA, 1, true);
+      await addOption(optionB, 1, true);
+      expectAddOns(await readCart(page), 1, [[optionA, 1], [optionB, 1]]);
+      await reset();
+
+      // An option without add-ons contributes none: the add-on follows the remaining option.
+      await addOption(optionA, 4, false);
+      await addOption(optionB, 3, true);
+      expectAddOns(await readCart(page), 3, [[optionA, 4], [optionB, 3]]);
+    } finally {
+      for (const itemId of itemIds) await apiCall(page, "DELETE", `/api/cart/items/${itemId}`);
+    }
+  });
+});
+
 test.describe("assistant and upload", () => {
   test("the search sends the question to the assistant, which answers", async ({ page }) => {
     const search = page.locator(".home-search input");
