@@ -18,6 +18,8 @@ export type Turn =
       role: "assistant";
       request: AssistantRequest;
       status: "pending" | "answer" | "error";
+      /** Set while a Reintentar is pending: the chips of the earlier answer stay hidden until it settles (REQ-5). */
+      retrying?: boolean;
       /** The page's starter questions as they were when the question was sent; a retry builds its chips from them. */
       suggestions: Chip[];
       answer?: ChatAnswer;
@@ -73,7 +75,8 @@ export function AssistantTurn({
 }: {
   turn: Turn;
   chipsAction?: { disabled: boolean; onAsk: (request: AssistantRequest) => void };
-  onRetry: (turn: Turn) => void;
+  /** Only the latest assistant turn gets one; an older error turn offers no Reintentar (REQ-8). */
+  onRetry?: (turn: Turn) => void;
 }) {
   if (turn.role === "user") {
     return (
@@ -93,7 +96,7 @@ export function AssistantTurn({
         {turn.status === "answer" && turn.answer ? <AnswerContent answer={turn.answer} /> : turn.status === "error" ? <p>{ERROR_TEXT}</p> : null}
       </div>
       {pending && <div className="assistant-turn-pending"><Loader text="Pensando…" /></div>}
-      {turn.status === "error" && (
+      {turn.status === "error" && onRetry && (
         <button type="button" className="assistant-retry" onClick={() => onRetry(turn)}>
           <RotateCcw size={14} aria-hidden="true" /> Reintentar
         </button>

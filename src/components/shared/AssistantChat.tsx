@@ -49,10 +49,12 @@ export function AssistantChat({ title = "Asistente", subtitle, suggestions = [],
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight, behavior: "smooth" });
   }, [turns]);
 
-  // Chips sit under the latest finished answer. An error as the latest finished turn hides them; a pending request keeps
-  // them on screen, disabled.
+  // Chips sit under the latest finished answer. An error as the latest finished turn hides them, and so does a pending
+  // retry (it stands in for its error turn); a pending new question keeps them on screen, disabled.
   const latest = turns.findLast((turn) => turn.role === "assistant" && turn.status !== "pending");
-  const chipsTurnId = latest?.role === "assistant" && latest.status === "answer" ? latest.id : null;
+  const lastAssistant = turns.findLast((turn) => turn.role === "assistant");
+  const retrying = lastAssistant?.role === "assistant" && lastAssistant.status === "pending" && lastAssistant.retrying;
+  const chipsTurnId = !retrying && latest?.role === "assistant" && latest.status === "answer" ? latest.id : null;
   const askChip = (request: AssistantRequest) => {
     dictation.stop();
     onSuggest(request);
@@ -99,7 +101,7 @@ export function AssistantChat({ title = "Asistente", subtitle, suggestions = [],
               <ChipList chips={suggestions} disabled={busy} onAsk={askChip} />
             </div>
           )}
-          {turns.map((turn) => <AssistantTurn key={turn.id} turn={turn} chipsAction={turn.id === chipsTurnId ? { disabled: busy, onAsk: askChip } : undefined} onRetry={onRetry} />)}
+          {turns.map((turn) => <AssistantTurn key={turn.id} turn={turn} chipsAction={turn.id === chipsTurnId ? { disabled: busy, onAsk: askChip } : undefined} onRetry={turn.id === lastAssistant?.id ? onRetry : undefined} />)}
         </div>
         {dictation.error && <p className="assistant-chat-error" role="alert">{dictation.error}</p>}
         <PromptInput value={draft} onValueChange={setDraft} onSubmit={ask} busy={busy} placeholder={placeholder} readOnly={dictation.transcribing} inputRef={inputRef}>

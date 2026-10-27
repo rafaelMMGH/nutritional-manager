@@ -143,7 +143,7 @@ export function useAssistantState() {
   const retry = useCallback(async (turn: Turn) => {
     if (turn.role !== "assistant" || turn.status !== "error" || busyRef.current) return;
     busyRef.current = true;
-    setTurns((current) => current.map((entry) => (entry.id === turn.id ? { ...turn, status: "pending" } : entry)));
+    setTurns((current) => current.map((entry) => (entry.id === turn.id ? { ...turn, status: "pending", retrying: true } : entry)));
     await attempt(turn.id, turn.request, turn.suggestions);
   }, [attempt]);
 

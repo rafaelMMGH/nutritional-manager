@@ -328,6 +328,25 @@ test.describe("REQ-8: error, Reintentar and the 15 s timeout", () => {
     });
   });
 
+  test.describe("an older error followed by a later answer", () => {
+    test.use({ expectedIssues: expectIssues(...FAILED_500) });
+
+    test("only the latest turn offers Reintentar", async ({ chat }) => {
+      await mockChat(chat, cartAnswer(), { status: 500 });
+      await chat.goto("/");
+      const ui = await openAssistant(chat);
+      await typeQuestion(chat, CART_CHIP);
+      await expect(retryButton(chat)).toBeVisible();
+
+      await mockChat(chat, cartAnswer(1));
+      await typeQuestion(chat, "una pregunta nueva");
+      await expect(ui.assistantTurns).toHaveCount(2);
+      await expect(ui.assistantTurns.nth(0)).toContainText(ERROR_COPY);
+      await expect(ui.assistantTurns.nth(1)).toContainText("Esto es lo que tienes en tu carrito.");
+      await expect(retryButton(chat)).toHaveCount(0);
+    });
+  });
+
   test.describe("a retry that fails again", () => {
     test.use({ expectedIssues: expectIssues(...FAILED_500, ...FAILED_500) });
 
@@ -422,9 +441,8 @@ test.describe("REQ-8: error, Reintentar and the 15 s timeout", () => {
       await expect(ui.pending).toContainText(THINKING);
       await expect(ui.assistantTurns).toHaveCount(1);
       await expect(ui.panel).not.toContainText("Ingrediente 05");
-      await expect(ui.chips).toHaveCount(2);
-      await expect(ui.chips.first()).toBeDisabled();
-      await expect(ui.chips.last()).toBeDisabled();
+      // A pending retry hides every chip, the earlier answer's too (REQ-5, REQ-8).
+      await expect(ui.chips).toHaveCount(0);
 
       second.release();
       await expect(ui.assistantTurns).toHaveCount(2);
