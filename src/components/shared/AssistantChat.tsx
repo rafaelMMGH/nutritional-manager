@@ -7,7 +7,6 @@ import { PromptInput } from "./PromptInput";
 import { ScrollButton } from "./ScrollButton";
 import { useChatScroll } from "./useChatScroll";
 import { useDictation } from "./useDictation";
-import { useMediaQuery } from "@/lib/client/useMediaQuery";
 import "./assistant-chat.css";
 
 type Props = {
@@ -50,12 +49,10 @@ export function AssistantChat({ title = "Asistente", subtitle, suggestions = [],
   }
 
   const { logRef, atBottom, scrollToBottom } = useChatScroll(turns);
-  // On touch the keyboard would cover the log, so there the log keeps the focus instead of the input.
-  const touch = useMediaQuery("(max-width: 640px), (pointer: coarse)");
 
   function jumpToLast() {
     scrollToBottom();
-    (touch ? logRef.current : inputRef.current)?.focus();
+    inputRef.current?.focus();
   }
 
   function startOver() {

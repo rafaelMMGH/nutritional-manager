@@ -22,6 +22,9 @@ export function useChatScroll(turns: Turn[]) {
   // and a log that just grew are both away from the bottom without the reader having left it.
   const stuck = useRef(true);
   const auto = useRef(false);
+  // Whether the reader is at (or being taken to) the bottom, as opposed to `stuck` alone, which also holds after an
+  // answer taller than the log put its first line at the top. Only a log following the bottom is re-stuck on resize.
+  const following = useRef(true);
   const lastTop = useRef(0);
   const previous = useRef<Turn[]>([]);
 
@@ -50,6 +53,7 @@ export function useChatScroll(turns: Turn[]) {
     if (!log) return;
     scrollTo(log.scrollHeight);
     stuck.current = true;
+    following.current = true;
     setAtBottom(true);
   }, [scrollTo]);
 
@@ -57,9 +61,12 @@ export function useChatScroll(turns: Turn[]) {
     const log = logRef.current;
     if (!log) return;
     const onScroll = () => {
-      if (distance() <= AT_BOTTOM_PX) stuck.current = true;
-      else if (log.scrollTop < lastTop.current) {
+      if (distance() <= AT_BOTTOM_PX) {
+        stuck.current = true;
+        following.current = true;
+      } else if (log.scrollTop < lastTop.current) {
         stuck.current = false;
+        following.current = false;
         auto.current = false;
       }
       lastTop.current = log.scrollTop;
@@ -72,15 +79,27 @@ export function useChatScroll(turns: Turn[]) {
     const onReader = () => {
       auto.current = false;
     };
+    // The log resizes when the composer grows or shrinks, or the panel changes size. Resizing never moves the content
+    // by itself, so a reader following the bottom is put back there: at once, or by aiming a smooth scroll in flight at
+    // the new bottom. Anyone else only gets the button re-synced. Scrolling does not resize the log, so this cannot loop.
+    const observer = new ResizeObserver(() => {
+      if (stuck.current && following.current) {
+        if (auto.current) scrollTo(log.scrollHeight);
+        else log.scrollTop = log.scrollHeight;
+      }
+      sync();
+    });
+    observer.observe(log);
     log.addEventListener("scroll", onScroll);
     log.addEventListener("scrollend", onEnd);
     for (const type of ["wheel", "touchmove", "keydown", "pointerdown"]) log.addEventListener(type, onReader, { passive: true });
     return () => {
+      observer.disconnect();
       log.removeEventListener("scroll", onScroll);
       log.removeEventListener("scrollend", onEnd);
       for (const type of ["wheel", "touchmove", "keydown", "pointerdown"]) log.removeEventListener(type, onReader);
     };
-  }, [distance, sync]);
+  }, [distance, sync, scrollTo]);
 
   // Runs before paint, so the new turn never shows at the old position for a frame.
   useLayoutEffect(() => {
@@ -113,6 +132,7 @@ export function useChatScroll(turns: Turn[]) {
       scrollToBottom();
     } else {
       const top = turn.getBoundingClientRect().top - log.getBoundingClientRect().top + log.scrollTop - parseFloat(style.paddingTop);
+      following.current = false;
       scrollTo(top);
       sync();
     }

@@ -409,3 +409,26 @@ test.describe("REQ-11: scroll", () => {
     }).toPass();
   });
 });
+
+test.describe("REQ-11: scroll at 360 px", () => {
+  test.use({ viewport: { width: 360, height: 740 } });
+
+  test("Ir al último mensaje moves focus to the input, as at every width", async ({ chat }) => {
+    await open(chat);
+    await fillLog(chat);
+    await scrollUp(chat);
+    await scrollButton(chat).click();
+    await expect(chat.getByRole("textbox", { name: "Pregunta", exact: true })).toBeFocused();
+    await expect.poll(() => toLogBottom(chat)).toBeLessThanOrEqual(24);
+  });
+});
+
+test.describe("REQ-11: the composer growing", () => {
+  test("a composer that grows with 5 lines keeps a log that was at the bottom at the bottom", async ({ chat }) => {
+    const { ui } = await open(chat);
+    await fillLog(chat);
+    await ui.input.fill(["uno", "dos", "tres", "cuatro", "cinco"].join("\n"));
+    await expect.poll(() => toLogBottom(chat)).toBeLessThanOrEqual(24);
+    await expect(scrollButton(chat)).toBeHidden();
+  });
+});
