@@ -1,8 +1,9 @@
 "use client";
 
-import { FormEvent, useEffect, useRef, useState } from "react";
-import { ArrowUp, Bot, Loader2, Mic, Square, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Bot, Loader2, Mic, Square, X } from "lucide-react";
 import { AssistantTurn, ChipList, type AssistantRequest, type Turn, type TurnChip } from "./AssistantTurn";
+import { PromptInput } from "./PromptInput";
 import { useDictation } from "./useDictation";
 import "./assistant-chat.css";
 
@@ -24,7 +25,7 @@ type Props = {
 export function AssistantChat({ title = "Asistente", subtitle, suggestions = [], turns, busy, open, onOpenChange, onSend, onSuggest, onRetry }: Props) {
   const [draft, setDraft] = useState("");
   const logRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const fabRef = useRef<HTMLButtonElement>(null);
   const dictation = useDictation(setDraft);
 
@@ -58,11 +59,9 @@ export function AssistantChat({ title = "Asistente", subtitle, suggestions = [],
   };
 
   function ask(text: string) {
-    const message = text.trim();
-    if (!message || busy) return;
     dictation.stop();
     setDraft("");
-    onSend(message);
+    onSend(text.trim());
   }
 
   const placeholder = dictation.listening
@@ -70,11 +69,6 @@ export function AssistantChat({ title = "Asistente", subtitle, suggestions = [],
     : dictation.transcribing
       ? dictation.download != null ? `Descargando modelo de voz… ${dictation.download}%` : "Transcribiendo…"
       : "Escribe tu pregunta";
-
-  function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    ask(draft);
-  }
 
   return (
     <>
@@ -108,15 +102,7 @@ export function AssistantChat({ title = "Asistente", subtitle, suggestions = [],
           {turns.map((turn) => <AssistantTurn key={turn.id} turn={turn} chipsAction={turn.id === chipsTurnId ? { disabled: busy, onAsk: askChip } : undefined} onRetry={onRetry} />)}
         </div>
         {dictation.error && <p className="assistant-chat-error" role="alert">{dictation.error}</p>}
-        <form className="assistant-chat-form" onSubmit={submit}>
-          <input
-            ref={inputRef}
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            placeholder={placeholder}
-            readOnly={dictation.transcribing}
-            aria-label="Pregunta"
-          />
+        <PromptInput value={draft} onValueChange={setDraft} onSubmit={ask} busy={busy} placeholder={placeholder} readOnly={dictation.transcribing} inputRef={inputRef}>
           {dictation.supported && (
             <button
               type="button"
@@ -130,8 +116,7 @@ export function AssistantChat({ title = "Asistente", subtitle, suggestions = [],
               {dictation.transcribing ? <Loader2 size={18} className="spin" /> : dictation.listening ? <Square size={14} fill="currentColor" /> : <Mic size={18} />}
             </button>
           )}
-          <button type="submit" disabled={!draft.trim() || busy} aria-label="Enviar"><ArrowUp size={18} /></button>
-        </form>
+        </PromptInput>
       </aside>
     </>
   );
