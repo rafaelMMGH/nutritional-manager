@@ -256,7 +256,7 @@ The old `messages` shape is removed in the same commit that renders `Turn[]` (T0
     - While pending, it re-enables Enviar and the search bar at once, and the late mock leaves the thread empty.
   - REQ-11, with mocked answers:
     - Scrolled up more than 24 px, the position is kept and "Ir al último mensaje" shows.
-    - Activating it puts the log at the bottom, hides the button and, on desktop, moves focus to the input.
+    - Activating it puts the log at the bottom, hides the button and moves focus to the input (all widths, per spec Interaction details "Focus").
     - A tall answer has its lead at the log's top.
     - Sending while scrolled up shows the question.
 - [ ] T047 [US2] Spec v1.6 follow-ups (src/components/shared/AssistantTurn.tsx, src/components/shared/AssistantChat.tsx, tests/e2e/assistant-next-step.spec.ts). REQ-5, REQ-8.
