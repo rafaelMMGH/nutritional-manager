@@ -1,4 +1,5 @@
 import type { Page } from "@playwright/test";
+import { expectIssues } from "./fixtures";
 import {
   UNKNOWN_ANSWER,
   assistantUi,
@@ -15,8 +16,8 @@ import {
   test
 } from "./assistant-helpers";
 
-// UI tests of the chips under an answer. Spec assistant-chat-polish, US2: REQ-5 (chips), REQ-6 (unknown reply) and the
-// UI of REQ-20 (out-of-scope and missing-recipe replies). Retry, the timeout and "Pensando…" (REQ-7, REQ-8) are not here.
+// UI tests of the next step after a question. Spec assistant-chat-polish, US2: REQ-5 (chips), REQ-6 (unknown reply), the
+// UI of REQ-20 (out-of-scope and missing-recipe replies), REQ-7 ("Pensando…") and REQ-8 (error, Reintentar, the 15 s timeout).
 
 const RECIPES_CHIP = "¿Qué recetas hay en mi plan?";
 const CART_CHIP = "¿Qué tengo en mi carrito?";
@@ -249,5 +250,196 @@ test.describe("REQ-20: strict scopes", () => {
     await expect(ui.assistantTurns).toHaveCount(2);
     await expect(ui.assistantTurns.nth(1).getByRole("listitem")).toHaveText(["Sazonar el pollo.", "Asar 20 minutos."]);
     expect(await labelsOf(chat)).toEqual(["Esta receta", "Esta receta"]);
+  });
+});
+
+const THINKING = "Pensando…";
+const ERROR_COPY = "No pude responder en este momento.";
+const FAILED_500 = [/POST \/api\/rag\/chat → 500/, /Failed to load resource.*500/];
+const retryButton = (page: Page) => page.getByRole("button", { name: "Reintentar" });
+
+test.describe("REQ-7: Pensando…", () => {
+  test("shows in the answer position while the request is pending, outside the live region, and is gone afterwards", async ({ chat }) => {
+    const mock = await mockChat(chat, cartAnswer(2), { hold: true });
+    await chat.goto("/");
+    const ui = await openAssistant(chat);
+    await typeQuestion(chat, CART_CHIP);
+    await expect(ui.pending).toHaveCount(1);
+    await expect(ui.pending).toContainText(THINKING);
+    await expect(ui.userTurns).toHaveText([CART_CHIP]);
+    await expect(ui.live.filter({ hasText: THINKING })).toHaveCount(0);
+
+    mock.release();
+    await expect(ui.assistantTurns).toHaveCount(1);
+    await expect(ui.pending).toHaveCount(0);
+    await expect(ui.panel).not.toContainText(THINKING);
+  });
+});
+
+test.describe("REQ-8: error, Reintentar and the 15 s timeout", () => {
+  test.describe("a 500 answer", () => {
+    test.use({ expectedIssues: expectIssues(...FAILED_500) });
+
+    test("keeps the question, shows the error with Reintentar and no chips; Reintentar swaps it for Pensando… and then the answer", async ({ chat }) => {
+      await mockChat(chat, cartAnswer(), { status: 500 });
+      await chat.goto("/");
+      const ui = await openAssistant(chat);
+      await typeQuestion(chat, CART_CHIP);
+      await expect(ui.assistantTurns).toHaveCount(1);
+      await expect(ui.assistantTurns.first()).toContainText(ERROR_COPY);
+      await expect(ui.live).toHaveText([ERROR_COPY]);
+      await expect(ui.userTurns).toHaveText([CART_CHIP]);
+      await expect(ui.labels).toHaveCount(0);
+      await expect(ui.chips).toHaveCount(0);
+      await expect(retryButton(chat)).toBeVisible();
+      await expect(ui.live.getByRole("button")).toHaveCount(0);
+
+      const healthy = await mockChat(chat, cartAnswer(), { hold: true });
+      await retryButton(chat).click();
+      await expect(ui.pending).toHaveCount(1);
+      await expect(ui.pending).toContainText(THINKING);
+      await expect(ui.assistantTurns).toHaveCount(0);
+      await expect(ui.panel).not.toContainText(ERROR_COPY);
+      await expect(retryButton(chat)).toHaveCount(0);
+      await expect(ui.userTurns).toHaveText([CART_CHIP]);
+
+      healthy.release();
+      await expect(ui.assistantTurns).toHaveCount(1);
+      await expect(ui.assistantTurns.getByRole("heading", { level: 3 })).toHaveText(["Ingredientes"]);
+      await expect(ui.chips).toHaveText([RECIPES_CHIP, "¿A qué hora es mi comida?"]);
+      await expect(ui.panel).not.toContainText(ERROR_COPY);
+      await expect(retryButton(chat)).toHaveCount(0);
+      await expect(ui.userTurns).toHaveText([CART_CHIP]);
+      expect(healthy.requests).toEqual([{ message: CART_CHIP, scope: "auto" }]);
+    });
+
+    test("Reintentar in Esta receta keeps its recipe", async ({ chat }) => {
+      await mockChat(chat, cartAnswer(), { status: 500 });
+      await chat.goto(`/recipes/${ids["Pollo asado"]}`);
+      const ui = await openAssistant(chat);
+      await typeQuestion(chat, "¿Qué ingredientes lleva?");
+      await expect(retryButton(chat)).toBeVisible();
+
+      const healthy = await mockChat(chat, cartAnswer());
+      await retryButton(chat).click();
+      await expect(ui.assistantTurns).toHaveCount(1);
+      await expect(ui.chips.first()).toBeVisible();
+      expect(healthy.requests).toEqual([{ message: "¿Qué ingredientes lleva?", scope: "Receta", recipe_id: ids["Pollo asado"] }]);
+    });
+  });
+
+  test.describe("a retry that fails again", () => {
+    test.use({ expectedIssues: expectIssues(...FAILED_500, ...FAILED_500) });
+
+    test("shows the error again, with the question once", async ({ chat }) => {
+      const mock = await mockChat(chat, cartAnswer(), { status: 500 });
+      await chat.goto("/");
+      const ui = await openAssistant(chat);
+      await typeQuestion(chat, CART_CHIP);
+      await expect(retryButton(chat)).toBeVisible();
+      await retryButton(chat).click();
+      await expect.poll(() => mock.requests.length).toBe(2);
+      await expect(ui.pending).toHaveCount(0);
+      await expect(ui.assistantTurns).toHaveCount(1);
+      await expect(ui.live).toHaveText([ERROR_COPY]);
+      await expect(retryButton(chat)).toBeVisible();
+      await expect(ui.userTurns).toHaveText([CART_CHIP]);
+      await expect(ui.chips).toHaveCount(0);
+    });
+  });
+
+  test.describe("a network failure", () => {
+    test.use({ expectedIssues: expectIssues(/Failed to load resource.*ERR_FAILED/) });
+
+    test("is treated like a non-2xx answer", async ({ chat }) => {
+      await mockChat(chat, cartAnswer(), { abort: true });
+      await chat.goto("/");
+      const ui = await openAssistant(chat);
+      await typeQuestion(chat, CART_CHIP);
+      await expect(ui.live).toHaveText([ERROR_COPY]);
+      await expect(retryButton(chat)).toBeVisible();
+      await expect(ui.userTurns).toHaveText([CART_CHIP]);
+      await expect(ui.chips).toHaveCount(0);
+    });
+  });
+
+  test.describe("a request pending over 15 s", () => {
+    // The clock is installed before the page loads so the app's own timer is the faked one.
+    test("shows the error, and a late answer is discarded", async ({ chat }) => {
+      await chat.clock.install();
+      const mock = await mockChat(chat, cartAnswer(), { hold: true });
+      await chat.goto("/");
+      const ui = await openAssistant(chat);
+      await typeQuestion(chat, CART_CHIP);
+      await expect(ui.pending).toHaveCount(1);
+
+      await chat.clock.fastForward(14_000);
+      await expect(ui.pending).toHaveCount(1);
+      await chat.clock.fastForward(1_500);
+      await expect(ui.pending).toHaveCount(0);
+      await expect(ui.live).toHaveText([ERROR_COPY]);
+      await expect(retryButton(chat)).toBeVisible();
+      await expect(ui.userTurns).toHaveText([CART_CHIP]);
+
+      const late = chat.waitForResponse(API);
+      mock.release();
+      await late;
+      // A round trip into the page: the late response has been handled by now.
+      await chat.evaluate(() => undefined);
+      await expect(ui.live).toHaveText([ERROR_COPY]);
+      await expect(ui.assistantTurns).toHaveCount(1);
+      await expect(ui.chips).toHaveCount(0);
+      await expect(ui.panel).not.toContainText("Esto es lo que tienes en tu carrito.");
+    });
+
+    test("Reintentar afterwards asks again and answers once", async ({ chat }) => {
+      await chat.clock.install();
+      await mockChat(chat, cartAnswer(), { hold: true });
+      await chat.goto("/");
+      const ui = await openAssistant(chat);
+      await typeQuestion(chat, CART_CHIP);
+      await expect(ui.pending).toHaveCount(1);
+      await chat.clock.fastForward(15_500);
+      await expect(retryButton(chat)).toBeVisible();
+
+      const healthy = await mockChat(chat, cartAnswer());
+      await retryButton(chat).click();
+      await expect(ui.assistantTurns).toHaveCount(1);
+      await expect(ui.chips).toHaveCount(2);
+      await expect(ui.userTurns).toHaveText([CART_CHIP]);
+      expect(healthy.requests).toHaveLength(1);
+    });
+  });
+});
+
+test.describe("REQ-5 with REQ-8: an error as the latest turn hides every chip", () => {
+  test.use({ expectedIssues: expectIssues(...FAILED_500) });
+
+  test("chips of the earlier answer are gone too", async ({ chat }) => {
+    await chat.goto("/");
+    const ui = await openAssistant(chat);
+    await typeQuestion(chat, CART_CHIP);
+    await expect(ui.chips).toHaveCount(2);
+
+    await mockChat(chat, cartAnswer(), { status: 500 });
+    await typeQuestion(chat, "una pregunta más");
+    await expect(ui.live.last()).toHaveText(ERROR_COPY);
+    await expect(chat.locator(".assistant-chips")).toHaveCount(0);
+  });
+});
+
+test.describe("REQ-16: the loader under reduced motion", () => {
+  const animationOf = (page: Page) => page.locator(".assistant-loader").evaluate((node) => getComputedStyle(node).animationName);
+
+  test("blinks normally and is static text under prefers-reduced-motion", async ({ chat }) => {
+    await mockChat(chat, cartAnswer(), { hold: true });
+    await chat.goto("/");
+    const ui = await openAssistant(chat);
+    await typeQuestion(chat, CART_CHIP);
+    await expect(ui.pending).toContainText(THINKING);
+    expect(await animationOf(chat)).not.toBe("none");
+
+    await chat.emulateMedia({ reducedMotion: "reduce" });
+    expect(await animationOf(chat)).toBe("none");
   });
 });

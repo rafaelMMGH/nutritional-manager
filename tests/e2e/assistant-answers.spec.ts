@@ -1,6 +1,7 @@
 import type { Locator, Page } from "@playwright/test";
 import { expectIssues } from "./fixtures";
 import { auditNow, visit } from "./theme-audit";
+import { contrast, effectiveBackground, toRgb } from "./theme-helpers";
 import { UNKNOWN_ANSWER, assistantUi, buildAnswer, cartAnswer, createChatUser, deleteChatUser, expect, mockChat, openAssistant, seedCart, seedPlan, seedRecipes, test } from "./assistant-helpers";
 
 // UI tests of what an answer turn shows. Spec assistant-chat-polish: REQ-4 (scope label) and the REQ-12 defaults
@@ -151,9 +152,10 @@ test.describe("REQ-2, REQ-3, REQ-18: an answer shows exactly its structure", () 
     const turn = await answerTurn(chat, answer);
     const sources = turn.getByText(/^Basado en:/);
     await expect(sources).toHaveText("Basado en: Recetario, Carrito actual, Receta: Pollo asado");
-    // "Muted" must be visible in the styles, not only in the name: the line is paler than the lead.
-    const colorOf = (locator: Locator) => locator.evaluate((node) => getComputedStyle(node).color);
-    expect(await colorOf(sources)).not.toBe(await colorOf(turn.locator(".assistant-turn-lead")));
+    // "Muted" must be visible in the styles, not only in the name: against the turn's background the line has less contrast than the lead.
+    const lead = turn.locator(".assistant-turn-lead");
+    const ratioOf = async (locator: Locator) => contrast(await toRgb(chat, await locator.evaluate((node) => getComputedStyle(node).color)), await effectiveBackground(locator));
+    expect(await ratioOf(sources)).toBeLessThan(await ratioOf(lead));
   });
 
   test("no 'Basado en' line without sources or on the unknown reply", async ({ chat }) => {
