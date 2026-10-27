@@ -174,7 +174,7 @@ The old `messages` shape is removed in the same commit that renders `Turn[]` (T0
 
 **Batch 5 (borderline size): chips, unknown reply, thinking, retry and timeout (REQ-5 to REQ-8, REQ-20 UI)**
 
-- [ ] T018 [US2] Tests REQ-5, REQ-6 UI and REQ-20 UI (tests/e2e/assistant-next-step.spec.ts).
+- [x] T018 [US2] Tests REQ-5, REQ-6 UI and REQ-20 UI (tests/e2e/assistant-next-step.spec.ts).
   - Chips show under the latest answer only, and activating one moves them.
   - All chips are disabled while pending, and a click sends nothing (count route hits).
   - Scope labels for chip answers:
@@ -204,15 +204,15 @@ The old `messages` shape is removed in the same commit that renders `Turn[]` (T0
     - `page.clock.install()` before `goto`, then a held route and `clock.fastForward(15_000)` → the error shows.
     - After the response is released, nothing is added.
   - Each mocked failure is declared with `expectIssues`.
-- [ ] T020 [US2] `chipsFor`, retry and timeout (src/components/app/assistant.tsx). REQ-5, REQ-8, REQ-20.
+- [ ] T020 [US2] (chip half done in Batch 5a) `chipsFor`, retry and timeout (src/components/app/assistant.tsx). REQ-5, REQ-8, REQ-20.
   - Chip lists per `kind`, with the repeat rule filling from the full list.
   - Page suggestions captured at send time and frozen on the turn, with `recipeId` on Receta chips.
   - "Preguntar en Todo" appends the user turn.
   - Reintentar sets the same turn back to pending.
   - The 15 s timer and the generation discard.
   - `console.warn` with context on failure.
-- [ ] T021 [P] [US2] `PromptSuggestion`, adapted from prompt-kit with attribution (src/components/shared/PromptSuggestion.tsx). REQ-5.
-- [ ] T022 [US2] Render chips under the latest successful turn (none on error) and the "Pensando…" loader (Loader text variant, with attribution), outside the live region. Render the error with Reintentar. All token-styled (src/components/shared/AssistantChat.tsx, src/components/shared/AssistantTurn.tsx, src/components/shared/assistant-chat.css). Depends on T020, T021. REQ-5 to REQ-8.
+- [x] T021 [P] [US2] `PromptSuggestion`, adapted from prompt-kit with attribution (src/components/shared/PromptSuggestion.tsx). REQ-5.
+- [x] T022 [US2] Render chips under the latest successful turn (none on error) and the "Pensando…" loader (Loader text variant, with attribution), outside the live region. Render the error with Reintentar. All token-styled (src/components/shared/AssistantChat.tsx, src/components/shared/AssistantTurn.tsx, src/components/shared/assistant-chat.css). Depends on T020, T021. REQ-5 to REQ-8.
 
 **Checkpoint:** US2 is complete (REQ-5 to REQ-8, REQ-20), except the switcher assertions added in T040.
 
@@ -283,6 +283,7 @@ The old `messages` shape is removed in the same commit that renders `Turn[]` (T0
     - `scrollTop` equals the target right after a send and right after "Ir al último mensaje".
   - Without reduced motion, the fade is ≤ 200 ms.
 - [ ] T031 [US5] Tune and verify only (src/components/shared/assistant-chat.css).
+  - Known light-theme AA misses from Batch 5a (must be fixed here): panel header subtitle 4.04:1, input placeholder 3.40:1, input border 1.19:1 (non-text, needs ≥3:1).
   - The elements are already token-styled by their batches.
   - Add the forced-colors rules, the reduced-motion block, 160 ms fades, the user bubble at ≤ 80% width and `overflow-wrap: anywhere`.
   - Fix any token pairing T030 flags.
@@ -317,6 +318,7 @@ The old `messages` shape is removed in the same commit that renders `Turn[]` (T0
 **Batch 9b: live region, modality and focus (REQ-17, REQ-22)**
 
 - [ ] T033 [US5] Tests REQ-17, REQ-22 (tests/e2e/assistant-a11y.spec.ts).
+  - From the Batch 5a review: after a chip click the clicked chip becomes disabled and focus drops to `body`. Cover focus after chip / Reintentar / "Preguntar en Todo" (input on desktop; log then new turn at ≤640 px).
   - REQ-17:
     - Turns are exposed as "Tú" and "Asistente", and the icon is hidden.
     - While pending, the live region has no "Pensando…". After the answer, it holds the lead and every item, and not the user message, chips or label.
