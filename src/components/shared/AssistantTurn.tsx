@@ -1,5 +1,5 @@
 import { Bot, Loader2 } from "lucide-react";
-import { SCOPE_LABEL, type ChatAnswer, type ScopeKey } from "@/lib/assistant";
+import { SCOPE_LABEL, type ChatAnswer, type Rich, type ScopeKey } from "@/lib/assistant";
 
 export type AssistantRequest = { message: string; scope: ScopeKey; recipeId?: string };
 
@@ -9,6 +9,30 @@ export type Turn =
   | { id: string; role: "assistant"; request: AssistantRequest; status: "pending" | "answer" | "error"; answer?: ChatAnswer };
 
 export const ERROR_TEXT = "No pude responder en este momento.";
+
+/** Spans in order; a highlighted span is bold (weight 700, not color-only) so values stand out (REQ-2). */
+function RichText({ rich }: { rich: Rich }) {
+  return rich.map((span, index) => (span.highlight ? <strong key={index}>{span.text}</strong> : <span key={index}>{span.text}</span>));
+}
+
+/** The structured answer: lead, body, each section as an h3 and a list, then the sources line (REQ-2, REQ-3). Never the plain `answer`. */
+function AnswerContent({ answer }: { answer: ChatAnswer }) {
+  return (
+    <>
+      <p className="assistant-turn-lead"><RichText rich={answer.lead} /></p>
+      {answer.body && <p>{answer.body}</p>}
+      {answer.sections.map((section) => (
+        <section key={section.title} className="assistant-turn-section">
+          <h3>{section.title}</h3>
+          <ul>
+            {section.items.map((item, index) => <li key={index}><RichText rich={item} /></li>)}
+          </ul>
+        </section>
+      ))}
+      {answer.sources.length > 0 && <p className="assistant-turn-sources">Basado en: {answer.sources.join(", ")}</p>}
+    </>
+  );
+}
 
 // One turn of the conversation. The assistant turn keeps its live region mounted from the moment the request is sent, so
 // a screen reader announces the answer when it lands; the label and the pending indicator stay outside the region.
@@ -28,7 +52,7 @@ export function AssistantTurn({ turn }: { turn: Turn }) {
         {turn.status !== "error" && <span className="assistant-turn-label">{SCOPE_LABEL[turn.request.scope]}</span>}
       </div>
       <div className="assistant-turn-live" aria-live="polite">
-        {turn.status === "answer" ? turn.answer?.answer : turn.status === "error" ? ERROR_TEXT : null}
+        {turn.status === "answer" && turn.answer ? <AnswerContent answer={turn.answer} /> : turn.status === "error" ? <p>{ERROR_TEXT}</p> : null}
       </div>
       {pending && (
         <div className="assistant-turn-pending">
