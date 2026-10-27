@@ -406,6 +406,20 @@ test.describe("builders", () => {
     expect(items(body, "Recetas")).toHaveLength(3);
   });
 
+  test("REQ-1 stop words and topic words never filter the recipe list", async ({ chatContext }) => {
+    // "con" is in "Tacos con carne" and "desayuno" in "Desayuno ranchero": they would narrow the list if they counted as filter words.
+    seedRecipes([
+      { name: "Tacos con carne", ingredients: [{ name: "Tortilla" }] },
+      { name: "Desayuno ranchero", ingredients: [{ name: "Huevo" }] },
+      { name: "Ensalada", ingredients: [{ name: "Lechuga" }] }
+    ]);
+    for (const question of ["¿Qué recetas hay con queso?", "¿Qué recetas hay para el desayuno?"]) {
+      const { body } = await ask(chatContext.request, question, "Recetario");
+      expect(plainOf(body.lead), question).toBe("Estas son tus recetas.");
+      expect(items(body, "Recetas"), question).toEqual(["Tacos con carne", "Desayuno ranchero", "Ensalada"]);
+    }
+  });
+
   test("REQ-1 in Todo the recipe list uses the same builder and caps at 8 recipes", async ({ chatContext }) => {
     seedRecipes(Array.from({ length: 10 }, (_, index) => ({ name: `Receta ${String(index + 1).padStart(2, "0")}`, ingredients: [{ name: "Sal" }] })));
     const { body } = await ask(chatContext.request, "¿Qué recetas tengo?");
@@ -432,6 +446,13 @@ test.describe("builders", () => {
   test("REQ-1 'Esta receta' asked about preparation shows only the steps", async ({ chatContext }) => {
     const { body } = await ask(chatContext.request, "¿Cómo se prepara?", "Receta", ids["Pollo asado"]);
     expect(body.sections.map((section) => section.title)).toEqual(["Preparación"]);
+  });
+
+  test("REQ-1 'Esta receta' asked how to prepare a named ingredient lists only that ingredient, then the steps", async ({ chatContext }) => {
+    const { body } = await ask(chatContext.request, "¿Cómo se prepara el pollo?", "Receta", ids["Pollo asado"]);
+    expect(body.sections.map((section) => section.title)).toEqual(["Ingredientes", "Preparación"]);
+    expect(items(body, "Ingredientes")).toEqual(["Pechuga de pollo · 200 g"]);
+    expect(items(body, "Preparación")).toEqual(["Sazonar el pollo.", "Asar 20 minutos."]);
   });
 
   test("REQ-1 the plan lists the meals, plus supplements and recommendations only when the question names them", async ({ chatContext }) => {
