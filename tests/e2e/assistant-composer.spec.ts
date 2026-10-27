@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
 import { COUNTER_FROM, MAX_MESSAGE } from "../../src/lib/assistant";
-import { assistantUi, cartAnswer, createChatUser, deleteChatUser, expect, mockChat, openAssistant, test } from "./assistant-helpers";
+import { assistantUi, buildAnswer, cartAnswer, createChatUser, deleteChatUser, expect, mockChat, openAssistant, test } from "./assistant-helpers";
 
 // The composer of the assistant panel. Spec assistant-chat-polish, US3: REQ-10 (client side).
 
@@ -228,5 +228,184 @@ test.describe("REQ-10: dictation", () => {
     const { ui } = await open(chat);
     await ui.panel.getByRole("button", { name: "Dictar pregunta" }).click();
     await expect(ui.panel.getByRole("alert")).toHaveText("Permite el acceso al micrófono para dictar.");
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+// REQ-9: Nueva conversación
+
+const newConversation = (page: Page) => page.getByRole("button", { name: "Nueva conversación" });
+
+/** Sends `message` from the composer. */
+async function ask(page: Page, message: string) {
+  const ui = assistantUi(page);
+  await ui.input.fill(message);
+  await ui.send.click();
+}
+
+test.describe("REQ-9: Nueva conversación", () => {
+  test("an empty thread shows the chips and no Nueva conversación", async ({ chat }) => {
+    const { ui } = await open(chat);
+    await expect(ui.userTurns).toHaveCount(0);
+    await expect(ui.chips.first()).toBeVisible();
+    await expect(newConversation(chat)).toHaveCount(0);
+  });
+
+  test("clears the thread at once, with no confirmation, shows the chips and focuses the input", async ({ chat }) => {
+    const { ui } = await open(chat);
+    await expect(ui.chips.first()).toBeVisible();
+    const starters = await ui.chips.count();
+    await ask(chat, "primera");
+    await expect(ui.assistantTurns).toHaveCount(1);
+    await ask(chat, "segunda");
+    await expect(ui.assistantTurns).toHaveCount(2);
+
+    await newConversation(chat).click();
+    await expect(chat.getByRole("dialog")).toHaveCount(0);
+    await expect(ui.userTurns).toHaveCount(0);
+    await expect(ui.assistantTurns).toHaveCount(0);
+    await expect(ui.pending).toHaveCount(0);
+    await expect(ui.chips).toHaveCount(starters);
+    await expect(ui.chips.first()).toBeEnabled();
+    await expect(ui.input).toBeFocused();
+    await expect(newConversation(chat)).toHaveCount(0);
+  });
+
+  test("while pending it frees Enviar at once and the late answer leaves the thread empty", async ({ chat }) => {
+    const { ui, mock } = await open(chat, { hold: true });
+    await ask(chat, "primera");
+    await expect(ui.pending).toHaveCount(1);
+    await expect(ui.chips).toHaveCount(0);
+
+    await newConversation(chat).click();
+    await expect(ui.pending).toHaveCount(0);
+    await expect(ui.userTurns).toHaveCount(0);
+    await ui.input.fill("otra");
+    await expect(ui.send).toBeEnabled();
+    await expect(ui.chips.first()).toBeEnabled();
+
+    const late = chat.waitForResponse(/\/api\/rag\/chat$/);
+    mock.release();
+    await late;
+    await settle(chat);
+    await expect(ui.userTurns).toHaveCount(0);
+    await expect(ui.assistantTurns).toHaveCount(0);
+    await expect(ui.pending).toHaveCount(0);
+    await expect(ui.chips.first()).toBeVisible();
+  });
+
+  test("while pending it frees the search bar at once", async ({ chat }) => {
+    const { ui, mock: first } = await open(chat, { hold: true });
+    await ask(chat, "primera");
+    await expect(ui.pending).toHaveCount(1);
+    // A question the late request could not have produced: "Ingrediente 05" only exists in this one.
+    const second = await mockChat(chat, cartAnswer(5));
+
+    await newConversation(chat).click();
+    const search = chat.getByRole("search").getByLabel("Preguntar al asistente");
+    await search.fill("desde la barra");
+    await search.press("Enter");
+    await expect.poll(() => second.requests.length).toBe(1);
+    await expect(ui.assistantTurns).toHaveCount(1);
+    await expect(ui.userTurns).toHaveText(["desde la barra"]);
+
+    const late = chat.waitForResponse(/\/api\/rag\/chat$/);
+    first.release();
+    await late;
+    await settle(chat);
+    await expect(ui.userTurns).toHaveCount(1);
+    await expect(ui.assistantTurns).toHaveCount(1);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+// REQ-11: scrolling
+
+const toLogBottom = (page: Page) =>
+  assistantUi(page).log.evaluate((node) => node.scrollHeight - node.scrollTop - node.clientHeight);
+/** Scrolls the log to its top as a reader would, once the app's own scroll to the bottom has arrived. */
+async function scrollUp(page: Page) {
+  const log = assistantUi(page).log;
+  // Exactly at the bottom: a smooth scroll still easing in over its last pixels would carry on after the jump.
+  await expect.poll(() => toLogBottom(page)).toBeLessThanOrEqual(1);
+  await log.evaluate((node) => { node.scrollTop = 0; });
+}
+const scrollButton = (page: Page) => page.getByRole("button", { name: "Ir al último mensaje" });
+
+/** A tall answer: far more than the log shows at once, with a recognizable lead. */
+const TALL = buildAnswer({
+  lead: [{ text: "Inicio de la respuesta larga." }],
+  sections: Array.from({ length: 6 }, (_, index) => ({ title: `Sección ${index + 1}`, items: Array.from({ length: 8 }, (_, item) => [{ text: `Elemento ${index + 1}.${item + 1}` }]) }))
+});
+
+/** Fills the log with finished exchanges until it scrolls, leaving it at the bottom. */
+async function fillLog(page: Page) {
+  const ui = assistantUi(page);
+  for (let count = 1; count <= 4; count++) {
+    await ask(page, `pregunta ${count}`);
+    await expect(ui.assistantTurns).toHaveCount(count);
+  }
+  await expect.poll(() => toLogBottom(page)).toBeLessThanOrEqual(24);
+  expect(await ui.log.evaluate((node) => node.scrollHeight > node.clientHeight)).toBe(true);
+}
+
+test.describe("REQ-11: scroll", () => {
+  test("an answer that fits keeps the log at the bottom, with no scroll button", async ({ chat }) => {
+    const { ui } = await open(chat);
+    await fillLog(chat);
+    await expect(scrollButton(chat)).toBeHidden();
+    await expect(ui.assistantTurns.last()).toBeInViewport();
+  });
+
+  test("scrolled up more than 24 px, an arriving answer keeps the position and shows Ir al último mensaje; activating it goes to the bottom", async ({ chat }) => {
+    const { ui } = await open(chat);
+    await fillLog(chat);
+    const held = await mockChat(chat, cartAnswer(), { hold: true });
+    await ask(chat, "pregunta 5");
+    await expect(ui.pending).toHaveCount(1);
+    await scrollUp(chat);
+    await expect(scrollButton(chat)).toBeVisible();
+
+    const kept = await ui.log.evaluate((node) => node.scrollTop);
+    held.release();
+    await expect(ui.assistantTurns).toHaveCount(5);
+    expect(await ui.log.evaluate((node) => node.scrollTop)).toBe(kept);
+    await expect(scrollButton(chat)).toBeVisible();
+
+    await scrollButton(chat).click();
+    await expect(scrollButton(chat)).toBeHidden();
+    await expect.poll(() => toLogBottom(chat)).toBeLessThanOrEqual(24);
+    await expect(ui.input).toBeFocused();
+  });
+
+  test("sending while scrolled up scrolls so the question is visible", async ({ chat }) => {
+    const { ui } = await open(chat);
+    await fillLog(chat);
+    await scrollUp(chat);
+    await expect(scrollButton(chat)).toBeVisible();
+
+    await mockChat(chat, cartAnswer(), { hold: true });
+    await ask(chat, "pregunta nueva");
+    await expect(ui.userTurns.last()).toHaveText("pregunta nueva");
+    await expect(ui.userTurns.last()).toBeInViewport({ ratio: 1 });
+  });
+
+  test("an answer taller than the log shows its lead at the top", async ({ chat }) => {
+    const { ui } = await open(chat);
+    await fillLog(chat);
+    await mockChat(chat, TALL);
+    await ask(chat, "pregunta larga");
+    const lead = ui.assistantTurns.last().locator(".assistant-turn-lead");
+    await expect(lead).toHaveText("Inicio de la respuesta larga.");
+    await expect(async () => {
+      const { lead: top, log, tall } = await ui.log.evaluate((node) => {
+        const box = node.getBoundingClientRect();
+        const leadBox = node.querySelector(".assistant-turn.assistant:last-of-type .assistant-turn-lead")!.getBoundingClientRect();
+        return { lead: leadBox.top - box.top, log: node.clientHeight, tall: node.scrollHeight - node.scrollTop - node.clientHeight };
+      });
+      expect(top).toBeGreaterThanOrEqual(0);
+      expect(top).toBeLessThan(log / 4);
+      expect(tall).toBeGreaterThan(24);
+    }).toPass();
   });
 });
