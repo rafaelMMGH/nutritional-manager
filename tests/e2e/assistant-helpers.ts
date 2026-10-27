@@ -24,6 +24,11 @@ function currentUser(): ChatUser {
   return chatUser;
 }
 
+/** The id of the current chat user (set by `createChatUser`). */
+export function chatUserId(): string {
+  return currentUser().id;
+}
+
 /**
  * Inserts the spec file's user and a session. `name` makes the email unique per file (asistente-e2e-<name>@local), so a
  * run that crashed before `deleteChatUser` cannot collide with the next one: leftovers are removed first.
@@ -278,7 +283,11 @@ export const UNKNOWN_ANSWER = buildAnswer({ kind: "unknown", lead: [{ text: UNKN
 
 /** A cart answer with `count` items, quantities highlighted, capped like the server does (8 items plus "y <n> más"). */
 export function cartAnswer(count = 3): ChatAnswer {
-  if (count === 0) return buildAnswer({ lead: [{ text: "Tu carrito está vacío." }] });
+  const follow_ups: ChatAnswer["follow_ups"] = [
+    { text: "¿Qué recetas hay en mi plan?", scope: "Recetario" },
+    { text: "¿A qué hora es mi comida?", scope: "Plan activo" }
+  ];
+  if (count === 0) return buildAnswer({ lead: [{ text: "Tu carrito está vacío." }], follow_ups });
   const shown = Math.min(count, 8);
   const items: Rich[] = Array.from({ length: shown }, (_, index) => [{ text: `Ingrediente ${String(index + 1).padStart(2, "0")} · ` }, { text: `${index + 1} g`, highlight: true }]);
   if (count > 8) items.push([{ text: `y ${count - 8} más` }]);
@@ -286,10 +295,7 @@ export function cartAnswer(count = 3): ChatAnswer {
     lead: [{ text: "Esto es lo que tienes en tu carrito." }],
     sections: [{ title: "Ingredientes", items }],
     sources: ["Carrito actual"],
-    follow_ups: [
-      { text: "¿Qué recetas hay en mi plan?", scope: "Recetario" },
-      { text: "¿A qué hora es mi comida?", scope: "Plan activo" }
-    ]
+    follow_ups
   });
 }
 

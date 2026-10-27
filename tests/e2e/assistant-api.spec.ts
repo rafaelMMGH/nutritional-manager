@@ -7,6 +7,7 @@ import {
   UNKNOWN_LEAD,
   ask,
   buildAnswer,
+  chatUserId,
   clearPlan,
   createChatUser,
   deleteChatUser,
@@ -218,7 +219,7 @@ test.describe("matcher and routing", () => {
   });
 
   test("REQ-20 an unknown, absent or foreign recipe id is the missing-recipe reply", async ({ chatContext }) => {
-    const foreign = sql(`select id from recipes where user_id <> '${ids["Pollo asado"].split("-rec-")[0]}' limit 1`);
+    const foreign = sql(`select id from recipes where user_id <> '${chatUserId()}' and deleted_at is null limit 1`);
     expect(foreign, "the cloned database has a recipe of another user").not.toBe("");
     for (const recipeId of ["no-existe", foreign, undefined]) {
       const { body } = await ask(chatContext.request, "¿Qué ingredientes lleva?", "Receta", recipeId);
@@ -540,7 +541,7 @@ test.describe("builders", () => {
         expect(body.kind, key).toBe("answer");
       }
     }
-    expect(seen.size).toBeGreaterThanOrEqual(7);
+    expect(seen.size).toBe(7);
   });
 
   test("REQ-5 the page suggestions, asked in their own scopes, are answered", async ({ chatContext }) => {
