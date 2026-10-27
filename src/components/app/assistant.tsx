@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useLayoutEffect, useRef, useState } from "react";
 import type { AssistantRequest, Turn, TurnChip } from "@/components/shared/AssistantTurn";
 import { api } from "@/lib/client/api";
 import { dashboardSuggestions, normalizeText, type ChatAnswer, type Chip, type ScopeKey } from "@/lib/assistant";
@@ -13,6 +13,9 @@ export type AssistantPageContext = {
   recipeId?: string;
   suggestions: Chip[];
 };
+
+/** A request still pending after this long is given up on (REQ-8). */
+const REQUEST_TIMEOUT_MS = 15_000;
 
 const askRag = ({ message, scope, recipeId }: AssistantRequest) =>
   api("/api/rag/chat", { method: "POST", body: JSON.stringify({ message, scope, ...(recipeId ? { recipe_id: recipeId } : {}) }) }) as Promise<ChatAnswer>;
@@ -55,11 +58,12 @@ export const AssistantPageProvider = PageContextSetter.Provider;
 export function useAssistantContext(context: AssistantPageContext) {
   const setContext = useContext(PageContextSetter);
   const key = JSON.stringify(context);
-  useEffect(() => {
+  // Layout effects, so the context changes in the same commit as the route: a question typed right after navigating can't be sent with the old scope.
+  useLayoutEffect(() => {
     setContext?.(JSON.parse(key));
   }, [setContext, key]);
   // Only leaving the page clears the context, so editing it in place (e.g. a renamed subtitle) keeps the chosen scope.
-  useEffect(() => () => setContext?.(null), [setContext]);
+  useLayoutEffect(() => () => setContext?.(null), [setContext]);
 }
 
 // State behind the single floating assistant the shell renders on every page.
@@ -73,6 +77,7 @@ export function useAssistantState() {
   const pageRef = useRef<AssistantPageContext | null>(null);
   const busyRef = useRef(false);
   const nextId = useRef(0);
+  const generation = useRef(0);
 
   // Navigating keeps the thread but puts the scope back to the new page's default (REQ-12). A change that keeps the page's
   // default scope and recipe (e.g. a renamed subtitle) leaves the user's chosen scope alone.
@@ -84,29 +89,63 @@ export function useAssistantState() {
     if (before.defaultScope !== after.defaultScope || before.recipeId !== after.recipeId) setScope(after.defaultScope);
   }, []);
 
+  /**
+   * Asks `sent` for the turn `id` and settles that turn with the answer or the error. Requests are never aborted: each
+   * attempt takes a generation, and only the attempt holding the current one may settle the turn or free the guard. A
+   * timeout bumps it, so a late answer finds itself discarded (REQ-8); the same will serve Nueva conversación (REQ-9).
+   */
+  const attempt = useCallback(async (id: string, sent: AssistantRequest, suggestions: Chip[]) => {
+    busyRef.current = true;
+    setBusy(true);
+    const mine = ++generation.current;
+    const settle = (turn: Turn) => setTurns((current) => current.map((entry) => (entry.id === id ? turn : entry)));
+    const fail = (reason: string, error?: unknown) => {
+      console.warn("Assistant request failed", { reason, scope: sent.scope, recipeId: sent.recipeId, error });
+      settle({ id, role: "assistant", request: sent, status: "error", suggestions });
+    };
+    const timer = setTimeout(() => {
+      if (generation.current !== mine) return;
+      generation.current++;
+      busyRef.current = false;
+      setBusy(false);
+      fail(`no answer after ${REQUEST_TIMEOUT_MS / 1000} s`);
+    }, REQUEST_TIMEOUT_MS);
+    try {
+      const answer = await askRag(sent);
+      if (generation.current !== mine) return;
+      settle({ id, role: "assistant", request: sent, status: "answer", suggestions, answer, chips: chipsFor(answer, sent, suggestions) });
+    } catch (error) {
+      if (generation.current !== mine) return;
+      fail("request rejected", error);
+    } finally {
+      clearTimeout(timer);
+      if (generation.current === mine) {
+        busyRef.current = false;
+        setBusy(false);
+      }
+    }
+  }, []);
+
   /** Sends one question in `request.scope`. The pending turn and its result share an id (REQ-17). */
   const send = useCallback(async (request: AssistantRequest) => {
     const message = request.message.trim();
     if (!message || busyRef.current) return;
     busyRef.current = true;
-    setBusy(true);
     const id = `turn-${nextId.current++}`;
     const sent = { ...request, message };
     // Frozen now: the chips under the answer come from the page the question was asked on, not the one open when it lands.
     const suggestions = (pageRef.current ?? DEFAULT_CONTEXT).suggestions;
-    setTurns((current) => [...current, { id: `${id}-user`, role: "user", text: message }, { id, role: "assistant", request: sent, status: "pending" }]);
-    const settle = (turn: Turn) => setTurns((current) => current.map((entry) => (entry.id === id ? turn : entry)));
-    try {
-      const answer = await askRag(sent);
-      settle({ id, role: "assistant", request: sent, status: "answer", answer, chips: chipsFor(answer, sent, suggestions) });
-    } catch (error) {
-      console.warn("Assistant request failed", { scope: sent.scope, error });
-      settle({ id, role: "assistant", request: sent, status: "error" });
-    } finally {
-      busyRef.current = false;
-      setBusy(false);
-    }
-  }, []);
+    setTurns((current) => [...current, { id: `${id}-user`, role: "user", text: message }, { id, role: "assistant", request: sent, status: "pending", suggestions }]);
+    await attempt(id, sent, suggestions);
+  }, [attempt]);
+
+  /** Reintentar: the same turn goes back to pending and asks the same question, in the same scope and recipe (REQ-8). */
+  const retry = useCallback(async (turn: Turn) => {
+    if (turn.role !== "assistant" || turn.status !== "error" || busyRef.current) return;
+    busyRef.current = true;
+    setTurns((current) => current.map((entry) => (entry.id === turn.id ? { ...turn, status: "pending" } : entry)));
+    await attempt(turn.id, turn.request, turn.suggestions);
+  }, [attempt]);
 
   const sendTyped = useCallback((text: string) => send({ message: text, scope, ...(scope === "Receta" && context.recipeId ? { recipeId: context.recipeId } : {}) }), [send, scope, context.recipeId]);
   const suggestions = context.suggestions.map(chipOf);
@@ -117,5 +156,5 @@ export function useAssistantState() {
     await send({ message, scope: askedScope });
   }, [send]);
 
-  return { turns, busy, open, setOpen, context, scope, setScope, setPage, suggestions, send: sendTyped, sendRequest: send, askInScope };
+  return { turns, busy, open, setOpen, context, scope, setScope, setPage, suggestions, send: sendTyped, sendRequest: send, retry, askInScope };
 }

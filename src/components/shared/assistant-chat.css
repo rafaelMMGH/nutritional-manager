@@ -82,7 +82,14 @@
 .assistant-turn-section li { padding: 1px 0; }
 .assistant-turn strong { font-weight: 700; }
 .assistant-turn p.assistant-turn-sources { color: var(--text-2); font-size: 12px; }
-.assistant-turn-pending { display: inline-flex; align-items: center; gap: 8px; color: var(--text-2); }
+.assistant-turn-pending { color: var(--text-2); }
+/* prompt-kit's text loader: the words blink between two theme colors (2 s, as upstream). */
+.assistant-loader { font-weight: 500; animation: assistant-loader-blink 2s ease-in-out infinite; }
+@keyframes assistant-loader-blink { 0%, 100% { color: var(--text-1); } 50% { color: var(--text-2); } }
+@media (prefers-reduced-motion: reduce) { .assistant-loader { animation: none; } }
+.assistant-retry { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; padding: 6px 12px; border: 1px solid var(--hairline); border-radius: 999px; background: var(--surface-raised); color: var(--text-1); font-size: 13px; font-weight: 600; cursor: pointer; }
+.assistant-retry:hover { border-color: var(--brand-200); background: var(--brand-50); }
+.assistant-retry:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 .assistant-chat-form { display: flex; align-items: center; gap: 8px; margin: 0 14px 14px; padding: 6px 6px 6px 18px; border: 1.5px solid var(--field-line); border-radius: 999px; }
 .assistant-chat-form:focus-within { border-color: var(--brand); }
 .assistant-chat-form input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font-size: 15px; }

@@ -16,11 +16,12 @@ type Props = {
   onOpenChange: (open: boolean) => void;
   onSend: (message: string) => void;
   onSuggest: (request: AssistantRequest) => void;
+  onRetry: (turn: Turn) => void;
 };
 
 // Floating chat over the RAG endpoint: a FAB in the bottom-right corner opens the panel (kept mounted so the
 // conversation survives closing it). Suggestion chips when empty, one article per turn, pill composer with dictation.
-export function AssistantChat({ title = "Asistente", subtitle, suggestions = [], turns, busy, open, onOpenChange, onSend, onSuggest }: Props) {
+export function AssistantChat({ title = "Asistente", subtitle, suggestions = [], turns, busy, open, onOpenChange, onSend, onSuggest, onRetry }: Props) {
   const [draft, setDraft] = useState("");
   const logRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -104,7 +105,7 @@ export function AssistantChat({ title = "Asistente", subtitle, suggestions = [],
               <ChipList chips={suggestions} disabled={busy} onAsk={askChip} />
             </div>
           )}
-          {turns.map((turn) => <AssistantTurn key={turn.id} turn={turn} chipsAction={turn.id === chipsTurnId ? { disabled: busy, onAsk: askChip } : undefined} />)}
+          {turns.map((turn) => <AssistantTurn key={turn.id} turn={turn} chipsAction={turn.id === chipsTurnId ? { disabled: busy, onAsk: askChip } : undefined} onRetry={onRetry} />)}
         </div>
         {dictation.error && <p className="assistant-chat-error" role="alert">{dictation.error}</p>}
         <form className="assistant-chat-form" onSubmit={submit}>
