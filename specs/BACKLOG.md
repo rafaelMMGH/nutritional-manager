@@ -6,6 +6,8 @@ _Last updated: 2026-10-26_
 
 ## In progress
 
+- [ ] **Assistant chat polish**, spec `specs/assistant-chat-polish/spec.md` v1.3 **approved** 2026-10-26 (size LARGE, 22 REQs, no migration, no new packages). UX checklist 60/60. Next: plan + tasks (planner), analyze loop, Gate 2, then branch `feature/assistant-chat-polish`.
+
 - [ ] **E2E run guard**, branch `fix/e2e-run-guard` (no commits of its own yet; its base, `feature/theme-switcher`, is merged into `main`, so the PR can target `main`). The bug note is `specs/bugs/e2e-run-guard.md`.
   - **⚠️ The code is in `stash@{0}`, not in the working tree.** On 2026-10-24 at 18:27 another Claude session stashed it ("fix/e2e-run-guard WIP: run guard + local server.js/package.json changes") and switched to `fix/shopping-list-quick`.
   - **The stash also holds the user's own unrelated changes:** the `src/server.js` deletion and `package.json` dropping `legacy:dev`. To resume:
