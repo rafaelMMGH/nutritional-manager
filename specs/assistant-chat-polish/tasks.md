@@ -121,21 +121,21 @@ Task IDs stay stable across revisions, so some appear out of numeric order. New 
 
 The old `messages` shape is removed in the same commit that renders `Turn[]` (T011 + T015 + T016), so the gate holds: tsc, the affected specs and a full e2e run are all green.
 
-- [ ] T010 [US1] Tests REQ-4 and REQ-12 defaults (tests/e2e/assistant-answers.spec.ts).
+- [x] T010 [US1] Tests REQ-4 and REQ-12 defaults (tests/e2e/assistant-answers.spec.ts).
   - An answer asked in Recetario is labelled "Recetario", and earlier labels are kept.
   - A search-bar question with "Carrito" is labelled "Carrito".
   - A mocked 500 gives an error turn with no label (`expectIssues`).
   - REQ-12 default scope per page: a typed question is labelled "Todo" on the dashboard, "Carrito" on groceries and "Esta receta" on a recipe page.
-- [ ] T011 [US1] Client state rewrite (src/components/app/assistant.tsx, src/components/app/AppShell.tsx). REQ-4, REQ-12.
+- [x] T011 [US1] Client state rewrite (src/components/app/assistant.tsx, src/components/app/AppShell.tsx). REQ-4, REQ-12.
   - `askRag({ message, scope, recipeId })`.
   - `Turn[]`, where the pending turn and its result share one id.
   - The page context `{ subtitle, defaultScope, recipeId?, suggestions: Chip[] }`.
   - `scope` resets on a page-context change, and every request stores its scope.
   - `askInScope(message, scope)`.
   - `Shell.assistantBusy`.
-- [ ] T012 [P] [US1] Page contexts only declare data, and `useRecipeActions.ask` is removed (src/components/groceries/GroceriesChat.tsx, src/components/recipes/RecipeDetail.tsx, src/components/recipes/useRecipeActions.ts). REQ-4, REQ-12.
-- [ ] T013 [P] [US1] The search bar sends `ScopeKey` values, with Carrito sent as "Carrito" (src/components/dashboard/DashboardView.tsx). REQ-4.
-- [ ] T015 [US1] Minimal `AssistantTurn` (src/components/shared/AssistantTurn.tsx). REQ-4, REQ-17 structure.
+- [x] T012 [P] [US1] Page contexts only declare data, and `useRecipeActions.ask` is removed (src/components/groceries/GroceriesChat.tsx, src/components/recipes/RecipeDetail.tsx, src/components/recipes/useRecipeActions.ts). REQ-4, REQ-12.
+- [x] T013 [P] [US1] The search bar sends `ScopeKey` values, with Carrito sent as "Carrito" (src/components/dashboard/DashboardView.tsx). REQ-4.
+- [x] T015 [US1] Minimal `AssistantTurn` (src/components/shared/AssistantTurn.tsx). REQ-4, REQ-17 structure.
   - `article[aria-label]`.
   - An `aria-hidden` Bot icon.
   - The scope label.
@@ -143,8 +143,8 @@ The old `messages` shape is removed in the same commit that renders `Turn[]` (T0
   - Today's pending indicator.
   - The user turn as a right-aligned bubble.
   - Token-styled per the contrast rule.
-- [ ] T016 [US1] `AssistantChat` renders `Turn[]` through `AssistantTurn`, and the log is no longer `aria-live`. Existing ids and classes are kept (src/components/shared/AssistantChat.tsx, src/components/shared/assistant-chat.css). REQ-4.
-- [ ] T017 [US1] Update the existing chat selectors to `.assistant-turn.assistant:not(.is-pending)` and drop any Todo-fallback assertion per REQ-6 (tests/e2e/dashboard.spec.ts, tests/e2e/theme-switch.spec.ts, tests/e2e/theme-palette.spec.ts).
+- [x] T016 [US1] `AssistantChat` renders `Turn[]` through `AssistantTurn`, and the log is no longer `aria-live`. Existing ids and classes are kept (src/components/shared/AssistantChat.tsx, src/components/shared/assistant-chat.css). REQ-4.
+- [x] T017 [US1] Update the existing chat selectors to `.assistant-turn.assistant:not(.is-pending)` and drop any Todo-fallback assertion per REQ-6 (tests/e2e/dashboard.spec.ts, tests/e2e/theme-switch.spec.ts, tests/e2e/theme-palette.spec.ts).
 
 **Batch 4: server builder change from spec v1.5, then structured rendering (REQ-1 server, REQ-2, REQ-3, REQ-18 UI)**
 
