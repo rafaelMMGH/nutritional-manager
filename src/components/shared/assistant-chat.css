@@ -57,9 +57,14 @@
 }
 .assistant-chat header { display: flex; align-items: center; gap: 12px; padding: 20px 20px 14px; border-bottom: 1px solid var(--hairline); }
 .assistant-chat-icon { display: grid; place-items: center; flex: none; width: 42px; height: 42px; border-radius: 50%; background: var(--brand-50); color: var(--brand-text); }
-.assistant-chat header div { min-width: 0; }
+.assistant-chat header div { flex: 1; min-width: 0; }
+.assistant-chat-new { display: inline-flex; align-items: center; flex: none; gap: 6px; padding: 7px 12px; border: 1px solid var(--hairline); border-radius: 999px; background: var(--surface-raised); color: var(--text-1); font-size: 13px; font-weight: 600; cursor: pointer; }
+.assistant-chat-new:hover { border-color: var(--brand-200); background: var(--brand-50); }
+.assistant-chat-new:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 .assistant-chat h2 { margin: 0; font-size: 20px; font-weight: 700; }
 .assistant-chat header p { margin: 0; overflow: hidden; color: var(--text-3); font-size: 13.5px; text-overflow: ellipsis; white-space: nowrap; }
+/* The log's frame, so the scroll button can sit over its bottom edge. */
+.assistant-chat-body { position: relative; display: flex; flex: 1; flex-direction: column; min-height: 0; }
 .assistant-chat-log { display: flex; flex: 1; flex-direction: column; gap: 10px; min-height: 0; padding: 16px; overflow-y: auto; }
 .assistant-chat-empty { display: grid; gap: 14px; margin-top: auto; }
 .assistant-chat-empty p { margin: 0; color: var(--text-3); font-size: 14px; line-height: 1.45; }
@@ -101,3 +106,9 @@
 .assistant-chat-form button { display: grid; place-items: center; flex: none; width: 40px; height: 40px; border: 0; border-radius: 50%; background: var(--btn); color: var(--on-brand); cursor: pointer; transition: background-color 140ms ease; }
 .assistant-chat-form button[type=submit]:hover:not(:disabled) { background: var(--btn-hover); }
 .assistant-chat-form button:disabled { background: var(--pill); color: var(--text-3); cursor: default; }
+/* Ir al último mensaje: fades in over the log's bottom edge once the reader is away from the bottom (REQ-11). */
+.assistant-scroll { position: absolute; bottom: 12px; left: 50%; z-index: 1; display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid var(--hairline); border-radius: 50%; background: var(--surface-raised); color: var(--text-1); box-shadow: 0 4px 14px rgb(15 23 42 / 0.16); cursor: pointer; opacity: 0; transform: translate(-50%, 16px) scale(0.95); visibility: hidden; transition: opacity 160ms ease, transform 160ms ease, visibility 0s linear 160ms; }
+.assistant-scroll.visible { opacity: 1; transform: translate(-50%, 0); visibility: visible; transition: opacity 160ms ease, transform 160ms ease; }
+.assistant-scroll:hover { border-color: var(--brand-200); background: var(--brand-50); }
+.assistant-scroll:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .assistant-scroll, .assistant-scroll.visible { transition: none; } }

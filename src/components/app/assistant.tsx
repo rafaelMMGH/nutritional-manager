@@ -92,7 +92,7 @@ export function useAssistantState() {
   /**
    * Asks `sent` for the turn `id` and settles that turn with the answer or the error. Requests are never aborted: each
    * attempt takes a generation, and only the attempt holding the current one may settle the turn or free the guard. A
-   * timeout bumps it, so a late answer finds itself discarded (REQ-8); the same will serve Nueva conversación (REQ-9).
+   * timeout bumps it, so a late answer finds itself discarded (REQ-8); Nueva conversación (REQ-9) does the same.
    */
   const attempt = useCallback(async (id: string, sent: AssistantRequest, suggestions: Chip[]) => {
     busyRef.current = true;
@@ -147,6 +147,14 @@ export function useAssistantState() {
     await attempt(turn.id, turn.request, turn.suggestions);
   }, [attempt]);
 
+  /** Nueva conversación: empties the thread and discards whatever is pending, so its late answer lands nowhere (REQ-9). */
+  const clear = useCallback(() => {
+    generation.current++;
+    busyRef.current = false;
+    setBusy(false);
+    setTurns([]);
+  }, []);
+
   const sendTyped = useCallback((text: string) => send({ message: text, scope, ...(scope === "Receta" && context.recipeId ? { recipeId: context.recipeId } : {}) }), [send, scope, context.recipeId]);
   const suggestions = context.suggestions.map(chipOf);
 
@@ -156,5 +164,5 @@ export function useAssistantState() {
     await send({ message, scope: askedScope });
   }, [send]);
 
-  return { turns, busy, open, setOpen, context, scope, setScope, setPage, suggestions, send: sendTyped, sendRequest: send, retry, askInScope };
+  return { turns, busy, open, setOpen, context, scope, setScope, setPage, suggestions, send: sendTyped, sendRequest: send, retry, clear, askInScope };
 }

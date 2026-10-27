@@ -30,6 +30,7 @@ export function HomeView({ user, goals, dashboard, cartIngredients, latestList }
       setWizard={() => shell.openUpload()}
       refresh={async () => shell.refresh()}
       askAssistant={shell.askAssistant}
+      assistantBusy={shell.assistantBusy}
     />
   );
 }

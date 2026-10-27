@@ -91,6 +91,7 @@ export function AppShell({ user, children }: Props) {
           onSend={assistant.send}
           onSuggest={assistant.sendRequest}
           onRetry={assistant.retry}
+          onClear={assistant.clear}
         />
         {wizard && <UploadWizard wizard={wizard} setWizard={setWizard} refresh={refresh} />}
         <ConfirmationDialogHost />

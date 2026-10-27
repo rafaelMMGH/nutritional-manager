@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Bot, Loader2, Mic, Square, X } from "lucide-react";
+import { Bot, Loader2, MessageSquarePlus, Mic, Square, X } from "lucide-react";
 import { AssistantTurn, ChipList, type AssistantRequest, type Turn, type TurnChip } from "./AssistantTurn";
 import { PromptInput } from "./PromptInput";
+import { ScrollButton } from "./ScrollButton";
+import { useChatScroll } from "./useChatScroll";
 import { useDictation } from "./useDictation";
+import { useMediaQuery } from "@/lib/client/useMediaQuery";
 import "./assistant-chat.css";
 
 type Props = {
@@ -18,13 +21,14 @@ type Props = {
   onSend: (message: string) => void;
   onSuggest: (request: AssistantRequest) => void;
   onRetry: (turn: Turn) => void;
+  /** Nueva conversación: empties the thread and drops any pending answer. */
+  onClear: () => void;
 };
 
 // Floating chat over the RAG endpoint: a FAB in the bottom-right corner opens the panel (kept mounted so the
 // conversation survives closing it). Suggestion chips when empty, one article per turn, pill composer with dictation.
-export function AssistantChat({ title = "Asistente", subtitle, suggestions = [], turns, busy, open, onOpenChange, onSend, onSuggest, onRetry }: Props) {
+export function AssistantChat({ title = "Asistente", subtitle, suggestions = [], turns, busy, open, onOpenChange, onSend, onSuggest, onRetry, onClear }: Props) {
   const [draft, setDraft] = useState("");
-  const logRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fabRef = useRef<HTMLButtonElement>(null);
   const dictation = useDictation(setDraft);
@@ -45,9 +49,20 @@ export function AssistantChat({ title = "Asistente", subtitle, suggestions = [],
     fabRef.current?.focus();
   }
 
-  useEffect(() => {
-    logRef.current?.scrollTo({ top: logRef.current.scrollHeight, behavior: "smooth" });
-  }, [turns]);
+  const { logRef, atBottom, scrollToBottom } = useChatScroll(turns);
+  // On touch the keyboard would cover the log, so there the log keeps the focus instead of the input.
+  const touch = useMediaQuery("(max-width: 640px), (pointer: coarse)");
+
+  function jumpToLast() {
+    scrollToBottom();
+    (touch ? logRef.current : inputRef.current)?.focus();
+  }
+
+  function startOver() {
+    dictation.stop();
+    onClear();
+    inputRef.current?.focus();
+  }
 
   // Chips sit under the latest finished answer. An error as the latest finished turn hides them, and so does a pending
   // retry (it stands in for its error turn); a pending new question keeps them on screen, disabled.
@@ -92,16 +107,24 @@ export function AssistantChat({ title = "Asistente", subtitle, suggestions = [],
             <h2>{title}</h2>
             <p>{subtitle}</p>
           </div>
+          {turns.length > 0 && (
+            <button type="button" className="assistant-chat-new" onClick={startOver}>
+              <MessageSquarePlus size={16} aria-hidden="true" /> Nueva conversación
+            </button>
+          )}
           <button type="button" className="assistant-chat-close" onClick={close} aria-label="Cerrar asistente"><X size={18} /></button>
         </header>
-        <div className="assistant-chat-log" ref={logRef}>
-          {turns.length === 0 && (
-            <div className="assistant-chat-empty">
-              <p>Pregúntame lo que quieras saber. Respondo con la información de tus planes.</p>
-              <ChipList chips={suggestions} disabled={busy} onAsk={askChip} />
-            </div>
-          )}
-          {turns.map((turn) => <AssistantTurn key={turn.id} turn={turn} chipsAction={turn.id === chipsTurnId ? { disabled: busy, onAsk: askChip } : undefined} onRetry={turn.id === lastAssistant?.id ? onRetry : undefined} />)}
+        <div className="assistant-chat-body">
+          <div className="assistant-chat-log" ref={logRef} tabIndex={-1}>
+            {turns.length === 0 && (
+              <div className="assistant-chat-empty">
+                <p>Pregúntame lo que quieras saber. Respondo con la información de tus planes.</p>
+                <ChipList chips={suggestions} disabled={busy} onAsk={askChip} />
+              </div>
+            )}
+            {turns.map((turn) => <AssistantTurn key={turn.id} turn={turn} chipsAction={turn.id === chipsTurnId ? { disabled: busy, onAsk: askChip } : undefined} onRetry={turn.id === lastAssistant?.id ? onRetry : undefined} />)}
+          </div>
+          <ScrollButton visible={!atBottom} onClick={jumpToLast} />
         </div>
         {dictation.error && <p className="assistant-chat-error" role="alert">{dictation.error}</p>}
         <PromptInput value={draft} onValueChange={setDraft} onSubmit={ask} busy={busy} placeholder={placeholder} readOnly={dictation.transcribing} inputRef={inputRef}>
