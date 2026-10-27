@@ -25,11 +25,15 @@ const MAX_ITEMS = 8;
 /** What a builder returns; `ragAnswer` adds the kind and the follow-ups. */
 type Built = { lead: Rich; sections?: Section[]; sources?: string[] };
 
-/** A section of plain items, capped at 8 with a last item "y <n> más" (REQ-1). */
-function section(title: string, items: Rich[]): Section {
-  if (items.length <= MAX_ITEMS) return { title, items };
-  return { title, items: [...items.slice(0, MAX_ITEMS), [{ text: `y ${items.length - MAX_ITEMS} más` }]] };
+/** A section of plain items, capped at 8 with a last item "y <n> más" (REQ-1). With no items there is no section: the list is empty. */
+function section(title: string, items: Rich[]): Section[] {
+  if (!items.length) return [];
+  if (items.length <= MAX_ITEMS) return [{ title, items }];
+  return [{ title, items: [...items.slice(0, MAX_ITEMS), [{ text: `y ${items.length - MAX_ITEMS} más` }]] }];
 }
+
+/** One plain item per non-empty line of `text`. */
+const lineItems = (text: string): Rich[] => text.split("\n").map((line) => line.trim()).filter(Boolean).map((line) => [{ text: line }]);
 
 /** "<name> · " followed by the highlighted value. */
 const withValue = (name: string, value: string): Rich => [{ text: `${name} · ` }, { text: value, highlight: true }];
@@ -41,19 +45,19 @@ function mealTimes(db: AppDb, userId: string): Built {
   const meals = plan.current_version.structured_data.meals;
   const lead = meals.some((meal) => meal.time_window) ? "Estos son los horarios de tus comidas." : "Tu plan no tiene horarios para tus comidas.";
   const items = meals.map((meal): Rich => (meal.time_window ? withValue(meal.name, meal.time_window) : [{ text: meal.name }]));
-  return { lead: textLead(lead), sections: [section("Comidas", items)], sources: [`Plan activo: ${plan.name}`] };
+  return { lead: textLead(lead), sections: section("Comidas", items), sources: [`Plan activo: ${plan.name}`] };
 }
 
 function planSummary(db: AppDb, userId: string, q: string): Built {
   const plan = activePlan(db, userId);
   if (!plan?.current_version) return { lead: textLead(NO_PLAN_LEAD) };
   const data = plan.current_version.structured_data;
-  const sections = [section("Comidas", data.meals.map((meal) => [{ text: meal.name }]))];
+  const sections = section("Comidas", data.meals.map((meal) => [{ text: meal.name }]));
   if (q.includes("suplement")) {
     const names = (data.supplements || []).map((item): Rich => [{ text: item.name }]);
-    sections.push(section("Suplementos", names.length ? names : [[{ text: "Sin suplementos registrados" }]]));
+    sections.push(...section("Suplementos", names.length ? names : [[{ text: "Sin suplementos registrados" }]]));
   }
-  if (q.includes("recomend") && data.recommendations) sections.push(section("Recomendaciones", [[{ text: data.recommendations }]]));
+  if (q.includes("recomend")) sections.push(...section("Recomendaciones", lineItems(data.recommendations || "")));
   return { lead: textLead(`Tu objetivo: ${data.objective}`), sections, sources: [`Plan activo: ${plan.name}`] };
 }
 
@@ -62,7 +66,7 @@ function cartSummary(db: AppDb, userId: string): Built {
   if (!cart.ingredients.length) return { lead: textLead("Tu carrito está vacío.") };
   return {
     lead: textLead("Esto es lo que tienes en tu carrito."),
-    sections: [section("Ingredientes", cart.ingredients.map((item) => withValue(item.name, quantity(item))))],
+    sections: section("Ingredientes", cart.ingredients.map((item) => withValue(item.name, quantity(item)))),
     sources: ["Carrito actual"]
   };
 }
@@ -78,7 +82,7 @@ function recipeList(db: AppDb, userId: string, question: string): Built {
   const filtered = matching.length > 0;
   return {
     lead: textLead(filtered ? "Estas recetas coinciden con tu pregunta." : "Estas son tus recetas."),
-    sections: [section("Recetas", (filtered ? matching : recipes).map((item) => [{ text: item.name }]))],
+    sections: section("Recetas", (filtered ? matching : recipes).map((item) => [{ text: item.name }])),
     sources: ["Recetario"]
   };
 }
@@ -87,13 +91,13 @@ function recipeList(db: AppDb, userId: string, question: string): Built {
 function thisRecipe(db: AppDb, recipe: Recipe, q: string): Built {
   const details = recipeDetails(db, recipe);
   const named = details.ingredients.filter((item) => normalize(item.name).split(/\s+/).some((word) => word.length > 2 && q.includes(word)));
-  const steps = recipe.description && !/^extraido de/.test(normalize(recipe.description)) ? recipe.description.split("\n").map((line) => line.trim()).filter(Boolean) : [];
+  const steps = recipe.description && !/^extraido de/.test(normalize(recipe.description)) ? lineItems(recipe.description) : [];
   const aboutPreparation = /prepar|como|cocin|paso|hace/.test(q);
   const sections: Section[] = [];
   if (named.length || !aboutPreparation || !steps.length) {
-    sections.push(section("Ingredientes", (named.length ? named : details.ingredients).map((item) => withValue(item.name, quantity(item)))));
+    sections.push(...section("Ingredientes", (named.length ? named : details.ingredients).map((item) => withValue(item.name, quantity(item)))));
   }
-  if (steps.length && (aboutPreparation || !named.length)) sections.push(section("Preparación", steps.map((step) => [{ text: step }])));
+  if (steps.length && (aboutPreparation || !named.length)) sections.push(...section("Preparación", steps));
   return { lead: textLead(`Sobre ${recipe.name}:`), sections, sources: [`Receta: ${recipe.name}`] };
 }
 
