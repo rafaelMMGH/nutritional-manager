@@ -249,7 +249,7 @@ The old `messages` shape is removed in the same commit that renders `Turn[]` (T0
 
 **Batch 7: Nueva conversación and scroll (REQ-9, REQ-11)**
 
-- [ ] T027 [US3] Tests REQ-9, REQ-11 (tests/e2e/assistant-composer.spec.ts).
+- [x] T027 [US3] Tests REQ-9, REQ-11 (tests/e2e/assistant-composer.spec.ts).
   - REQ-9:
     - An empty thread shows all page chips and no "Nueva conversación".
     - Activating "Nueva conversación" clears the thread, shows the chips and focuses the input.
@@ -259,11 +259,11 @@ The old `messages` shape is removed in the same commit that renders `Turn[]` (T0
     - Activating it puts the log at the bottom, hides the button and moves focus to the input (all widths, per spec Interaction details "Focus").
     - A tall answer has its lead at the log's top.
     - Sending while scrolled up shows the question.
-- [ ] T047 [US2] Spec v1.6 follow-ups (src/components/shared/AssistantTurn.tsx, src/components/shared/AssistantChat.tsx, tests/e2e/assistant-next-step.spec.ts). REQ-5, REQ-8.
+- [x] T047 [US2] Spec v1.6 follow-ups (src/components/shared/AssistantTurn.tsx, src/components/shared/AssistantChat.tsx, tests/e2e/assistant-next-step.spec.ts). REQ-5, REQ-8.
   - Tests first: an older error turn followed by a later answer shows no Reintentar; while a retry is pending no chips show anywhere (including the previous answer's).
   - Then: Reintentar only on the latest assistant turn; `chipsTurnId` treats a pending retry like its error turn.
-- [ ] T028 [US3] `clear()`: bumps the generation, resets busy and empties the thread (src/components/app/assistant.tsx). REQ-9.
-- [ ] T029 [US3] `useChatScroll` (scroll button adapted from prompt-kit, with attribution), "Ir al último mensaje" (which focuses the input) and the header "Nueva conversación", all token-styled (src/components/shared/useChatScroll.ts, src/components/shared/AssistantChat.tsx, src/components/shared/assistant-chat.css). Depends on T028. REQ-9, REQ-11.
+- [x] T028 [US3] `clear()`: bumps the generation, resets busy and empties the thread (src/components/app/assistant.tsx). REQ-9.
+- [x] T029 [US3] `useChatScroll` (scroll button adapted from prompt-kit, with attribution), "Ir al último mensaje" (which focuses the input) and the header "Nueva conversación", all token-styled (src/components/shared/useChatScroll.ts, src/components/shared/AssistantChat.tsx, src/components/shared/assistant-chat.css). Depends on T028. REQ-9, REQ-11.
 
 **Checkpoint:** US3 is complete (REQ-9 to REQ-11).
 
