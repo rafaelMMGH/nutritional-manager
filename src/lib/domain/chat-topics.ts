@@ -9,10 +9,12 @@ type Tier = 1 | 2 | 3;
 
 type Vocabulary = { tier: Tier; topic: TopicId; exact: string[]; stems: string[] };
 
+const MEAL_NOUNS = ["desayuno", "desayunos", "comida", "comidas", "cena", "cenas", "colacion", "colaciones"];
+
 // Normalized (lowercase, no accents). A word matches if it equals an `exact` entry or starts with a stem.
 const VOCABULARY: Vocabulary[] = [
   { tier: 1, topic: "mealTimes", exact: ["hora", "horas", "horario", "horarios"], stems: [] },
-  { tier: 3, topic: "mealTimes", exact: ["desayuno", "desayunos", "comida", "comidas", "cena", "cenas", "colacion", "colaciones"], stems: [] },
+  { tier: 3, topic: "mealTimes", exact: MEAL_NOUNS, stems: [] },
   { tier: 2, topic: "cart", exact: ["carrito", "carritos"], stems: ["compr"] },
   { tier: 2, topic: "recipes", exact: [], stems: ["receta", "ingrediente", "prepar"] },
   { tier: 2, topic: "plan", exact: ["plan", "planes", "objetivo", "objetivos"], stems: ["suplement", "recomend"] }
@@ -20,7 +22,6 @@ const VOCABULARY: Vocabulary[] = [
 
 // "cuándo" is a weak Tier 1 word (REQ-19): it counts only next to a meal noun or when nothing else is a topic word.
 const WHEN = "cuando";
-const MEAL_NOUNS = VOCABULARY[1].exact;
 
 // Ties inside a tier go to the first topic of this list.
 const TIE_ORDER: TopicId[] = ["cart", "recipes", "plan", "mealTimes"];
