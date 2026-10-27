@@ -296,7 +296,7 @@ None.
 
 ## Progress
 
-- [ ] US1 (P1): structured answers, sources, scope label, meal times, topic precedence (REQ-1 to REQ-4, REQ-18, REQ-19)
+- [x] US1 (P1): structured answers, sources, scope label, meal times, topic precedence (REQ-1 to REQ-4, REQ-18, REQ-19)
 - [ ] US2 (P1): follow-ups, unknown reply, thinking, retry and timeout, strict scopes (REQ-5 to REQ-8, REQ-20)
 - [ ] US3 (P1): empty state, new conversation, composer, scroll (REQ-9 to REQ-11)
 - [ ] US5 (P1): themes and contrast, narrow sheet, motion, live region, modality (REQ-14 to REQ-17, REQ-22)

@@ -148,7 +148,7 @@ The old `messages` shape is removed in the same commit that renders `Turn[]` (T0
 
 **Batch 4: server builder change from spec v1.5, then structured rendering (REQ-1 server, REQ-2, REQ-3, REQ-18 UI)**
 
-- [ ] T046 [US1] Server builder change from spec v1.5 (tests/e2e/assistant-api.spec.ts, src/lib/domain/chat.ts). REQ-1.
+- [x] T046 [US1] Server builder change from spec v1.5 (tests/e2e/assistant-api.spec.ts, src/lib/domain/chat.ts). REQ-1.
   - Tests first, red (tests/e2e/assistant-api.spec.ts):
     - Multi-line recommendations: 3 non-empty lines plus 1 blank line → "Recomendaciones" has 3 items, and `answer` matches the plain-text form.
     - Empty sections are omitted from `sections` and `answer`, and the lead still shows: a plan with zero meals has no "Comidas" section; a recipe with no steps has no "Preparación" section where it would otherwise show.
@@ -156,7 +156,7 @@ The old `messages` shape is removed in the same commit that renders `Turn[]` (T0
     - Recommendations split into one item per non-empty line, like Preparación steps, with the 8-item cap and "y <n> más".
     - The shared section helper drops sections with no items.
 
-- [ ] T014 [US1] Tests REQ-2, REQ-3 and REQ-18 UI (tests/e2e/assistant-answers.spec.ts).
+- [x] T014 [US1] Tests REQ-2, REQ-3 and REQ-18 UI (tests/e2e/assistant-answers.spec.ts).
   - With a non-empty cart:
     - One `h3` sits one level below the panel's `h2`.
     - There is one `li` per item.
@@ -164,7 +164,7 @@ The old `messages` shape is removed in the same commit that renders `Turn[]` (T0
   - No heading, item or highlight shows text that is only in `answer`.
   - "Basado en: …" lists every source, and no such line appears without sources or on the unknown reply.
   - Meal times show one item per meal, with highlighted times.
-- [ ] T044 [US1] Structured `AssistantTurn` (src/components/shared/AssistantTurn.tsx, src/components/shared/assistant-chat.css). REQ-2, REQ-3.
+- [x] T044 [US1] Structured `AssistantTurn` (src/components/shared/AssistantTurn.tsx, src/components/shared/assistant-chat.css). REQ-2, REQ-3.
   - Inside the live region, render the lead `<p>`, the body, `<h3>` + `<ul>` per section, `<strong>` highlights and the muted "Basado en" line, replacing the `answer` text.
   - Token-styled.
 
