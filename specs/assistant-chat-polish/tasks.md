@@ -69,7 +69,7 @@ Task IDs stay stable across revisions, so some appear out of numeric order. New 
 
 **Gate exception:** T006 is written in full here, but its `describe("builders")` group (REQ-1 content, REQ-3, REQ-18 and the overview content of REQ-20) stays red until Batch 2b. The 2a gate is green for the matcher, routing and schema tests. In the full e2e run, the only failures allowed are that group's tests, and they are listed in the batch notes.
 
-- [ ] T006 [foundational] API tests, red first (tests/e2e/assistant-api.spec.ts). Depends on T004. The winner is identified by `kind` + `follow_ups`.
+- [x] T006 [foundational] API tests, red first (tests/e2e/assistant-api.spec.ts). Depends on T004. The winner is identified by `kind` + `follow_ups`.
   - Matcher and routing group:
     - REQ-19: every G/W/T, including "¿Qué hago ahora?", the "cuándo" cases, the ties and "desayuno" alone.
     - REQ-6: in Todo, an unrecognized question gets the unknown lead, the capability line as `body` and `kind: "unknown"`, with no objective or meals.
@@ -91,16 +91,16 @@ Task IDs stay stable across revisions, so some appear out of numeric order. New 
     - REQ-20: the overview content for "hola" in Plan activo, Carrito and Recetario.
     - REQ-5 invariant: each Topics follow-up asked in its own scope is never `unknown` or `out_of_scope`.
     - Confirmed copy: every lead and section title in the contract.
-- [ ] T007 [foundational] Topic matcher (src/lib/domain/chat-topics.ts). REQ-19.
+- [x] T007 [foundational] Topic matcher (src/lib/domain/chat-topics.ts). REQ-19.
   - The exhaustive vocabulary, tiers, tie order cart > recipes > plan, and the "cuándo" rule.
   - `isTopicWord`.
   - The follow-up table and "Answers in" per topic.
-- [ ] T043 [foundational] Routing in `ragAnswer` (src/lib/domain/chat.ts). Depends on T007. REQ-6, REQ-19, REQ-20.
+- [x] T043 [foundational] Routing in `ragAnswer` (src/lib/domain/chat.ts). Depends on T007. REQ-6, REQ-19, REQ-20.
   - The order is missing recipe, then winner, then scope check, then overview or unknown.
   - The fixed-copy replies (unknown, out-of-scope, missing) return `kind`, `body` and empty sections.
   - Topic answers and overviews return their `kind` and `follow_ups`, with today's text as a one-span lead until T009.
   - `context_used` keeps its meaning.
-- [ ] T008 [P] [foundational] Set `chatSchema.message` to `z.string().trim().min(1).max(500)`. Not a migration (src/lib/validation/schemas.ts). REQ-10.
+- [x] T008 [P] [foundational] Set `chatSchema.message` to `z.string().trim().min(1).max(500)`. Not a migration (src/lib/validation/schemas.ts). REQ-10.
 
 **Batch 2b: builders (REQ-1, REQ-3 data, REQ-18, REQ-20 overviews)**
 
