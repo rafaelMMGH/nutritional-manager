@@ -31,14 +31,14 @@ Task IDs stay stable across revisions, so some appear out of numeric order. New 
 
 ## Phase 1: Setup
 
-- [ ] T001 [setup] Create branch `feature/assistant-chat-polish` from `main` (local, no push).
-- [ ] T002 [setup] Baseline. Run `npx tsc --noEmit` and `npx playwright test dashboard theme-switch theme-palette a-theme-visual`, then record the pass/fail list in the batch notes. Nothing is committed.
+- [x] T001 [setup] Create branch `feature/assistant-chat-polish` from `main` (local, no push).
+- [x] T002 [setup] Baseline. Run `npx tsc --noEmit` and `npx playwright test dashboard theme-switch theme-palette a-theme-visual`, then record the pass/fail list in the batch notes. Nothing is committed.
 
 ## Phase 2: Foundational (blocks all stories)
 
 **Batch 1: shared module, harness, CSS move**
 
-- [ ] T003 [foundational] Shared pure module (src/lib/assistant.ts). REQ-1, REQ-4, REQ-5, REQ-10, REQ-19.
+- [x] T003 [foundational] Shared pure module (src/lib/assistant.ts). REQ-1, REQ-4, REQ-5, REQ-10, REQ-19.
   - The `ScopeKey` wire values and labels: auto→Todo, Receta→Esta receta, "Carrito actual"→Carrito.
   - `MAX_MESSAGE` = 500 and `COUNTER_FROM` = 450.
   - `normalizeText`, `words` and `messageLength`.
@@ -46,7 +46,7 @@ Task IDs stay stable across revisions, so some appear out of numeric order. New 
   - `Chip`.
   - The page-suggestion builders for the dashboard, groceries and recipe pages, with their scopes. The recipe builder adds "¿Cuánto <proteína> lleva?" only when the recipe has a protein (today's `RecipeDetail` rule).
   - The module must stay importable by client and server (no db or Node imports).
-- [ ] T004 [P] [foundational] e2e harness (tests/e2e/assistant-helpers.ts).
+- [x] T004 [P] [foundational] e2e harness (tests/e2e/assistant-helpers.ts).
   - `createChatUser(name)`: inserts a user with a fixed per-file email (e.g. `asistente-e2e-<name>@local`) and a session token via `sql()`. Call it in `beforeAll`.
   - `deleteChatUser()` in `afterAll`: deletes the user's rows. The row is deleted, not left in place, per plan D2: a dead tuple is never returned by `users limit 1`, but a live extra row can be.
   - A `chat` fixture extending `test` from `fixtures.ts`:
@@ -62,8 +62,8 @@ Task IDs stay stable across revisions, so some appear out of numeric order. New 
   - `ask(request, message, scope?, recipeId?)` posts through `page.request`.
   - Locators follow the plan's DOM contract.
   - `mockChat(page, answer, { delayMs, status, abort })` and contract-valid fixtures.
-- [ ] T005 [P] [foundational] Move the assistant block (`globals.css` ~766-847) verbatim into the feature file imported by `AssistantChat.tsx`, with no visual change. `.spin` stays global (src/app/globals.css, src/components/shared/assistant-chat.css, src/components/shared/AssistantChat.tsx). Guard: T002's specs stay as they were.
-- [ ] T042 [P] [foundational] Backstop for plan D2: add `order by seq` to the three `users limit 1` reads (tests/e2e/dashboard.spec.ts:163,167,188). Commit this on its own.
+- [x] T005 [P] [foundational] Move the assistant block (`globals.css` ~766-847) verbatim into the feature file imported by `AssistantChat.tsx`, with no visual change. `.spin` stays global (src/app/globals.css, src/components/shared/assistant-chat.css, src/components/shared/AssistantChat.tsx). Guard: T002's specs stay as they were.
+- [x] T042 [P] [foundational] Backstop for plan D2: add `order by seq` to the three `users limit 1` reads (tests/e2e/dashboard.spec.ts:163,167,188). Commit this on its own.
 
 **Batch 2a: tests, matcher, routing, schema (REQ-6, REQ-10 server, REQ-19, REQ-20 routing)**
 

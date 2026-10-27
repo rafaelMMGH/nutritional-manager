@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { ArrowUp, Bot, Loader2, Mic, Square, X } from "lucide-react";
 import { useDictation } from "./useDictation";
+import "./assistant-chat.css";
 
 export type ChatAnswer = { answer: string; context_used: string; sources: string[] };
 export type ChatMessage = { role: "user" | "assistant"; text: string; sources?: string[] };
