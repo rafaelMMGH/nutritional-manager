@@ -104,7 +104,7 @@ Task IDs stay stable across revisions, so some appear out of numeric order. New 
 
 **Batch 2b: builders (REQ-1, REQ-3 data, REQ-18, REQ-20 overviews)**
 
-- [ ] T009 [foundational] Builders per the contract (src/lib/domain/chat.ts). Depends on T043. REQ-1, REQ-3, REQ-18, REQ-20.
+- [x] T009 [foundational] Builders per the contract (src/lib/domain/chat.ts). Depends on T043. REQ-1, REQ-3, REQ-18, REQ-20.
   - Meal times from the stored plan's `time_window`.
   - Plan.
   - Recipe list, with the filter.

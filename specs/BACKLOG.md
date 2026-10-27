@@ -31,6 +31,12 @@ _Last updated: 2026-10-26_
   - the deletion of `src/server.js` and `package.json` dropping the `legacy:dev` script (both currently inside `stash@{0}`, see the run guard above)
   - `.claude/`, which is gitignored; un-ignore it to share the agents with the repo
 
+## Assistant chat (follow-ups)
+
+- [ ] **Optional spec-change:** combined questions on a recipe page ("¿Qué lleva y cómo se hace?") currently show only Preparación (today's narrowing rule, kept by spec v1.4). Decide whether they should show both sections.
+- [ ] **Stale snapshot:** `a-theme-visual` "signed in, light › cart looks as it did" fails on main because local cart data grew (1882 px vs 900). Refresh it or make the test data-independent.
+- [ ] **Safe areas:** the app sets no `viewport-fit=cover`, so `env(safe-area-inset-*)` is 0; the REQ-15 safe-area check is weak.
+
 ## Shopping list
 
 Findings, with file:line references: `specs/bugs/shopping-list-findings.md`.
