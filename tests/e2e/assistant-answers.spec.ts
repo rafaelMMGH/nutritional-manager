@@ -1,15 +1,23 @@
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 import { expectIssues } from "./fixtures";
+import { auditNow, visit } from "./theme-audit";
 import { UNKNOWN_ANSWER, assistantUi, buildAnswer, cartAnswer, createChatUser, deleteChatUser, expect, mockChat, openAssistant, seedCart, seedPlan, seedRecipes, test } from "./assistant-helpers";
 
 // UI tests of what an answer turn shows. Spec assistant-chat-polish: REQ-4 (scope label) and the REQ-12 defaults
 // (the scope a typed question is asked in on each page), and the structured content of a turn (REQ-2, REQ-3, REQ-18 UI).
 
 let recipeId = "";
+let otherRecipeId = "";
 
 test.beforeAll(() => {
   createChatUser("answers");
-  recipeId = seedRecipes([{ name: "Pollo asado", ingredients: [{ name: "Pechuga de pollo", quantity: 200, category: "Proteínas" }] }])["Pollo asado"];
+  const ids = seedRecipes([
+    { name: "Pollo asado", ingredients: [{ name: "Pechuga de pollo", quantity: 200, category: "Proteínas" }] },
+    // The Recetario list shows only dishes with more than one ingredient.
+    { name: "Ensalada verde", ingredients: [{ name: "Lechuga", quantity: 100 }, { name: "Aguacate", quantity: 50 }] }
+  ]);
+  recipeId = ids["Pollo asado"];
+  otherRecipeId = ids["Ensalada verde"];
   seedPlan({ times: "all" });
   seedCart(3);
 });
@@ -122,6 +130,14 @@ test.describe("REQ-2, REQ-3, REQ-18: an answer shows exactly its structure", () 
     for (const weight of await strong.evaluateAll((nodes) => nodes.map((node) => Number(getComputedStyle(node).fontWeight)))) expect(weight).toBeGreaterThanOrEqual(600);
   });
 
+  test("the items are a bulleted list, so the bullets show and the list keeps its semantics", async ({ chat }) => {
+    const turn = await answerTurn(chat, cartAnswer(2));
+    const list = turn.getByRole("list");
+    await expect(list).toHaveCount(1);
+    await expect(list).toHaveCSS("list-style-type", "disc");
+    expect(await list.evaluate((node) => parseFloat(getComputedStyle(node).paddingLeft))).toBeGreaterThan(0);
+  });
+
   test("text only in `answer` is not shown as a heading, item or highlight", async ({ chat }) => {
     const answer = { ...cartAnswer(2), answer: "SOLO EN ANSWER" };
     const turn = await answerTurn(chat, answer);
@@ -133,7 +149,11 @@ test.describe("REQ-2, REQ-3, REQ-18: an answer shows exactly its structure", () 
   test("an answer with sources ends with a muted line listing every source", async ({ chat }) => {
     const answer = buildAnswer({ lead: [{ text: "Sobre algo:" }], sources: ["Recetario", "Carrito actual", "Receta: Pollo asado"] });
     const turn = await answerTurn(chat, answer);
-    await expect(turn.getByText(/^Basado en:/)).toHaveText("Basado en: Recetario, Carrito actual, Receta: Pollo asado");
+    const sources = turn.getByText(/^Basado en:/);
+    await expect(sources).toHaveText("Basado en: Recetario, Carrito actual, Receta: Pollo asado");
+    // "Muted" must be visible in the styles, not only in the name: the line is paler than the lead.
+    const colorOf = (locator: Locator) => locator.evaluate((node) => getComputedStyle(node).color);
+    expect(await colorOf(sources)).not.toBe(await colorOf(turn.locator(".assistant-turn-lead")));
   });
 
   test("no 'Basado en' line without sources or on the unknown reply", async ({ chat }) => {
@@ -156,5 +176,84 @@ test.describe("REQ-2, REQ-3, REQ-18: an answer shows exactly its structure", () 
     await expect(turn.getByRole("listitem")).toHaveText(["Desayuno · Entre 7 a 8 am", "Colación · Entre 10 a 11 am", "Comida · Entre 2 a 3 pm", "Cena · Entre 8 a 9 pm"]);
     await expect(turn.locator("strong")).toHaveText(["Entre 7 a 8 am", "Entre 10 a 11 am", "Entre 2 a 3 pm", "Entre 8 a 9 pm"]);
     await expect(turn).toContainText("Basado en: Plan activo:");
+  });
+});
+
+test.describe("REQ-12 on navigation: a typed question follows the page it is asked on (in-app links)", () => {
+  /** Sends a typed question from the current page and returns the body of the request it caused. */
+  async function typedRequest(chat: Page, mock: Awaited<ReturnType<typeof mockChat>>) {
+    const before = mock.requests.length;
+    await typeQuestion(chat, "¿Qué tengo en mi carrito?");
+    await expect.poll(() => mock.requests.length).toBe(before + 1);
+    await expect(assistantUi(chat).pending).toHaveCount(0);
+    return mock.requests[before];
+  }
+
+  test("recipe page to dashboard sends auto and no recipe_id", async ({ chat }) => {
+    const mock = await mockChat(chat, cartAnswer());
+    await chat.goto(`/recipes/${recipeId}`);
+    await openAssistant(chat);
+    expect((await typedRequest(chat, mock)).scope).toBe("Receta");
+    await chat.getByRole("link", { name: "Hoy" }).click();
+    await expect(chat).toHaveURL(/\/$/);
+    const body = await typedRequest(chat, mock);
+    expect(body.scope).toBe("auto");
+    expect(body.recipe_id).toBeUndefined();
+  });
+
+  test("recipe page to groceries sends Carrito", async ({ chat }) => {
+    const mock = await mockChat(chat, cartAnswer());
+    await chat.goto(`/recipes/${recipeId}`);
+    await openAssistant(chat);
+    await chat.getByRole("link", { name: "Compras" }).click();
+    await expect(chat).toHaveURL(/\/groceries/);
+    const body = await typedRequest(chat, mock);
+    expect(body.scope).toBe("Carrito");
+    expect(body.recipe_id).toBeUndefined();
+  });
+
+  test("recipe A to recipe B sends B's recipe_id", async ({ chat }) => {
+    const mock = await mockChat(chat, cartAnswer());
+    await chat.goto(`/recipes/${recipeId}`);
+    await openAssistant(chat);
+    expect((await typedRequest(chat, mock)).recipe_id).toBe(recipeId);
+    await chat.getByRole("link", { name: "Recetario" }).first().click();
+    await chat.getByRole("link", { name: /Ensalada verde/ }).first().click();
+    await expect(chat).toHaveURL(new RegExp(`/recipes/${otherRecipeId}`));
+    const body = await typedRequest(chat, mock);
+    expect(body).toMatchObject({ scope: "Receta", recipe_id: otherRecipeId });
+  });
+});
+
+test.describe("REQ-17: the live region", () => {
+  test("a pending turn already has a visible polite region, and it holds the answer once released", async ({ chat }) => {
+    const mock = await mockChat(chat, cartAnswer(2), { hold: true });
+    await chat.goto("/");
+    const ui = await openAssistant(chat);
+    await typeQuestion(chat, "¿Qué tengo en mi carrito?");
+    await expect(ui.pending).toHaveCount(1);
+    const region = ui.pending.locator('[aria-live="polite"]');
+    await expect(region).toBeAttached();
+    expect(await region.evaluate((node) => getComputedStyle(node).display)).not.toBe("none");
+    await expect(region).toHaveText("");
+
+    mock.release();
+    await expect(ui.pending).toHaveCount(0);
+    await expect(ui.assistantTurns.locator('[aria-live="polite"]')).toContainText("Esto es lo que tienes en tu carrito.");
+  });
+});
+
+test.describe("REQ-14: an answered turn meets contrast in the light theme", () => {
+  test("lead, section, highlight, sources, scope label and chips", async ({ chat }) => {
+    test.setTimeout(120_000);
+    await mockChat(chat, { ...cartAnswer(3), sources: ["Carrito actual"] });
+    await visit(chat, "/", "light");
+    const ui = await openAssistant(chat);
+    await typeQuestion(chat, "¿Qué tengo en mi carrito?");
+    await expect(ui.assistantTurns).toHaveCount(1);
+    await expect(ui.chips).toHaveCount(2);
+    await expect(ui.assistantTurns.locator(".assistant-turn-sources")).toBeVisible();
+    const { violations } = await auditNow(chat, { scope: ".assistant-chat", tab: false, hover: false });
+    expect(violations).toEqual([]);
   });
 });

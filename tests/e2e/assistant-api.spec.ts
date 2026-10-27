@@ -467,11 +467,21 @@ test.describe("builders", () => {
     expect(items(both.body, "Recomendaciones")).toEqual(["Tomar agua durante el día"]);
   });
 
-  test("REQ-1 recommendations get one item per non-empty line and the answer matches", async ({ chatContext }) => {
+  test("T006 REQ-1 recommendations get one item per non-empty line and the answer matches", async ({ chatContext }) => {
     seedPlan({ times: "all", recommendations: "Tomar agua\n\nDormir 8 horas\nCaminar a diario\n" });
     const { body } = await ask(chatContext.request, "¿Qué recomendaciones tengo?", "Plan activo");
     expect(items(body, "Recomendaciones")).toEqual(["Tomar agua", "Dormir 8 horas", "Caminar a diario"]);
-    expect(body.answer).toContain("Recomendaciones\nTomar agua\nDormir 8 horas\nCaminar a diario");
+    expect(body.answer).toBe(
+      [`Tu objetivo: ${OBJECTIVE}`, "Comidas", ...MEALS, "Recomendaciones", "Tomar agua", "Dormir 8 horas", "Caminar a diario"].join("\n")
+    );
+  });
+
+  test("T006 REQ-1 ten recommendation lines show 8 items and a last item 'y 2 más'", async ({ chatContext }) => {
+    const lines = Array.from({ length: 10 }, (_, index) => `Recomendación ${index + 1}`);
+    seedPlan({ times: "all", recommendations: lines.join("\n") });
+    const { body } = await ask(chatContext.request, "¿Qué recomendaciones tengo?", "Plan activo");
+    expect(items(body, "Recomendaciones")).toEqual([...lines.slice(0, 8), "y 2 más"]);
+    expect(body.answer).toContain(`Recomendaciones\n${[...lines.slice(0, 8), "y 2 más"].join("\n")}`);
   });
 
   test("REQ-1 blank recommendations omit the section and the lead stays", async ({ chatContext }) => {
