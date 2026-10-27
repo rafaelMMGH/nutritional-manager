@@ -423,7 +423,7 @@ test.describe("builders", () => {
   });
 
   test("REQ-1 'Esta receta' without a named ingredient lists all of them and the preparation steps", async ({ chatContext }) => {
-    const { body } = await ask(chatContext.request, "¿Qué lleva y cómo se hace?", "Receta", ids["Pollo asado"]);
+    const { body } = await ask(chatContext.request, "¿Qué lleva?", "Receta", ids["Pollo asado"]);
     expect(body.sections.map((section) => section.title)).toEqual(["Ingredientes", "Preparación"]);
     expect(items(body, "Ingredientes")).toEqual(["Pechuga de pollo · 200 g", "Limón · 1 pza", "Aceite de oliva · 10 ml"]);
     expect(items(body, "Preparación")).toEqual(["Sazonar el pollo.", "Asar 20 minutos."]);
