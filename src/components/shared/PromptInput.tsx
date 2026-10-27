@@ -2,7 +2,7 @@
 // Copyright (c) 2025 Julien Thibeaut
 "use client";
 
-import { useId, useLayoutEffect, type FormEvent, type KeyboardEvent, type ReactNode, type RefObject } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, type FormEvent, type KeyboardEvent, type ReactNode, type RefObject } from "react";
 import { ArrowUp } from "lucide-react";
 import { COUNTER_FROM, MAX_MESSAGE, messageLength } from "@/lib/assistant";
 import { useMediaQuery } from "@/lib/client/useMediaQuery";
@@ -36,12 +36,27 @@ export function PromptInput({ value, onValueChange, onSubmit, busy, placeholder,
   const canSend = length > 0 && !overLimit && !busy;
 
   // Resize before paint: the height follows the content up to the CSS max-height, which is 5 lines.
-  useLayoutEffect(() => {
+  const fit = useCallback(() => {
     const node = inputRef.current;
     if (!node) return;
     node.style.height = "auto";
     node.style.height = `${node.scrollHeight}px`;
-  }, [inputRef, value, newlineOnEnter]);
+  }, [inputRef]);
+  useLayoutEffect(fit, [fit, value]);
+
+  // A width change (the panel becoming a sheet, a rotation) rewraps the text, so the height is measured again.
+  useEffect(() => {
+    const node = inputRef.current;
+    if (!node) return;
+    let width = node.clientWidth;
+    const observer = new ResizeObserver(() => {
+      if (node.clientWidth === width) return;
+      width = node.clientWidth;
+      fit();
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [inputRef, fit]);
 
   function submit() {
     if (canSend) onSubmit(value);

@@ -187,6 +187,9 @@ test.describe("REQ-10: growth", () => {
     expect(six.client).toBe(five.client);
     expect(six.scroll).toBeGreaterThan(six.client);
     await expect(ui.input).toHaveCSS("overflow-y", "auto");
+    // It shrinks back with the content.
+    await ui.input.fill(lines(1));
+    expect((await heights()).client).toBe(one.client);
   });
 });
 
