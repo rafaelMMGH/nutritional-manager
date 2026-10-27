@@ -193,7 +193,7 @@ The old `messages` shape is removed in the same commit that renders `Turn[]` (T0
     - "¿Qué ingredientes necesito comprar?" → "Carrito".
   - Missing recipe → the 3 dashboard chips, and no "Preguntar en Todo".
   - After navigating to the dashboard, an Esta receta chip and Reintentar still answer about recipe A.
-- [ ] T019 [US2] Tests REQ-7, REQ-8 (tests/e2e/assistant-next-step.spec.ts).
+- [x] T019 [US2] Tests REQ-7, REQ-8 (tests/e2e/assistant-next-step.spec.ts).
   - "Pensando…" shows while a delayed mock is pending and is gone afterwards.
   - Fail once (500), then Reintentar on a delayed healthy mock:
     - While the retry is pending, the error turn is replaced by "Pensando…" (no error text, one pending turn).
@@ -204,7 +204,7 @@ The old `messages` shape is removed in the same commit that renders `Turn[]` (T0
     - `page.clock.install()` before `goto`, then a held route and `clock.fastForward(15_000)` → the error shows.
     - After the response is released, nothing is added.
   - Each mocked failure is declared with `expectIssues`.
-- [ ] T020 [US2] (chip half done in Batch 5a) `chipsFor`, retry and timeout (src/components/app/assistant.tsx). REQ-5, REQ-8, REQ-20.
+- [x] T020 [US2] (chip half done in Batch 5a) `chipsFor`, retry and timeout (src/components/app/assistant.tsx). REQ-5, REQ-8, REQ-20.
   - Chip lists per `kind`, with the repeat rule filling from the full list.
   - Page suggestions captured at send time and frozen on the turn, with `recipeId` on Receta chips.
   - "Preguntar en Todo" appends the user turn.
@@ -212,7 +212,7 @@ The old `messages` shape is removed in the same commit that renders `Turn[]` (T0
   - The 15 s timer and the generation discard.
   - `console.warn` with context on failure.
 - [x] T021 [P] [US2] `PromptSuggestion`, adapted from prompt-kit with attribution (src/components/shared/PromptSuggestion.tsx). REQ-5.
-- [ ] T022 [US2] (chip rendering done in Batch 5a) Render chips under the latest successful turn (none on error) and the "Pensando…" loader (Loader text variant, with attribution), outside the live region. Render the error with Reintentar. All token-styled (src/components/shared/AssistantChat.tsx, src/components/shared/AssistantTurn.tsx, src/components/shared/assistant-chat.css). Depends on T020, T021. REQ-5 to REQ-8.
+- [x] T022 [US2] (chip rendering done in Batch 5a) Render chips under the latest successful turn (none on error) and the "Pensando…" loader (Loader text variant, with attribution), outside the live region. Render the error with Reintentar. All token-styled (src/components/shared/AssistantChat.tsx, src/components/shared/AssistantTurn.tsx, src/components/shared/assistant-chat.css). Depends on T020, T021. REQ-5 to REQ-8.
 
 **Checkpoint:** US2 is complete (REQ-5 to REQ-8, REQ-20), except the switcher assertions added in T040.
 
