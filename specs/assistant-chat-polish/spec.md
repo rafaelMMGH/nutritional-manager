@@ -1,7 +1,7 @@
 # Spec: Assistant chat polish
 
 **Status:** planned
-**Version:** 1.5 · **Branch:** feature/assistant-chat-polish · **Owner:** Rafael Martinez
+**Version:** 1.6 · **Branch:** feature/assistant-chat-polish · **Owner:** Rafael Martinez
 
 ## Overview
 
@@ -54,6 +54,9 @@ Rationale only; the rules live in the REQs.
 - **Search bar answers once in its scope and is disabled while pending:** a one-off entry point; disabling is simpler than queueing.
 - **Answer still lands after close or navigation, no badge:** the thread is the record; a badge adds state for little gain.
 - **Retry with a timeout:** the generic error is a dead end, and a hung request would wait forever.
+- **Reintentar only on the latest turn:** retrying an older turn would settle its answer mid-thread without chips, and while another request is pending the button would do nothing.
+- **Chips hidden during a retry:** the earlier chips reappearing and then vanishing is a flicker with no use.
+- **Loader blink exempt from the fade cap:** the cap governs message and control transitions, not a looping progress indicator.
 - **Touch Enter behavior:** touch keyboards have no easy Shift+Enter.
 - **Focus to the new turn on touch:** the on-screen keyboard would cover the answer if the input were focused.
 - **Long answers show their start:** the user reads from the start of the answer.
@@ -146,9 +149,10 @@ As the user, I want follow-ups, a helpful reply when the assistant doesn't know,
     - empty state: all page suggestions
   - Repeat rule: a candidate whose normalized text equals the normalized question just asked is skipped, and the next candidate from the full source list (all page suggestions, or the topic's full follow-ups), not just the first 3 or 2, fills the slot. If the list has none left, fewer chips show; never fewer than 2, since no list can lose more than one candidate.
   - Each follow-up in the Topics table, asked in its own scope, resolves to a topic answered in that scope, never the unknown reply.
-  - Chips are disabled while a request is pending. An error turn has no chips, and while it is the latest turn no chips show.
+  - Chips are disabled while a request is pending. An error turn has no chips, and while it is the latest turn no chips show. While a failed turn is being retried, no chips show, including the previous answer's.
   - Given two answers, then only the last has chips. When I activate one, then its text appears as my message, the new answer brings its own chips, and the old ones are gone.
   - Given a pending request, then every chip is disabled and activating one sends nothing.
+  - Given an answer with chips, then a failed question, when I activate Reintentar and the retry is pending, then no chips show anywhere.
   - Given groceries (switcher "Carrito") with an empty thread, when I activate "¿Qué recetas hay en mi plan?", then the answer lists recipes, is labelled "Recetario", and the switcher shows "Carrito".
   - Given a recipe page, when I activate "¿Qué tengo en mi carrito?", then the answer is labelled "Carrito".
   - Given Esta receta and "¿Qué ingredientes lleva?", then the chips are "¿Cómo se prepara?" and "¿Qué hay en mi carrito?".
@@ -160,10 +164,11 @@ As the user, I want follow-ups, a helpful reply when the assistant doesn't know,
   - Given Todo and a plan-topic question, then the plan summary is returned.
 - **REQ-7:** "Pensando…" shows in the answer position while a request is pending and disappears when the answer or error arrives.
   - Given a delayed response, when I send, then "Pensando…" is visible until the response, then gone.
-- **REQ-8:** A network failure, a non-2xx response, or a request pending over 15 s keeps my question and shows "No pude responder en este momento." with "Reintentar". Reintentar resends the question in the same scope (and recipe, REQ-5). During the retry the error turn is replaced by "Pensando…". On success the answer and its chips appear. A late answer after the timeout is discarded.
+- **REQ-8:** A network failure, a non-2xx response, or a request pending over 15 s keeps my question and shows "No pude responder en este momento." with "Reintentar". Reintentar resends the question in the same scope (and recipe, REQ-5). During the retry the error turn is replaced by "Pensando…". On success the answer and its chips appear. A late answer after the timeout is discarded. Reintentar shows only while the error turn is the latest assistant turn; older error turns keep their error text without Reintentar.
   - Given the endpoint fails once, when I send "¿Qué tengo en mi carrito?", then my message stays and the error with Reintentar shows. When I activate Reintentar with the endpoint healthy, then the answer and chips appear, the error is gone, and my question appears once.
   - Given a response delayed beyond 15 s, then the error turn shows at 15 s and the late response adds nothing.
   - Given a retry that fails again, then the error and Reintentar show, with one copy of my question.
+  - Given a failed question followed by a later answered question, then the earlier error turn shows no Reintentar.
 - **REQ-20:** Strict scopes. After the winner is chosen (REQ-19):
   - A winner the scope does not answer (Topics table, "Answers in") gets the unknown reply with the out-of-scope chips (REQ-5). "Preguntar en Todo" appends the same question again as my message and answers it in Todo, labelled "Todo"; the switcher is unchanged.
   - No winner: Todo returns the unknown reply (REQ-6); a narrowed scope returns its overview (Recetario: recipe list; Carrito: cart; Plan activo: plan summary; Esta receta: the recipe), as today.
@@ -271,7 +276,7 @@ As the user, I want to choose what the assistant searches from inside the panel.
 - **Touch targets (≤640 px):** FAB, ×, Nueva conversación, switcher options or the compact button and its menu options, chips, Reintentar, "Ir al último mensaje", mic, send.
 - **Narrow header (360 px):** row 1: "Asistente" and ×; row 2: "Alcance: <scope>" and "Nueva conversación".
 - **Layout:** user bubbles right-aligned, ≤80% of the log width; assistant answers full width with no bubble and a decorative icon; long tokens wrap; no thread cap.
-- **Motion:** under reduced motion nothing animates (messages, the loader as static "Pensando…" text, the panel or sheet, the scroll button, chips) and scrolling is instant. Otherwise fades and transitions are ≤200 ms and smooth scrolling is allowed.
+- **Motion:** under reduced motion nothing animates (messages, the loader as static "Pensando…" text, the panel or sheet, the scroll button, chips) and scrolling is instant. Otherwise fades and transitions are ≤200 ms (the "Pensando…" loader's looping text blink is exempt) and smooth scrolling is allowed.
 - **Contrast** (both themes): message, lead and item text; scope label, sources, highlights; user bubble; switcher states (default, selected, focus); compact button and menu; chips; send enabled and disabled; placeholder; "Pensando…"; scroll button; error; Reintentar; ×; Nueva conversación; counter and its over-limit state; modal backdrop; focus rings.
 
 ## Edge cases and errors
@@ -312,3 +317,4 @@ None.
 | 1.3 | 2026-10-26 | Verify round 3 and UX G32: recipe-list filter by words minus topic and stop words, sources only when used, protein chip answer (REQ-1, REQ-3); word tokenization (REQ-19); repeat fill from full lists, missing-recipe chips and precedence (REQ-5, REQ-20); blank messages rejected by server (REQ-10); new G/W/T (REQ-11, REQ-17); touch focus on log, new turn and Reintentar (REQ-22); Decisions deduplicated, stray tags removed, REQ-9 under one Goal |
 | 1.4 | 2026-10-26 | Spec-change: confirmed answer copy and wording fixes; no behavior change |
 | 1.5 | 2026-10-26 | Spec-change: recommendations one item per line; empty sections hidden |
+| 1.6 | 2026-10-27 | Spec-change: Reintentar only on the latest turn; chips hidden during a retry; loader exempt from the fade cap |
