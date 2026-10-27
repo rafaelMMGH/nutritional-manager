@@ -2,21 +2,20 @@
 
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { ArrowUp, Bot, Loader2, Mic, Square, X } from "lucide-react";
-import type { Chip } from "@/lib/assistant";
-import { AssistantTurn, type Turn } from "./AssistantTurn";
+import { AssistantTurn, ChipList, type AssistantRequest, type Turn, type TurnChip } from "./AssistantTurn";
 import { useDictation } from "./useDictation";
 import "./assistant-chat.css";
 
 type Props = {
   title?: string;
   subtitle: string;
-  suggestions?: Chip[];
+  suggestions?: TurnChip[];
   turns: Turn[];
   busy: boolean;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSend: (message: string) => void;
-  onSuggest: (chip: Chip) => void;
+  onSuggest: (request: AssistantRequest) => void;
 };
 
 // Floating chat over the RAG endpoint: a FAB in the bottom-right corner opens the panel (kept mounted so the
@@ -47,6 +46,15 @@ export function AssistantChat({ title = "Asistente", subtitle, suggestions = [],
   useEffect(() => {
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight, behavior: "smooth" });
   }, [turns]);
+
+  // Chips sit under the latest finished answer. An error as the latest finished turn hides them; a pending request keeps
+  // them on screen, disabled.
+  const latest = turns.findLast((turn) => turn.role === "assistant" && turn.status !== "pending");
+  const chipsTurnId = latest?.role === "assistant" && latest.status === "answer" ? latest.id : null;
+  const askChip = (request: AssistantRequest) => {
+    dictation.stop();
+    onSuggest(request);
+  };
 
   function ask(text: string) {
     const message = text.trim();
@@ -93,12 +101,10 @@ export function AssistantChat({ title = "Asistente", subtitle, suggestions = [],
           {turns.length === 0 && (
             <div className="assistant-chat-empty">
               <p>Pregúntame lo que quieras saber. Respondo con la información de tus planes.</p>
-              <div className="assistant-chat-suggestions">
-                {suggestions.map((item) => <button key={item.text} type="button" className="assistant-suggestion" onClick={() => { dictation.stop(); onSuggest(item); }}>{item.text}</button>)}
-              </div>
+              <ChipList chips={suggestions} disabled={busy} onAsk={askChip} />
             </div>
           )}
-          {turns.map((turn) => <AssistantTurn key={turn.id} turn={turn} />)}
+          {turns.map((turn) => <AssistantTurn key={turn.id} turn={turn} chipsAction={turn.id === chipsTurnId ? { disabled: busy, onAsk: askChip } : undefined} />)}
         </div>
         {dictation.error && <p className="assistant-chat-error" role="alert">{dictation.error}</p>}
         <form className="assistant-chat-form" onSubmit={submit}>

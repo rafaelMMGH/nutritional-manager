@@ -63,21 +63,25 @@
 .assistant-chat-log { display: flex; flex: 1; flex-direction: column; gap: 10px; min-height: 0; padding: 16px; overflow-y: auto; }
 .assistant-chat-empty { display: grid; gap: 14px; margin-top: auto; }
 .assistant-chat-empty p { margin: 0; color: var(--text-3); font-size: 14px; line-height: 1.45; }
-.assistant-chat-suggestions { display: grid; gap: 8px; }
-.assistant-chat-suggestions .assistant-suggestion { padding: 11px 14px; border: 1px solid var(--hairline); border-radius: 16px; background: var(--surface-raised); color: var(--text-1); font-size: 14px; font-weight: 500; text-align: left; cursor: pointer; }
-.assistant-chat-suggestions .assistant-suggestion:hover { border-color: var(--brand-200); background: var(--brand-50); }
+.assistant-chips { display: grid; gap: 8px; margin-top: 10px; }
+.assistant-chat-empty .assistant-chips { margin-top: 0; }
+.assistant-chips .assistant-suggestion { padding: 11px 14px; border: 1px solid var(--hairline); border-radius: 16px; background: var(--surface-raised); color: var(--text-1); font-size: 14px; font-weight: 500; text-align: left; cursor: pointer; }
+.assistant-chips .assistant-suggestion:hover:not(:disabled) { border-color: var(--brand-200); background: var(--brand-50); }
+.assistant-chips .assistant-suggestion:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.assistant-chips .assistant-suggestion:disabled { background: var(--pill); color: var(--text-2); cursor: default; }
 .assistant-turn { max-width: 90%; padding: 12px 14px; border-radius: 18px; font-size: 14px; line-height: 1.45; }
-.assistant-turn p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+/* The global `p` rule paints paragraphs muted; turn text takes the bubble's color instead. */
+.assistant-turn p { margin: 0; color: inherit; white-space: pre-wrap; overflow-wrap: anywhere; }
 .assistant-turn.user { align-self: flex-end; border-bottom-right-radius: 6px; background: var(--brand-fill); color: var(--on-brand); }
 .assistant-turn.assistant { align-self: flex-start; border-bottom-left-radius: 6px; background: var(--canvas); color: var(--text-1); }
 .assistant-turn-head { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; color: var(--text-2); }
 .assistant-turn-label { font-size: 12px; font-weight: 600; }
 .assistant-turn-live { display: grid; gap: 8px; overflow-wrap: anywhere; }
 .assistant-turn-section h3 { margin: 0 0 2px; color: var(--text-2); font-size: 13px; font-weight: 700; }
-.assistant-turn-section ul { margin: 0; padding-left: 18px; }
+.assistant-turn-section ul { margin: 0; padding-left: 18px; list-style: disc; }
 .assistant-turn-section li { padding: 1px 0; }
 .assistant-turn strong { font-weight: 700; }
-.assistant-turn p.assistant-turn-sources { color: var(--text-3); font-size: 12px; }
+.assistant-turn p.assistant-turn-sources { color: var(--text-2); font-size: 12px; }
 .assistant-turn-pending { display: inline-flex; align-items: center; gap: 8px; color: var(--text-2); }
 .assistant-chat-form { display: flex; align-items: center; gap: 8px; margin: 0 14px 14px; padding: 6px 6px 6px 18px; border: 1.5px solid var(--field-line); border-radius: 999px; }
 .assistant-chat-form:focus-within { border-color: var(--brand); }

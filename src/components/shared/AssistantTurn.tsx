@@ -1,12 +1,25 @@
 import { Bot, Loader2 } from "lucide-react";
 import { SCOPE_LABEL, type ChatAnswer, type Rich, type ScopeKey } from "@/lib/assistant";
+import { PromptSuggestion } from "./PromptSuggestion";
 
 export type AssistantRequest = { message: string; scope: ScopeKey; recipeId?: string };
+
+/** A chip: the text on the button and the request it sends (its own scope, and the recipe for an Esta receta chip). */
+export type TurnChip = { label: string; request: AssistantRequest };
 
 /** One entry of the conversation. The pending and the finished assistant turn of a request share one id, so React keeps the same element. */
 export type Turn =
   | { id: string; role: "user"; text: string }
-  | { id: string; role: "assistant"; request: AssistantRequest; status: "pending" | "answer" | "error"; answer?: ChatAnswer };
+  | { id: string; role: "assistant"; request: AssistantRequest; status: "pending" | "answer" | "error"; answer?: ChatAnswer; chips?: TurnChip[] };
+
+/** Suggestion chips: the starter questions of an empty thread or the next questions under the latest answer (REQ-5). */
+export function ChipList({ chips, disabled, onAsk }: { chips: TurnChip[]; disabled: boolean; onAsk: (request: AssistantRequest) => void }) {
+  return (
+    <div className="assistant-chips">
+      {chips.map((chip) => <PromptSuggestion key={chip.label} disabled={disabled} onClick={() => onAsk(chip.request)}>{chip.label}</PromptSuggestion>)}
+    </div>
+  );
+}
 
 export const ERROR_TEXT = "No pude responder en este momento.";
 
@@ -35,8 +48,8 @@ function AnswerContent({ answer }: { answer: ChatAnswer }) {
 }
 
 // One turn of the conversation. The assistant turn keeps its live region mounted from the moment the request is sent, so
-// a screen reader announces the answer when it lands; the label and the pending indicator stay outside the region.
-export function AssistantTurn({ turn }: { turn: Turn }) {
+// a screen reader announces the answer when it lands; the label, the pending indicator and the chips stay outside the region.
+export function AssistantTurn({ turn, chipsAction }: { turn: Turn; chipsAction?: { disabled: boolean; onAsk: (request: AssistantRequest) => void } }) {
   if (turn.role === "user") {
     return (
       <article className="assistant-turn user" aria-label="Tú">
@@ -59,6 +72,7 @@ export function AssistantTurn({ turn }: { turn: Turn }) {
           <Loader2 size={16} className="spin" aria-hidden="true" /> Buscando…
         </div>
       )}
+      {chipsAction && turn.chips && turn.chips.length > 0 && <ChipList chips={turn.chips} {...chipsAction} />}
     </article>
   );
 }

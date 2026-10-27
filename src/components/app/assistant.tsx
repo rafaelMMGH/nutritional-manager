@@ -1,9 +1,9 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
-import type { AssistantRequest, Turn } from "@/components/shared/AssistantTurn";
+import type { AssistantRequest, Turn, TurnChip } from "@/components/shared/AssistantTurn";
 import { api } from "@/lib/client/api";
-import { dashboardSuggestions, type ChatAnswer, type Chip, type ScopeKey } from "@/lib/assistant";
+import { dashboardSuggestions, normalizeText, type ChatAnswer, type Chip, type ScopeKey } from "@/lib/assistant";
 
 /** What the current page tells the floating assistant: its subtitle, the scope it asks in by default and its starter questions. */
 export type AssistantPageContext = {
@@ -16,6 +16,31 @@ export type AssistantPageContext = {
 
 const askRag = ({ message, scope, recipeId }: AssistantRequest) =>
   api("/api/rag/chat", { method: "POST", body: JSON.stringify({ message, scope, ...(recipeId ? { recipe_id: recipeId } : {}) }) }) as Promise<ChatAnswer>;
+
+const chipOf = ({ text, scope, recipeId }: Chip): TurnChip => ({ label: text, request: { message: text, scope, ...(recipeId ? { recipeId } : {}) } });
+
+/**
+ * The chips under an answer (REQ-5), from its kind: the topic's follow-ups, the first 3 page suggestions for an unknown
+ * reply, "Preguntar en Todo" plus the first 2 for an out-of-scope one, or the first 3 dashboard suggestions for a missing
+ * recipe. A candidate that repeats the question just asked is skipped and the next one of the full list fills the slot.
+ * `suggestions` are the page's, as they were when the question was sent.
+ */
+export function chipsFor(answer: ChatAnswer, request: AssistantRequest, suggestions: Chip[]): TurnChip[] {
+  const asked = normalizeText(request.message);
+  const fresh = (list: Chip[], count = list.length) => list.filter((chip) => normalizeText(chip.text) !== asked).slice(0, count).map(chipOf);
+  switch (answer.kind) {
+    case "answer":
+    case "overview":
+      // A follow-up in "Receta" is about the recipe this question was about.
+      return fresh(answer.follow_ups.map(({ text, scope }) => ({ text, scope, ...(scope === "Receta" && request.recipeId ? { recipeId: request.recipeId } : {}) })));
+    case "unknown":
+      return fresh(suggestions, 3);
+    case "out_of_scope":
+      return [{ label: "Preguntar en Todo", request: { message: request.message, scope: "auto" } }, ...fresh(suggestions, 2)];
+    case "missing_recipe":
+      return fresh(dashboardSuggestions(), 3);
+  }
+}
 
 const DEFAULT_CONTEXT: AssistantPageContext = {
   subtitle: "Sobre tus planes, recetas y compras",
@@ -67,10 +92,13 @@ export function useAssistantState() {
     setBusy(true);
     const id = `turn-${nextId.current++}`;
     const sent = { ...request, message };
+    // Frozen now: the chips under the answer come from the page the question was asked on, not the one open when it lands.
+    const suggestions = (pageRef.current ?? DEFAULT_CONTEXT).suggestions;
     setTurns((current) => [...current, { id: `${id}-user`, role: "user", text: message }, { id, role: "assistant", request: sent, status: "pending" }]);
     const settle = (turn: Turn) => setTurns((current) => current.map((entry) => (entry.id === id ? turn : entry)));
     try {
-      settle({ id, role: "assistant", request: sent, status: "answer", answer: await askRag(sent) });
+      const answer = await askRag(sent);
+      settle({ id, role: "assistant", request: sent, status: "answer", answer, chips: chipsFor(answer, sent, suggestions) });
     } catch (error) {
       console.warn("Assistant request failed", { scope: sent.scope, error });
       settle({ id, role: "assistant", request: sent, status: "error" });
@@ -81,7 +109,7 @@ export function useAssistantState() {
   }, []);
 
   const sendTyped = useCallback((text: string) => send({ message: text, scope, ...(scope === "Receta" && context.recipeId ? { recipeId: context.recipeId } : {}) }), [send, scope, context.recipeId]);
-  const sendChip = useCallback((chip: Chip) => send({ message: chip.text, scope: chip.scope, ...(chip.recipeId ? { recipeId: chip.recipeId } : {}) }), [send]);
+  const suggestions = context.suggestions.map(chipOf);
 
   /** Opens the assistant and asks within a specific scope (used by the dashboard search bar). */
   const askInScope = useCallback(async (message: string, askedScope: ScopeKey) => {
@@ -89,5 +117,5 @@ export function useAssistantState() {
     await send({ message, scope: askedScope });
   }, [send]);
 
-  return { turns, busy, open, setOpen, context, scope, setScope, setPage, send: sendTyped, sendChip, askInScope };
+  return { turns, busy, open, setOpen, context, scope, setScope, setPage, suggestions, send: sendTyped, sendRequest: send, askInScope };
 }

@@ -83,13 +83,13 @@ export function AppShell({ user, children }: Props) {
         </AssistantPageProvider>
         <AssistantChat
           subtitle={assistant.context.subtitle}
-          suggestions={assistant.context.suggestions}
+          suggestions={assistant.suggestions}
           turns={assistant.turns}
           busy={assistant.busy}
           open={assistant.open}
           onOpenChange={assistant.setOpen}
           onSend={assistant.send}
-          onSuggest={assistant.sendChip}
+          onSuggest={assistant.sendRequest}
         />
         {wizard && <UploadWizard wizard={wizard} setWizard={setWizard} refresh={refresh} />}
         <ConfirmationDialogHost />
