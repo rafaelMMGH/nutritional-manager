@@ -212,7 +212,7 @@ The old `messages` shape is removed in the same commit that renders `Turn[]` (T0
   - The 15 s timer and the generation discard.
   - `console.warn` with context on failure.
 - [x] T021 [P] [US2] `PromptSuggestion`, adapted from prompt-kit with attribution (src/components/shared/PromptSuggestion.tsx). REQ-5.
-- [x] T022 [US2] Render chips under the latest successful turn (none on error) and the "Pensando…" loader (Loader text variant, with attribution), outside the live region. Render the error with Reintentar. All token-styled (src/components/shared/AssistantChat.tsx, src/components/shared/AssistantTurn.tsx, src/components/shared/assistant-chat.css). Depends on T020, T021. REQ-5 to REQ-8.
+- [ ] T022 [US2] (chip rendering done in Batch 5a) Render chips under the latest successful turn (none on error) and the "Pensando…" loader (Loader text variant, with attribution), outside the live region. Render the error with Reintentar. All token-styled (src/components/shared/AssistantChat.tsx, src/components/shared/AssistantTurn.tsx, src/components/shared/assistant-chat.css). Depends on T020, T021. REQ-5 to REQ-8.
 
 **Checkpoint:** US2 is complete (REQ-5 to REQ-8, REQ-20), except the switcher assertions added in T040.
 
