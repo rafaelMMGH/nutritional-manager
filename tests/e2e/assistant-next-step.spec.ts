@@ -49,7 +49,7 @@ async function typeQuestion(page: Page, message: string) {
   await ui.send.click();
 }
 
-/** Asks from the dashboard search bar, in the scope the bar offers. */
+/** Asks from the dashboard search bar, in the scope the bar offers. It opens the panel itself, and the open panel covers the bar's menu. */
 async function askFromSearchBar(page: Page, scope: string, message: string) {
   await page.getByRole("button", { name: "Buscar en: Todo" }).click();
   await page.getByRole("menuitemradio", { name: scope }).click();
@@ -160,7 +160,7 @@ test.describe("REQ-5: chips under the latest answer", () => {
 
   test("a follow-up in a narrowed scope that repeats the question leaves the other two", async ({ chat }) => {
     await chat.goto("/");
-    const ui = await openAssistant(chat);
+    const ui = assistantUi(chat);
     await askFromSearchBar(chat, "Plan activo", "¿Qué suplementos tomo?");
     await expect(ui.assistantTurns).toHaveCount(1);
     await expect(ui.chips).toHaveText(["¿A qué hora es mi comida?", RECIPES_CHIP]);
@@ -196,7 +196,7 @@ test.describe("REQ-6: the unknown reply in Todo", () => {
 test.describe("REQ-20: strict scopes", () => {
   test("a question the scope does not answer offers Preguntar en Todo and two suggestions; Preguntar en Todo asks it again in Todo", async ({ chat }) => {
     await chat.goto("/");
-    const ui = await openAssistant(chat);
+    const ui = assistantUi(chat);
     await askFromSearchBar(chat, "Recetario", CART_CHIP);
     await expect(ui.assistantTurns).toHaveCount(1);
     await expect(ui.assistantTurns.getByRole("paragraph").first()).toHaveText("No encontré eso en tu información.");
@@ -213,7 +213,7 @@ test.describe("REQ-20: strict scopes", () => {
 
   test("a suggestion on an out-of-scope reply is asked in its own scope", async ({ chat }) => {
     await chat.goto("/");
-    const ui = await openAssistant(chat);
+    const ui = assistantUi(chat);
     await askFromSearchBar(chat, "Recetario", CART_CHIP);
     await expect(ui.chips).toHaveText([ASK_ALL, RECIPES_CHIP, BUY_CHIP]);
     await ui.panel.getByRole("button", { name: BUY_CHIP }).click();
