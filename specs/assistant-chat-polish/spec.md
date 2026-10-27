@@ -1,7 +1,7 @@
 # Spec: Assistant chat polish
 
 **Status:** planned
-**Version:** 1.4 · **Branch:** feature/assistant-chat-polish · **Owner:** Rafael Martinez
+**Version:** 1.5 · **Branch:** feature/assistant-chat-polish · **Owner:** Rafael Martinez
 
 ## Overview
 
@@ -46,6 +46,8 @@ Rationale only; the rules live in the REQs.
 - **Capped lists:** the full turn is announced, so long lists must stay short to hear; the recipe list already caps at 8.
 - **Copy in Interaction details accepted as written:** the user approved it.
 - **Sources only when present:** context, not required content.
+- **Recommendations one item per non-empty line, capped at 8:** uploaded plans store recommendations as several lines, and one run-on bullet is hard to read.
+- **Empty sections hidden, lead kept:** a heading over an empty list adds nothing.
 - **Scope label from the asked scope, never `context_used`:** the label must reflect what the user chose.
 - **"Carrito actual" and "Carrito" both labelled "Carrito":** the same data to the user.
 - **Thread kept, scope reset on navigation:** history belongs to the user; scope is page context.
@@ -94,8 +96,9 @@ As the user, I want answers laid out with a lead, titled lists and highlighted v
 - **REQ-1:** The response keeps `answer`, `context_used` and `sources` unchanged in type and meaning, and adds a lead (required), zero or more sections (title plus items), highlighted values inside the lead or items, and follow-ups (each with text and scope: the topic's for a topic answer or overview, otherwise none).
   - `answer` is the plain-text form: the lead, then each section's title line and one line per item, newline-separated. For the unknown reply it is the lead and the capability line.
   - Every section list shows at most 8 items; when more exist, a last item reads "y <n> más". Sources list only the data used for the answer; the unknown reply has none.
+  - A section with no items is omitted from both the panel and `answer`; the lead still shows. This covers Esta receta with no ingredients or no steps, plan and meal-times answers when the plan has zero meals, and blank recommendations.
   - Content per answer (lead / sections); lead and section-title copy is in Interaction details "Copy":
-    - Plan: lead is "Tu objetivo: <objetivo>"; sections are the meal names, plus supplements when the question names suplement* and recommendations when it names recomend* (as today).
+    - Plan: lead is "Tu objetivo: <objetivo>"; sections are the meal names, plus supplements when the question names suplement* and recommendations when it names recomend* (as today). Recommendations have one item per non-empty line of the plan's recommendations text, as the Preparación steps are split.
     - Recipe list (Todo, Recetario, and the Recetario overview): lead introduces the list; one section of recipe names. Filter (changes today's behavior): drop question words in the Topics vocabulary and the stop words que, hay, en, mi, mis, de, del, el, la, los, las, con, para, por, tengo, cual, cuales, como, cuanto, es, un, una; a recipe matches when a remaining word of 3+ letters equals a word of its normalized name. If no word remains or nothing matches, all recipes are listed.
     - Cart (same in Todo and Carrito): lead introduces the cart; one section with one item per consolidated ingredient, quantity highlighted.
     - Esta receta (also its overview): lead names the recipe; sections are ingredients and preparation, keeping today's narrowing to the ingredients the question names. The "¿Cuánto <proteína> lleva?" chip has no topic word, so this narrowed overview is its intended answer.
@@ -106,6 +109,8 @@ As the user, I want answers laid out with a lead, titled lists and highlighted v
   - Given a 40-ingredient cart, then the cart section shows 8 items and a last item "y 32 más".
   - Given Recetario with recipes "Quesadillas", "Ensalada" and "Pollo asado", then "¿Qué recetas hay en mi plan?" lists all 3 and "¿Qué recetas hay con pollo?" lists only "Pollo asado".
   - Given Esta receta for a recipe with a pollo ingredient, when I activate "¿Cuánto pollo lleva?", then the lead names the recipe and the ingredients section lists only ingredients whose name includes "pollo".
+  - Given an active plan whose recommendations have 3 non-empty lines and 1 blank line, when I ask "¿Qué recomendaciones tengo?" in Todo, then a "Recomendaciones" section shows 3 items.
+  - Given Esta receta for a recipe with ingredients but no steps, when I ask "¿Cómo se prepara?", then only the lead and the "Ingredientes" section show, with no "Preparación" heading in the panel or `answer`.
 - **REQ-2:** The panel shows exactly the structured content: the lead as a paragraph; each section title as a heading one level below the panel title, followed by a list with one item per section item; each highlight as emphasized text with font-weight ≥600 or an underline. Text only in `answer` is never shown as a heading, item or highlight.
   - Given a non-empty cart and "¿Qué tengo en mi carrito?", then one section lists the cart items and each quantity has font-weight ≥600 or an underline.
 - **REQ-3:** Sources appear only when present, as one muted line "Basado en: <source>, <source>".
@@ -306,3 +311,4 @@ None.
 | 1.2 | 2026-10-26 | Verify round 2, UX G13, G18, G26–G31, user decisions: exhaustive tiered Topics vocabulary with fixed follow-ups, "cuándo" rule (REQ-19); chip-count and repeat rules, Esta receta chips keep their recipe (REQ-5); per-answer content, 8-item cap (REQ-1); old fallbacks removed (REQ-20); UTF-16 length limit everywhere (REQ-10, REQ-13); retry, live region, motion, contrast, sheet, listbox and focus details (REQ-8, REQ-14 to REQ-17, REQ-21, REQ-22) |
 | 1.3 | 2026-10-26 | Verify round 3 and UX G32: recipe-list filter by words minus topic and stop words, sources only when used, protein chip answer (REQ-1, REQ-3); word tokenization (REQ-19); repeat fill from full lists, missing-recipe chips and precedence (REQ-5, REQ-20); blank messages rejected by server (REQ-10); new G/W/T (REQ-11, REQ-17); touch focus on log, new turn and Reintentar (REQ-22); Decisions deduplicated, stray tags removed, REQ-9 under one Goal |
 | 1.4 | 2026-10-26 | Spec-change: confirmed answer copy and wording fixes; no behavior change |
+| 1.5 | 2026-10-26 | Spec-change: recommendations one item per line; empty sections hidden |

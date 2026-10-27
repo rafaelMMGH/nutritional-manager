@@ -1,6 +1,6 @@
 # Contract: `POST /api/rag/chat`
 
-**Spec:** [../spec.md](../spec.md) (v1.4) · **Plan:** [../plan.md](../plan.md)
+**Spec:** [../spec.md](../spec.md) (v1.5) · **Plan:** [../plan.md](../plan.md)
 
 Additive change (REQ-1). Old clients reading only `answer`, `context_used` and `sources` keep working.
 
@@ -34,6 +34,7 @@ type ChatAnswer = {
 };
 ```
 
+- Sections with no items are omitted, from both `sections` and `answer` (spec v1.5). Examples: a recipe with no ingredients or no steps, a plan with zero meals, blank recommendations. The lead always shows.
 - `answer` = lead text, then for each section its title line and one line per item, joined with `\n`; for unknown replies, lead then `body`. Span texts are concatenated with no separator.
 - `follow_ups` are the topic's full list from the spec's Topics table, unfiltered. The client applies the repeat rule and derives every other chip list from `kind` (plan, "Chips").
 - The API never returns an error-shaped answer; network/HTTP failures and the 15 s timeout are client-side (REQ-8).
@@ -50,13 +51,13 @@ type ChatAnswer = {
 
 ## Copy
 
-All copy is **confirmed** (spec v1.4 Interaction details "Copy"; user decision 2026-10-26) and used verbatim; tests may assert it. Confirmed leads: "Estos son los horarios de tus comidas.", "Tu objetivo: <objetivo>", "Estas son tus recetas.", "Estas recetas coinciden con tu pregunta.", "Esto es lo que tienes en tu carrito.", "Sobre <receta>:". Section titles: "Comidas", "Suplementos", "Recomendaciones", "Recetas", "Ingredientes", "Preparación". Empty supplements item: "Sin suplementos registrados". Source strings are today's.
+All copy is **confirmed** (spec v1.4 Interaction details "Copy"; user decision 2026-10-26) and used verbatim; tests may assert it. Confirmed leads: "Estos son los horarios de tus comidas.", "Tu objetivo: <objetivo>", "Estas son tus recetas.", "Estas recetas coinciden con tu pregunta.", "Esto es lo que tienes en tu carrito.", "Sobre <receta>:". Section titles: "Comidas", "Suplementos", "Recomendaciones", "Recetas", "Ingredientes", "Preparación". Empty supplements item: "Sin suplementos registrados". Source strings are today's. Every section obeys the 8-item cap with "y <n> más", and a section with no items is omitted (spec v1.5).
 
 | Builder | Lead | Sections (title: item) | Sources |
 |---|---|---|---|
 | Unknown / out-of-scope / missing | "No encontré eso en tu información." + body = capability line | none | none |
 | Meal times | "Estos son los horarios de tus comidas." · no times: "Tu plan no tiene horarios para tus comidas." · no plan: "No tienes un plan activo." | "Comidas": `<meal>` + ` · ` + **`<time_window>`** (time only when present) | `Plan activo: <name>` |
-| Plan | "Tu objetivo: <objetivo>" · no plan: "No tienes un plan activo." | "Comidas": meal names; "Suplementos" (when suplement*): names, or "Sin suplementos registrados"; "Recomendaciones" (when recomend*): the text | `Plan activo: <name>` |
+| Plan | "Tu objetivo: <objetivo>" · no plan: "No tienes un plan activo." | "Comidas": meal names; "Suplementos" (when suplement*): names, or "Sin suplementos registrados"; "Recomendaciones" (when recomend*): one item per non-empty line (spec v1.5) | `Plan activo: <name>` |
 | Recipe list | all: "Estas son tus recetas." · filtered: "Estas recetas coinciden con tu pregunta." · none: "Aún no tienes recetas." | "Recetas": names | `Recetario` |
 | Cart | "Esto es lo que tienes en tu carrito." · empty: "Tu carrito está vacío." | "Ingredientes": `<name>` + ` · ` + **`<qty> <unit>`** | `Carrito actual` |
 | This recipe | "Sobre <receta>:" | "Ingredientes": `<name>` + ` · ` + **`<qty> <unit>`**; "Preparación": one item per non-empty step line | `Receta: <name>` |

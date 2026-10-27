@@ -1,6 +1,6 @@
 # Tasks: Assistant chat polish
 
-**Spec:** [spec.md](spec.md) (v1.4) · **Plan:** [plan.md](plan.md) · **Contract:** [contracts/chat-api.md](contracts/chat-api.md)
+**Spec:** [spec.md](spec.md) (v1.5) · **Plan:** [plan.md](plan.md) · **Contract:** [contracts/chat-api.md](contracts/chat-api.md)
 
 Format: `- [ ] T### [P] [US#] Description (path/to/file)`.
 `[P]` = can run in parallel with other `[P]` tasks in the same batch (different files, no shared dependency).
@@ -23,7 +23,7 @@ Task IDs stay stable across revisions, so some appear out of numeric order. New 
   - `specs/BACKLOG.md` and `specs/bugs/e2e-run-guard.md` are user changes. Leave them alone.
 - e2e runs are sequential. Never run two at once, and never leave a background run.
 - Do not add npm packages, run `next build` in place, run migrations or use the `shadcn` CLI.
-- Copy is es-MX and verbatim from spec v1.4, including the confirmed leads and section titles in the contract. Tests may assert it.
+- Copy is es-MX and verbatim from spec v1.5, including the confirmed leads and section titles in the contract. Tests may assert it.
 - Every new or changed test is shown red by temporarily breaking the code it protects.
 - **Contrast per batch:** each batch styles the elements it adds with theme tokens only (`var(--…)`, including hover and focus states). The existing `theme-palette` audits and hover sweeps must stay green at every gate. T031 only tunes and verifies.
 - **Snapshots:** if `a-theme-visual` diffs only in the assistant area, report it to the orchestrator, which asks the user. Run `--update-snapshots` only after the user's explicit yes. A diff outside the assistant area is a regression to fix in the batch.
@@ -146,7 +146,15 @@ The old `messages` shape is removed in the same commit that renders `Turn[]` (T0
 - [ ] T016 [US1] `AssistantChat` renders `Turn[]` through `AssistantTurn`, and the log is no longer `aria-live`. Existing ids and classes are kept (src/components/shared/AssistantChat.tsx, src/components/shared/assistant-chat.css). REQ-4.
 - [ ] T017 [US1] Update the existing chat selectors to `.assistant-turn.assistant:not(.is-pending)` and drop any Todo-fallback assertion per REQ-6 (tests/e2e/dashboard.spec.ts, tests/e2e/theme-switch.spec.ts, tests/e2e/theme-palette.spec.ts).
 
-**Batch 4: structured rendering (REQ-2, REQ-3, REQ-18 UI)**
+**Batch 4: server builder change from spec v1.5, then structured rendering (REQ-1 server, REQ-2, REQ-3, REQ-18 UI)**
+
+- [ ] T046 [US1] Server builder change from spec v1.5 (tests/e2e/assistant-api.spec.ts, src/lib/domain/chat.ts). REQ-1.
+  - Tests first, red (tests/e2e/assistant-api.spec.ts):
+    - Multi-line recommendations: 3 non-empty lines plus 1 blank line → "Recomendaciones" has 3 items, and `answer` matches the plain-text form.
+    - Empty sections are omitted from `sections` and `answer`, and the lead still shows: a plan with zero meals has no "Comidas" section; a recipe with no steps has no "Preparación" section where it would otherwise show.
+  - Then the code (src/lib/domain/chat.ts):
+    - Recommendations split into one item per non-empty line, like Preparación steps, with the 8-item cap and "y <n> más".
+    - The shared section helper drops sections with no items.
 
 - [ ] T014 [US1] Tests REQ-2, REQ-3 and REQ-18 UI (tests/e2e/assistant-answers.spec.ts).
   - With a non-empty cart:
@@ -389,7 +397,7 @@ The old `messages` shape is removed in the same commit that renders `Turn[]` (T0
 
 | REQ | Tasks |
 |---|---|
-| 1 | T003, T006, T009 |
+| 1 | T003, T006, T009, T046 |
 | 2 | T014, T016, T044 |
 | 3 | T006, T009, T014, T044 |
 | 4 | T010–T013, T015, T016 |
