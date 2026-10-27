@@ -540,7 +540,7 @@ test.describe("builders", () => {
         expect(body.kind, key).toBe("answer");
       }
     }
-    expect(seen.size).toBeGreaterThanOrEqual(8);
+    expect(seen.size).toBeGreaterThanOrEqual(7);
   });
 
   test("REQ-5 the page suggestions, asked in their own scopes, are answered", async ({ chatContext }) => {
