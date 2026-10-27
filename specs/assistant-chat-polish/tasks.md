@@ -220,7 +220,7 @@ The old `messages` shape is removed in the same commit that renders `Turn[]` (T0
 
 **Batch 6: composer (REQ-10 client)**
 
-- [ ] T023 [US3] Tests REQ-10 client (tests/e2e/assistant-composer.spec.ts).
+- [x] T023 [US3] Tests REQ-10 client (tests/e2e/assistant-composer.spec.ts).
   - The field is labelled "Pregunta". The mic and Enviar keep a native `title`.
   - Shift+Enter then Enter sends one 2-line message and clears the field.
   - A double Enter sends one request.
@@ -237,9 +237,9 @@ The old `messages` shape is removed in the same commit that renders `Turn[]` (T0
   - Six lines → the field is 5 lines tall and scrolls.
   - The field and mic stay editable while pending.
   - A dictation error shows as `role=alert`.
-- [ ] T024 [P] [US3] `textarea` primitive from the cached base-nova JSON (src/components/ui/textarea.tsx).
-- [ ] T025 [P] [US3] `useMediaQuery` with `useSyncExternalStore`, server snapshot `false` (src/lib/client/useMediaQuery.ts).
-- [ ] T026 [US3] `PromptInput`, adapted from prompt-kit with attribution (src/components/shared/PromptInput.tsx, src/components/shared/AssistantChat.tsx, src/components/shared/assistant-chat.css). Depends on T024, T025. REQ-10.
+- [x] T024 [P] [US3] `textarea` primitive from the cached base-nova JSON (src/components/ui/textarea.tsx).
+- [x] T025 [P] [US3] `useMediaQuery` with `useSyncExternalStore`, server snapshot `false` (src/lib/client/useMediaQuery.ts).
+- [x] T026 [US3] `PromptInput`, adapted from prompt-kit with attribution (src/components/shared/PromptInput.tsx, src/components/shared/AssistantChat.tsx, src/components/shared/assistant-chat.css). Depends on T024, T025. REQ-10.
   - Autosize to 5 lines.
   - The Enter rules, including `isComposing` or `keyCode 229`.
   - The counter via `aria-describedby`.
