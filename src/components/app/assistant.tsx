@@ -31,10 +31,10 @@ export function useAssistantContext(context: AssistantPageContext) {
   const setContext = useContext(PageContextSetter);
   const key = JSON.stringify(context);
   useEffect(() => {
-    if (!setContext) return;
-    setContext(JSON.parse(key));
-    return () => setContext(null);
+    setContext?.(JSON.parse(key));
   }, [setContext, key]);
+  // Only leaving the page clears the context, so editing it in place (e.g. a renamed subtitle) keeps the chosen scope.
+  useEffect(() => () => setContext?.(null), [setContext]);
 }
 
 // State behind the single floating assistant the shell renders on every page.
@@ -45,13 +45,18 @@ export function useAssistantState() {
   const [page, setPageContext] = useState<AssistantPageContext | null>(null);
   const [scope, setScope] = useState<ScopeKey>(DEFAULT_CONTEXT.defaultScope);
   const context = page ?? DEFAULT_CONTEXT;
+  const pageRef = useRef<AssistantPageContext | null>(null);
   const busyRef = useRef(false);
   const nextId = useRef(0);
 
-  // Navigating keeps the thread but puts the scope back to the new page's default (REQ-12).
+  // Navigating keeps the thread but puts the scope back to the new page's default (REQ-12). A change that keeps the page's
+  // default scope and recipe (e.g. a renamed subtitle) leaves the user's chosen scope alone.
   const setPage = useCallback((next: AssistantPageContext | null) => {
+    const before = pageRef.current ?? DEFAULT_CONTEXT;
+    const after = next ?? DEFAULT_CONTEXT;
+    pageRef.current = next;
     setPageContext(next);
-    setScope((next ?? DEFAULT_CONTEXT).defaultScope);
+    if (before.defaultScope !== after.defaultScope || before.recipeId !== after.recipeId) setScope(after.defaultScope);
   }, []);
 
   /** Sends one question in `request.scope`. The pending turn and its result share an id (REQ-17). */

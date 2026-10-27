@@ -94,7 +94,7 @@ export function AssistantChat({ title = "Asistente", subtitle, suggestions = [],
             <div className="assistant-chat-empty">
               <p>Pregúntame lo que quieras saber. Respondo con la información de tus planes.</p>
               <div className="assistant-chat-suggestions">
-                {suggestions.map((item) => <button key={item.text} type="button" className="assistant-suggestion" onClick={() => onSuggest(item)}>{item.text}</button>)}
+                {suggestions.map((item) => <button key={item.text} type="button" className="assistant-suggestion" onClick={() => { dictation.stop(); onSuggest(item); }}>{item.text}</button>)}
               </div>
             </div>
           )}
