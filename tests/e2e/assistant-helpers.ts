@@ -36,7 +36,9 @@ export function createChatUser(name: string): ChatUser {
   removeUserRows(user.id);
   sql(
     `insert into users (id, email, name, created_at, updated_at) values (${lit(user.id)}, ${lit(user.email)}, ${lit(`Asistente ${key}`)}, now(), now());` +
-      `insert into sessions (token, user_id) values (${lit(user.token)}, ${lit(user.id)})`
+      `insert into sessions (token, user_id) values (${lit(user.token)}, ${lit(user.id)});` +
+      // The app's first-user seed creates an empty active cart; the chat code expects one to exist.
+      `insert into carts (id, user_id, status, created_at, updated_at) values (${lit(`${user.id}-cart`)}, ${lit(user.id)}, 'active', now(), now())`
   );
   return user;
 }
@@ -49,31 +51,44 @@ export function deleteChatUser() {
 }
 
 // Children before parents. Every statement is scoped to the user through its owning parent.
-function removeUserRows(userId: string) {
-  const u = lit(userId);
+// Shopping lists point at plan versions and carts, so they go first.
+function planRowDeletes(u: string) {
   const plans = `(select id from plans where user_id = ${u})`;
   const versions = `(select id from plan_versions where plan_id in ${plans})`;
+  const lists = `(select id from shopping_lists where user_id = ${u})`;
+  return [
+    `delete from shopping_list_items where shopping_list_id in ${lists}`,
+    `delete from shopping_lists where user_id = ${u}`,
+    `delete from shared_add_ons where plan_version_id in ${versions}`,
+    `delete from plan_version_recipes where plan_version_id in ${versions}`,
+    `delete from meal_options where plan_version_id in ${versions}`,
+    `delete from meal_types where plan_version_id in ${versions}`,
+    `delete from uploaded_pdfs where plan_id in ${plans}`,
+    `delete from plan_versions where plan_id in ${plans}`,
+    `delete from plans where user_id = ${u}`
+  ];
+}
+
+function recipeRowDeletes(u: string) {
   const recipes = `(select id from recipes where user_id = ${u})`;
   const ingredients = `(select id from ingredients where user_id = ${u})`;
+  return [
+    `delete from ingredient_usages where source_id in ${recipes} or ingredient_id in ${ingredients}`,
+    `delete from recipes where user_id = ${u}`,
+    `delete from ingredients where user_id = ${u}`
+  ];
+}
+
+function removeUserRows(userId: string) {
+  const u = lit(userId);
   const carts = `(select id from carts where user_id = ${u})`;
-  const lists = `(select id from shopping_lists where user_id = ${u})`;
   sql(
     [
-      `delete from shopping_list_items where shopping_list_id in ${lists}`,
-      `delete from shopping_lists where user_id = ${u}`,
+      ...planRowDeletes(u),
       `delete from shopping_templates where user_id = ${u}`,
       `delete from cart_items where cart_id in ${carts}`,
       `delete from carts where user_id = ${u}`,
-      `delete from shared_add_ons where plan_version_id in ${versions}`,
-      `delete from plan_version_recipes where plan_version_id in ${versions}`,
-      `delete from meal_options where plan_version_id in ${versions}`,
-      `delete from meal_types where plan_version_id in ${versions}`,
-      `delete from uploaded_pdfs where plan_id in ${plans}`,
-      `delete from plan_versions where plan_id in ${plans}`,
-      `delete from plans where user_id = ${u}`,
-      `delete from ingredient_usages where source_id in ${recipes} or ingredient_id in ${ingredients}`,
-      `delete from recipes where user_id = ${u}`,
-      `delete from ingredients where user_id = ${u}`,
+      ...recipeRowDeletes(u),
       `delete from daily_logs where user_id = ${u}`,
       `delete from audit_events where user_id = ${u}`,
       `delete from rag_indexes where user_id = ${u}`,
@@ -84,7 +99,7 @@ function removeUserRows(userId: string) {
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// Seeders. Each one replaces what it seeded before, so a describe block can reseed between tests.
+// Seeders. Each one replaces what it seeded before (seedRecipes: all of the user's recipes), so a describe block can reseed between tests.
 
 export type SeedRecipe = {
   name: string;
@@ -98,7 +113,8 @@ export type SeedRecipe = {
 export function seedRecipes(recipes: SeedRecipe[]): Record<string, string> {
   const userId = currentUser().id;
   const ids: Record<string, string> = {};
-  const statements: string[] = [];
+  // Reseeding starts clean, so a recipe or ingredient (and its category) from an earlier call cannot linger.
+  const statements: string[] = recipeRowDeletes(lit(userId));
   for (const recipe of recipes) {
     const recipeId = `${userId}-rec-${slug(recipe.name)}`;
     ids[recipe.name] = recipeId;
@@ -109,7 +125,7 @@ export function seedRecipes(recipes: SeedRecipe[]): Record<string, string> {
       const ingredientId = `${userId}-ing-${slug(ingredient.name)}`;
       const unit = ingredient.unit ?? "g";
       statements.push(
-        `insert into ingredients (id, user_id, canonical_name, category, primary_unit, created_at, updated_at) values (${lit(ingredientId)}, ${lit(userId)}, ${lit(ingredient.name)}, ${lit(ingredient.category ?? "Otros")}, ${lit(unit)}, now(), now()) on conflict (id) do nothing`,
+        `insert into ingredients (id, user_id, canonical_name, category, primary_unit, created_at, updated_at) values (${lit(ingredientId)}, ${lit(userId)}, ${lit(ingredient.name)}, ${lit(ingredient.category ?? "Otros")}, ${lit(unit)}, now(), now()) on conflict (id) do update set category = excluded.category`,
         `insert into ingredient_usages (id, ingredient_id, source_type, source_id, quantity, unit, notes, is_optional, confidence_score, requires_review, created_at) values (${lit(`${recipeId}-use-${index}`)}, ${lit(ingredientId)}, 'recipe', ${lit(recipeId)}, ${ingredient.quantity ?? 100}, ${lit(unit)}, '', false, 1, false, now())`
       );
     });
@@ -181,18 +197,9 @@ export function seedPlan({ times, meals = DEFAULT_MEALS, supplements = true, obj
   sql(statements.join(";"));
 }
 
-/** Removes the plan, for the "no active plan" cases. */
+/** Removes the plan and everything hanging off it, for the "no active plan" cases. */
 export function clearPlan() {
-  const u = lit(currentUser().id);
-  const plans = `(select id from plans where user_id = ${u})`;
-  const versions = `(select id from plan_versions where plan_id in ${plans})`;
-  sql(
-    [
-      `delete from meal_types where plan_version_id in ${versions}`,
-      `delete from plan_versions where plan_id in ${plans}`,
-      `delete from plans where user_id = ${u}`
-    ].join(";")
-  );
+  sql(planRowDeletes(lit(currentUser().id)).join(";"));
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -211,9 +218,9 @@ export async function ask(request: APIRequestContext, message: string, scope?: S
 
 export const test = base.extend<{ chat: Page; chatContext: BrowserContext }>({
   // Same options as the project's pages (viewport, color scheme, reduced motion) so `test.use` applies unchanged.
-  chatContext: async ({ browser, baseURL, viewport, colorScheme, reducedMotion, issues }, use) => {
+  chatContext: async ({ browser, baseURL, viewport, colorScheme, reducedMotion, hasTouch, isMobile, forcedColors, issues }, use) => {
     const user = currentUser();
-    const context = await browser.newContext({ baseURL, viewport, colorScheme, reducedMotion, locale: "es-MX" });
+    const context = await browser.newContext({ baseURL, viewport, colorScheme, reducedMotion, hasTouch, isMobile, forcedColors, locale: "es-MX" });
     // Registered before the first page exists, so every page of the context reports into `issues`.
     context.on("page", (page) => watch(page, issues));
     await context.addCookies([{ name: "nm_session", value: user.token, url: baseURL ?? "http://localhost:3200", httpOnly: true, sameSite: "Lax" }]);
@@ -225,12 +232,13 @@ export const test = base.extend<{ chat: Page; chatContext: BrowserContext }>({
 
 /** Locators of the panel, following the plan's DOM contract. */
 export function assistantUi(page: Page) {
+  const panel = page.locator("#assistant-chat-panel");
   return {
     fab: page.locator(".assistant-fab"),
-    panel: page.locator("#assistant-chat-panel"),
+    panel,
     close: page.locator(".assistant-chat-close"),
-    input: page.getByLabel("Pregunta"),
-    send: page.getByRole("button", { name: "Enviar" }),
+    input: panel.getByLabel("Pregunta", { exact: true }),
+    send: panel.getByRole("button", { name: "Enviar" }),
     log: page.locator(".assistant-chat-log"),
     userTurns: page.locator(".assistant-turn.user"),
     /** Finished assistant turns (answers and errors), not the pending one. */
@@ -270,6 +278,7 @@ export const UNKNOWN_ANSWER = buildAnswer({ kind: "unknown", lead: [{ text: UNKN
 
 /** A cart answer with `count` items, quantities highlighted, capped like the server does (8 items plus "y <n> más"). */
 export function cartAnswer(count = 3): ChatAnswer {
+  if (count === 0) return buildAnswer({ lead: [{ text: "Tu carrito está vacío." }] });
   const shown = Math.min(count, 8);
   const items: Rich[] = Array.from({ length: shown }, (_, index) => [{ text: `Ingrediente ${String(index + 1).padStart(2, "0")} · ` }, { text: `${index + 1} g`, highlight: true }]);
   if (count > 8) items.push([{ text: `y ${count - 8} más` }]);
