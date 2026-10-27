@@ -370,8 +370,8 @@ test.describe("assistant and upload", () => {
     await search.fill("¿Qué ingredientes necesito comprar?");
     await search.press("Enter");
     await expect(search).toHaveValue("");
-    await expect(page.locator(".assistant-bubble.user")).toContainText("¿Qué ingredientes necesito comprar?");
-    const answer = page.locator(".assistant-bubble.assistant:not(.typing)").last();
+    await expect(page.locator(".assistant-turn.user")).toContainText("¿Qué ingredientes necesito comprar?");
+    const answer = page.locator(".assistant-turn.assistant:not(.is-pending)").last();
     await expect(answer).toBeVisible({ timeout: 20_000 });
     await expect(answer).not.toContainText("No pude responder");
   });

@@ -1,13 +1,10 @@
 "use client";
 
-import { askRag, useAssistantContext } from "@/components/app/assistant";
+import { useAssistantContext } from "@/components/app/assistant";
+import { groceriesSuggestions } from "@/lib/assistant";
 
 // Points the floating assistant at the cart and the recipes while a Compras page is open.
 export function GroceriesChat() {
-  useAssistantContext({
-    subtitle: "Sobre tus compras",
-    suggestions: ["¿Qué tengo en mi carrito?", "¿Qué ingredientes necesito comprar?", "¿Qué recetas hay en mi plan?"],
-    ask: (message) => askRag(message, "Carrito")
-  });
+  useAssistantContext({ subtitle: "Sobre tus compras", defaultScope: "Carrito", suggestions: groceriesSuggestions() });
   return null;
 }

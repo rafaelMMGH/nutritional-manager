@@ -66,18 +66,18 @@
 .assistant-chat-suggestions { display: grid; gap: 8px; }
 .assistant-chat-suggestions .assistant-suggestion { padding: 11px 14px; border: 1px solid var(--hairline); border-radius: 16px; background: var(--surface-raised); color: var(--text-1); font-size: 14px; font-weight: 500; text-align: left; cursor: pointer; }
 .assistant-chat-suggestions .assistant-suggestion:hover { border-color: var(--brand-200); background: var(--brand-50); }
-.assistant-bubble { max-width: 90%; padding: 12px 14px; border-radius: 18px; font-size: 14px; line-height: 1.45; }
-.assistant-bubble p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
-.assistant-bubble.user { align-self: flex-end; border-bottom-right-radius: 6px; background: var(--brand-fill); color: var(--on-brand); }
-.assistant-bubble.assistant { align-self: flex-start; border-bottom-left-radius: 6px; background: var(--canvas); color: var(--text-1); }
-.assistant-bubble.typing { display: inline-flex; align-items: center; gap: 8px; color: var(--text-3); }
-.assistant-sources { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-.assistant-sources span { padding: 3px 8px; border-radius: 8px; background: var(--surface-raised); color: var(--text-3); font-size: 12px; font-weight: 600; }
+.assistant-turn { max-width: 90%; padding: 12px 14px; border-radius: 18px; font-size: 14px; line-height: 1.45; }
+.assistant-turn p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.assistant-turn.user { align-self: flex-end; border-bottom-right-radius: 6px; background: var(--brand-fill); color: var(--on-brand); }
+.assistant-turn.assistant { align-self: flex-start; border-bottom-left-radius: 6px; background: var(--canvas); color: var(--text-1); }
+.assistant-turn-head { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; color: var(--text-2); }
+.assistant-turn-label { font-size: 12px; font-weight: 600; }
+.assistant-turn-live { white-space: pre-line; overflow-wrap: anywhere; }
+.assistant-turn-live:empty { display: none; }
+.assistant-turn-pending { display: inline-flex; align-items: center; gap: 8px; color: var(--text-2); }
 .assistant-chat-form { display: flex; align-items: center; gap: 8px; margin: 0 14px 14px; padding: 6px 6px 6px 18px; border: 1.5px solid var(--field-line); border-radius: 999px; }
 .assistant-chat-form:focus-within { border-color: var(--brand); }
 .assistant-chat-form input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font-size: 15px; }
 .assistant-chat-form button { display: grid; place-items: center; flex: none; width: 40px; height: 40px; border: 0; border-radius: 50%; background: var(--btn); color: var(--on-brand); cursor: pointer; transition: background-color 140ms ease; }
 .assistant-chat-form button[type=submit]:hover:not(:disabled) { background: var(--btn-hover); }
 .assistant-chat-form button:disabled { background: var(--pill); color: var(--text-3); cursor: default; }
-.assistant-chat .assistant-bubble.user p { color: var(--on-brand); }
-.assistant-chat .assistant-bubble.assistant p { color: var(--text-1); }

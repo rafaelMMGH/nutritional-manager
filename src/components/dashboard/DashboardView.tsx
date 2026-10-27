@@ -25,6 +25,7 @@ import {
   plural,
   qty
 } from "./food";
+import { SCOPE_LABEL, type ScopeKey } from "@/lib/assistant";
 import "./home.css";
 
 const WEEKDAYS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
@@ -37,7 +38,7 @@ type Props = {
   setWizard: (wizard: { step: number; data: any } | null) => void;
   user: any;
   goals: { weight_goal_kg: number | null; activity_goal_days: number };
-  askAssistant: (message: string, scope: string) => Promise<void>;
+  askAssistant: (message: string, scope: ScopeKey) => Promise<void>;
 };
 
 type Logs = { get: (date: string) => DayLog; latest: (date: string) => DayLog; all: () => [string, DayLog][]; save: (date: string, patch: Partial<DayLog>) => Promise<void> };
@@ -235,16 +236,11 @@ export function DashboardView({ data, user, goals: serverGoals, setView, setWiza
 
 /* ---------- Greeting search: questions go to the assistant ---------- */
 
-const ASSISTANT_SCOPES = [
-  { value: "auto", label: "Todo" },
-  { value: "Plan activo", label: "Plan activo" },
-  { value: "Recetario", label: "Recetario" },
-  { value: "Carrito actual", label: "Carrito" }
-];
+const ASSISTANT_SCOPES = (["auto", "Plan activo", "Recetario", "Carrito"] as const).map((value) => ({ value, label: SCOPE_LABEL[value] }));
 
-function SearchBar({ onAsk }: { onAsk: (message: string, scope: string) => Promise<void> }) {
+function SearchBar({ onAsk }: { onAsk: (message: string, scope: ScopeKey) => Promise<void> }) {
   const [query, setQuery] = useState("");
-  const [scope, setScope] = useState("auto");
+  const [scope, setScope] = useState<ScopeKey>("auto");
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const menu = useRef<HTMLDivElement>(null);
