@@ -1,5 +1,6 @@
-// The "Pensando…" loader is adapted from prompt-kit (https://github.com/ibelick/prompt-kit), MIT License
+// Adapted from prompt-kit (https://github.com/ibelick/prompt-kit), MIT License
 // Copyright (c) 2025 Julien Thibeaut
+// (the "Pensando…" Loader text variant)
 import { Bot, RotateCcw } from "lucide-react";
 import { SCOPE_LABEL, type ChatAnswer, type Chip, type Rich, type ScopeKey } from "@/lib/assistant";
 import { PromptSuggestion } from "./PromptSuggestion";

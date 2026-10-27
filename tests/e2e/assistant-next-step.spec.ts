@@ -384,12 +384,52 @@ test.describe("REQ-8: error, Reintentar and the 15 s timeout", () => {
       const late = chat.waitForResponse(API);
       mock.release();
       await late;
-      // A round trip into the page: the late response has been handled by now.
-      await chat.evaluate(() => undefined);
-      await expect(ui.live).toHaveText([ERROR_COPY]);
+      // A new question, answered by a healthy mock, proves the late response was handled before the assertions below.
+      await mockChat(chat, cartAnswer(1));
+      await typeQuestion(chat, "una pregunta nueva");
+      await expect(ui.assistantTurns).toHaveCount(2);
+      await expect(ui.assistantTurns.nth(0)).toContainText(ERROR_COPY);
+      await expect(ui.assistantTurns.nth(1)).toContainText("Esto es lo que tienes en tu carrito.");
+      await expect(ui.userTurns).toHaveText([CART_CHIP, "una pregunta nueva"]);
+      await expect(ui.panel.getByText("Esto es lo que tienes en tu carrito.")).toHaveCount(1);
+    });
+
+    test("a late answer that arrives during a retry leaves the retry pending", async ({ chat }) => {
+      await chat.clock.install();
+      await mockChat(chat, cartAnswer(2));
+      await chat.goto("/");
+      const ui = await openAssistant(chat);
+      // An earlier answer, so the chips under it show while the later turn is pending.
+      await typeQuestion(chat, BUY_CHIP);
       await expect(ui.assistantTurns).toHaveCount(1);
-      await expect(ui.chips).toHaveCount(0);
-      await expect(ui.panel).not.toContainText("Esto es lo que tienes en tu carrito.");
+      // 5 items, against 2 in the earlier answer: "Ingrediente 05" can only come from the late or the retried answer.
+      const first = await mockChat(chat, cartAnswer(5), { hold: true });
+      await typeQuestion(chat, CART_CHIP);
+      await expect(ui.pending).toHaveCount(1);
+      await chat.clock.fastForward(15_500);
+      await expect(retryButton(chat)).toBeVisible();
+
+      const second = await mockChat(chat, cartAnswer(5), { hold: true });
+      await retryButton(chat).click();
+      await expect(ui.pending).toHaveCount(1);
+      await expect.poll(() => second.requests.length).toBe(1);
+
+      const late = chat.waitForResponse(API);
+      first.release();
+      await late;
+      await chat.evaluate(() => undefined);
+      await expect(ui.pending).toHaveCount(1);
+      await expect(ui.pending).toContainText(THINKING);
+      await expect(ui.assistantTurns).toHaveCount(1);
+      await expect(ui.panel).not.toContainText("Ingrediente 05");
+      await expect(ui.chips).toHaveCount(2);
+      await expect(ui.chips.first()).toBeDisabled();
+      await expect(ui.chips.last()).toBeDisabled();
+
+      second.release();
+      await expect(ui.assistantTurns).toHaveCount(2);
+      await expect(ui.panel.getByText("Ingrediente 05")).toHaveCount(1);
+      await expect(ui.pending).toHaveCount(0);
     });
 
     test("Reintentar afterwards asks again and answers once", async ({ chat }) => {
