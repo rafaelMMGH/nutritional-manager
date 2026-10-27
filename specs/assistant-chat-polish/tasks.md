@@ -271,6 +271,8 @@ The old `messages` shape is removed in the same commit that renders `Turn[]` (T0
 
 **Batch 8: contrast matrix, forced colors, motion (REQ-14, REQ-16)**
 
+- [ ] T048 [US3] Spec v1.7 test (tests/e2e/assistant-composer.spec.ts). REQ-10. At 1024 px with a coarse primary pointer (`hasTouch` + coarse-pointer emulation), Enter adds a newline and sends nothing; red-proof by dropping `(pointer: coarse)` from the query. No code change expected.
+
 - [ ] T030 [US5] Tests REQ-14, REQ-16 (tests/e2e/assistant-look.spec.ts).
   - Contrast: `auditNow` scoped to `.assistant-chat`, in light and dark, with zero violations, on:
     - a structured answer, chips and sources

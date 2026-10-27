@@ -1,7 +1,7 @@
 # Spec: Assistant chat polish
 
 **Status:** planned
-**Version:** 1.6 · **Branch:** feature/assistant-chat-polish · **Owner:** Rafael Martinez
+**Version:** 1.7 · **Branch:** feature/assistant-chat-polish · **Owner:** Rafael Martinez
 
 ## Overview
 
@@ -58,6 +58,7 @@ Rationale only; the rules live in the REQs.
 - **Chips hidden during a retry:** the earlier chips reappearing and then vanishing is a flicker with no use.
 - **Loader blink exempt from the fade cap:** the cap governs message and control transitions, not a looping progress indicator.
 - **Touch Enter behavior:** touch keyboards have no easy Shift+Enter.
+- **Enter adds a newline on coarse-pointer devices at any width:** touch keyboards have no easy Shift+Enter, at any width.
 - **Focus to the new turn on touch:** the on-screen keyboard would cover the answer if the input were focused.
 - **Long answers show their start:** the user reads from the start of the answer.
 - **Modal sheet at ≤640 px, non-modal desktop panel:** a sheet covers the page and touch users have no Escape key.
@@ -190,10 +191,11 @@ As the user, I want a comfortable input and a way to start over.
   - Send is disabled when the field is empty or whitespace, while a request is pending, or when the length exceeds 500. The field and mic stay editable while pending; Enter while pending sends nothing.
   - From a length of 450, a counter "<n>/500" shows. It is the field's accessible description and outside any live region. Over 500 it also shows "Máximo 500 caracteres".
   - The server rejects a chat request whose message length is 0 or exceeds 500 with the standard bad-request response and no answer.
-  - On desktop (>640 px), Enter sends and Shift+Enter adds a newline. At ≤640 px, Enter adds a newline. Enter never sends during IME composition.
-  - Given desktop, when I type a line, press Shift+Enter, type a line and press Enter, then one two-line message is sent and the field clears.
-  - Given desktop, when I press Enter twice quickly, then one request is sent and my message appears once.
+  - At ≤640 px, or on a device whose primary pointer is coarse (touch-first, e.g. a tablet without a keyboard) at any width, Enter adds a newline and only "Enviar" sends. Elsewhere, Enter sends and Shift+Enter adds a newline. Enter never sends during IME composition. Only this Enter rule uses the coarse-pointer condition; the narrow-sheet, modality and focus rules (REQ-15, REQ-22, Interaction details) stay at ≤640 px.
+  - Given desktop with a fine primary pointer, when I type a line, press Shift+Enter, type a line and press Enter, then one two-line message is sent and the field clears.
+  - Given desktop with a fine primary pointer, when I press Enter twice quickly, then one request is sent and my message appears once.
   - Given 360 px, when I press Enter, then a newline is added and nothing is sent. Given an active composition, when I press Enter, then nothing is sent.
+  - Given a 1024 px wide viewport with a coarse primary pointer, when I press Enter in the field, then a newline is added and nothing is sent.
   - Given a length of 449, then no counter shows; at 450, the counter reads "450/500".
   - Given a length of 500 plus surrounding spaces, then "Enviar" is enabled and the message is answered.
   - Given a length of 501, then "Enviar" is disabled, Enter sends nothing, and the counter reads "501/500" with "Máximo 500 caracteres".
@@ -318,3 +320,4 @@ None.
 | 1.4 | 2026-10-26 | Spec-change: confirmed answer copy and wording fixes; no behavior change |
 | 1.5 | 2026-10-26 | Spec-change: recommendations one item per line; empty sections hidden |
 | 1.6 | 2026-10-27 | Spec-change: Reintentar only on the latest turn; chips hidden during a retry; loader exempt from the fade cap |
+| 1.7 | 2026-10-27 | Spec-change: Enter adds a newline on coarse-pointer devices too |
