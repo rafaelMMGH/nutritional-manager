@@ -357,7 +357,7 @@ The old `messages` shape is removed in the same commit that renders `Turn[]` (T0
 
 **Batch 10: switcher and search bar (REQ-12, REQ-13, REQ-21)**
 
-- [ ] T036 [US4] Tests REQ-12, REQ-21 (tests/e2e/assistant-scope.spec.ts).
+- [x] T036 [US4] Tests REQ-12, REQ-21 (tests/e2e/assistant-scope.spec.ts).
   - REQ-12:
     - Options per page, with "Esta receta" only on a recipe page.
     - The switcher shows the page default: Todo on the dashboard, Carrito on groceries, Esta receta on a recipe page.
@@ -369,16 +369,16 @@ The old `messages` shape is removed in the same commit that renders `Turn[]` (T0
     - Opening "Alcance: Todo" focuses Todo.
     - ArrowDown ×2 + Enter closes the menu, and the button reads "Alcance: Recetario".
     - Escape closes the menu and focuses the button.
-- [ ] T037 [US4] Tests REQ-13 (tests/e2e/assistant-scope.spec.ts).
+- [x] T037 [US4] Tests REQ-13 (tests/e2e/assistant-scope.spec.ts).
   - Switcher Todo and bar Recetario: the input is focused, the answer is labelled "Recetario" and the switcher stays "Todo".
   - The bar's input and scope button are disabled while pending. The spec says "submit", but the bar has no submit control.
   - A 501-character bar question sends nothing.
-- [ ] T038 [US4] `ScopeSwitcher` (src/components/shared/ScopeSwitcher.tsx, src/components/shared/AssistantChat.tsx, src/components/shared/assistant-chat.css). REQ-12, REQ-14, REQ-21, REQ-22.
+- [x] T038 [US4] `ScopeSwitcher` (src/components/shared/ScopeSwitcher.tsx, src/components/shared/AssistantChat.tsx, src/components/shared/assistant-chat.css). REQ-12, REQ-14, REQ-21, REQ-22.
   - Desktop: a ToggleGroup labelled "Alcance" that ignores empty values.
   - Compact: a button + listbox. Escape calls `preventDefault` and `stopPropagation`, and the panel skips `defaultPrevented` events.
   - Selection shows a border plus a check icon.
   - Token-styled.
-- [ ] T039 [P] [US4] Search bar (src/components/dashboard/DashboardView.tsx). REQ-13.
+- [x] T039 [P] [US4] Search bar (src/components/dashboard/DashboardView.tsx). REQ-13.
   - Disabled while `assistantBusy`.
   - Skips a trimmed length over 500.
   - Uses `askInScope`.
