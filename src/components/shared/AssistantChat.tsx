@@ -3,11 +3,15 @@
 import { useEffect, useRef, useState } from "react";
 import { Bot, Loader2, MessageSquarePlus, Mic, Square, X } from "lucide-react";
 import { AssistantTurn, ChipList, type AssistantRequest, type Turn, type TurnChip } from "./AssistantTurn";
+import { useMediaQuery } from "@/lib/client/useMediaQuery";
 import { PromptInput } from "./PromptInput";
 import { ScrollButton } from "./ScrollButton";
 import { useChatScroll } from "./useChatScroll";
 import { useDictation } from "./useDictation";
 import "./assistant-chat.css";
+
+// Same breakpoint as the sheet rules in assistant-chat.css.
+const SHEET = "(max-width: 640px)";
 
 type Props = {
   title?: string;
@@ -30,7 +34,9 @@ export function AssistantChat({ title = "Asistente", subtitle, suggestions = [],
   const [draft, setDraft] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fabRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLElement>(null);
   const dictation = useDictation(setDraft);
+  const sheet = useMediaQuery(SHEET);
 
   useEffect(() => {
     if (!open) return;
@@ -40,6 +46,27 @@ export function AssistantChat({ title = "Asistente", subtitle, suggestions = [],
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+
+  // The sheet follows the visual viewport, so the on-screen keyboard shrinks it instead of covering the composer.
+  // The vars only matter at ≤640 px (the CSS falls back to the full viewport without them).
+  useEffect(() => {
+    const panel = panelRef.current;
+    const viewport = window.visualViewport;
+    if (!open || !panel || !viewport) return;
+    const follow = () => {
+      panel.style.setProperty("--vv-height", `${viewport.height}px`);
+      panel.style.setProperty("--vv-top", `${viewport.offsetTop}px`);
+    };
+    follow();
+    viewport.addEventListener("resize", follow);
+    viewport.addEventListener("scroll", follow);
+    return () => {
+      viewport.removeEventListener("resize", follow);
+      viewport.removeEventListener("scroll", follow);
+      panel.style.removeProperty("--vv-height");
+      panel.style.removeProperty("--vv-top");
+    };
   }, [open]);
 
   function close() {
@@ -97,7 +124,8 @@ export function AssistantChat({ title = "Asistente", subtitle, suggestions = [],
       >
         {open ? <X size={24} /> : <Bot size={26} />}
       </button>
-      <aside id="assistant-chat-panel" className={open ? "assistant-chat open" : "assistant-chat"} aria-label={title} aria-hidden={!open} inert={!open}>
+      {open && sheet && <div className="assistant-chat-backdrop" aria-hidden="true" />}
+      <aside ref={panelRef} id="assistant-chat-panel" className={open ? "assistant-chat open" : "assistant-chat"} aria-label={title} aria-hidden={!open} inert={!open}>
         <header>
           <span className="assistant-chat-icon"><Bot size={20} /></span>
           <div>

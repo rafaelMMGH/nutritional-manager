@@ -54,10 +54,6 @@
   .assistant-chat, .assistant-chat.open, .assistant-fab { transition: none; }
   .assistant-chat-form .assistant-mic.listening { animation: none; }
 }
-@media (max-width: 640px) {
-  .assistant-fab { right: 16px; bottom: 16px; width: 54px; height: 54px; }
-  .assistant-chat { right: 8px; bottom: 80px; width: calc(100vw - 16px); height: calc(100dvh - 100px); }
-}
 .assistant-chat header { display: flex; align-items: center; gap: 12px; padding: 20px 20px 14px; border-bottom: 1px solid var(--hairline); }
 .assistant-chat-icon { display: grid; place-items: center; flex: none; width: 42px; height: 42px; border-radius: 50%; background: var(--brand-50); color: var(--brand-text); }
 .assistant-chat header div { flex: 1; min-width: 0; }
@@ -127,4 +123,38 @@
   .assistant-turn strong { font-weight: 700; text-decoration: underline; }
   .assistant-chat-form { border-color: CanvasText; }
   .assistant-chat-form:focus-within { border-color: Highlight; }
+}
+/* Last, so the sheet's sizes win over the base rules above at equal specificity.
+   At ≤640 px the panel is a sheet: full height inside 8 px side gutters, over a dimmed page (REQ-15). */
+.assistant-chat-backdrop { position: fixed; inset: 0; z-index: 59; background: var(--overlay-modal); }
+@media (max-width: 640px) {
+  .assistant-fab { right: 16px; bottom: 16px; width: 54px; height: 54px; }
+  .assistant-fab.open { display: none; }
+  .assistant-chat {
+    top: var(--vv-top, 0px);
+    right: 8px;
+    bottom: auto;
+    left: 8px;
+    width: auto;
+    height: var(--vv-height, 100dvh);
+    padding: max(0px, env(safe-area-inset-top)) max(0px, env(safe-area-inset-right)) max(0px, env(safe-area-inset-bottom)) max(0px, env(safe-area-inset-left));
+    /* Over a dimmed page the surface alone is under 3:1 in both themes, so the sheet gets an edge as the field does. */
+    border: 1px solid light-dark(var(--text-2), var(--field-line));
+    transform-origin: bottom center;
+  }
+  .assistant-chat-close { width: 44px; height: 44px; }
+  .assistant-chat-new { min-height: 44px; padding-block: 0; }
+  .assistant-chips .assistant-suggestion { min-height: 44px; }
+  .assistant-retry { min-height: 44px; }
+  .assistant-scroll { width: 44px; height: 44px; }
+  .assistant-chat-form button { width: 44px; height: 44px; }
+  .assistant-chat-form .assistant-input { min-height: 44px; padding-block: 11px; }
+  /* Row 1: icon, title, ×. Row 2: the scope line and Nueva conversación (the scope button takes the first cell in Batch 10). */
+  .assistant-chat header { display: grid; grid-template: "icon title title close" auto "scope scope new new" auto / auto minmax(0, 1fr) auto 44px; gap: 4px 12px; padding: 12px 12px 10px 16px; }
+  .assistant-chat header div { display: contents; }
+  .assistant-chat-icon { grid-area: icon; }
+  .assistant-chat h2 { grid-area: title; }
+  .assistant-chat header p { grid-area: scope; min-width: 0; }
+  .assistant-chat-new { grid-area: new; justify-self: end; }
+  .assistant-chat-close { grid-area: close; justify-self: end; margin-left: 0; }
 }
