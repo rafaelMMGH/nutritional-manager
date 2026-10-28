@@ -271,9 +271,9 @@ The old `messages` shape is removed in the same commit that renders `Turn[]` (T0
 
 **Batch 8: contrast matrix, forced colors, motion (REQ-14, REQ-16)**
 
-- [ ] T048 [US3] Spec v1.7 test (tests/e2e/assistant-composer.spec.ts). REQ-10. At 1024 px with a coarse primary pointer (`hasTouch` + coarse-pointer emulation), Enter adds a newline and sends nothing; red-proof by dropping `(pointer: coarse)` from the query. No code change expected.
+- [x] T048 [US3] Spec v1.7 test (tests/e2e/assistant-composer.spec.ts). REQ-10. At 1024 px with a coarse primary pointer (`hasTouch` + coarse-pointer emulation), Enter adds a newline and sends nothing; red-proof by dropping `(pointer: coarse)` from the query. No code change expected.
 
-- [ ] T030 [US5] Tests REQ-14, REQ-16 (tests/e2e/assistant-look.spec.ts).
+- [x] T030 [US5] Tests REQ-14, REQ-16 (tests/e2e/assistant-look.spec.ts).
   - Contrast: `auditNow` scoped to `.assistant-chat`, in light and dark, with zero violations, on:
     - a structured answer, chips and sources
     - an error (`expectIssues`)
@@ -287,7 +287,7 @@ The old `messages` shape is removed in the same commit that renders `Turn[]` (T0
     - The panel, scroll button and chips compute 0 durations.
     - `scrollTop` equals the target right after a send and right after "Ir al último mensaje".
   - Without reduced motion, the fade is ≤ 200 ms.
-- [ ] T031 [US5] Tune and verify only (src/components/shared/assistant-chat.css).
+- [x] T031 [US5] Tune and verify only (src/components/shared/assistant-chat.css).
   - Known light-theme AA misses from Batch 5a (must be fixed here): panel header subtitle 4.04:1, input placeholder 3.40:1, input border 1.19:1 (non-text, needs ≥3:1).
   - The elements are already token-styled by their batches.
   - Add the forced-colors rules, the reduced-motion block, 160 ms fades, the user bubble at ≤ 80% width and `overflow-wrap: anywhere`.
