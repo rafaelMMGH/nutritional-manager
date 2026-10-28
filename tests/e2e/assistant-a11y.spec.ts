@@ -271,6 +271,44 @@ test.describe("REQ-15: safe areas and the on-screen keyboard", () => {
   });
 });
 
+// Spec v1.8, "Narrow header": at <=640 px Nueva conversación is an icon button named by aria-label and title and the subtitle
+// is hidden; on a short window (<=480 px tall) wider than that only the subtitle gives way.
+test.describe("REQ-15: the narrow header", () => {
+  async function startThread(page: Page) {
+    await mockChat(page, cartAnswer());
+    await page.goto("/");
+    const ui = await openSheet(page);
+    await ask(page, QUESTION);
+    await expect(ui.assistantTurns).toHaveCount(1);
+    return ui;
+  }
+  const subtitleOf = (page: Page) => assistantUi(page).panel.locator("header p");
+
+  test.describe("at 360x740", () => {
+    test.use({ viewport: PHONE });
+    test("the subtitle and the Nueva conversación text are hidden; the icon button keeps its name and tooltip", async ({ chat }) => {
+      await startThread(chat);
+      const fresh = assistantUi(chat).panel.getByRole("button", { name: "Nueva conversación", exact: true });
+      await expect(subtitleOf(chat)).toBeHidden();
+      await expect(fresh).toHaveAttribute("title", "Nueva conversación");
+      await expect(fresh.locator("span")).toBeHidden();
+      expect(await fresh.evaluate((node) => (node as HTMLElement).innerText.trim())).toBe("");
+      await expect(fresh).toBeVisible();
+    });
+  });
+
+  test.describe("at 1024x420", () => {
+    test.use({ viewport: { width: 1024, height: 420 } });
+    test("only the subtitle is hidden; the Nueva conversación text shows", async ({ chat }) => {
+      await startThread(chat);
+      const fresh = assistantUi(chat).panel.getByRole("button", { name: "Nueva conversación", exact: true });
+      await expect(subtitleOf(chat)).toBeHidden();
+      await expect(fresh.locator("span")).toBeVisible();
+      await expect(fresh.locator("span")).toHaveText("Nueva conversación");
+    });
+  });
+});
+
 
 // ---------------------------------------------------------------------------------------------------------------------
 // REQ-17: turn names and the live region

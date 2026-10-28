@@ -5,10 +5,17 @@ import { assistantUi, cartAnswer, createChatUser, deleteChatUser, expect, mockCh
 // changes, navigation), REQ-13 (a search-bar question) and REQ-21 (the segmented group on desktop, the button and listbox at 360 px).
 
 let recipeId = "";
+let otherRecipeId = "";
 
 test.beforeAll(() => {
   createChatUser("scope");
-  recipeId = seedRecipes([{ name: "Pollo asado", ingredients: [{ name: "Pechuga de pollo", quantity: 200, category: "Proteínas" }] }])["Pollo asado"];
+  const ids = seedRecipes([
+    { name: "Pollo asado", ingredients: [{ name: "Pechuga de pollo", quantity: 200, category: "Proteínas" }] },
+    // The Recetario list shows only dishes with more than one ingredient.
+    { name: "Ensalada verde", ingredients: [{ name: "Lechuga", quantity: 100 }, { name: "Aguacate", quantity: 50 }] }
+  ]);
+  recipeId = ids["Pollo asado"];
+  otherRecipeId = ids["Ensalada verde"];
   seedPlan({ times: "all" });
   seedCart(3);
 });
@@ -144,6 +151,59 @@ test.describe("REQ-12: a change applies to the next question only", () => {
   });
 });
 
+test.describe("REQ-12: recipe pages", () => {
+  test("recipe A to recipe B with a picked scope: the switcher shows Esta receta and the next request sends B's recipe_id", async ({ chat }) => {
+    const mock = await mockChat(chat, cartAnswer());
+    await chat.goto(`/recipes/${recipeId}`);
+    await openAssistant(chat);
+    await optionOf(chat, "Recetario").click();
+    await expect(optionOf(chat, "Recetario")).toHaveAttribute("aria-pressed", "true");
+    await chat.getByRole("link", { name: "Recetario" }).first().click();
+    await expect(chat).toHaveURL(/\/recipes$/);
+    await chat.getByRole("link", { name: /Ensalada verde/ }).first().click();
+    await expect(chat).toHaveURL(new RegExp(`/recipes/${otherRecipeId}`));
+    const ui = assistantUi(chat);
+    if (!(await ui.panel.isVisible())) await openAssistant(chat);
+    await expect(optionOf(chat, "Esta receta")).toHaveAttribute("aria-pressed", "true");
+    await expect(optionOf(chat, "Recetario")).toHaveAttribute("aria-pressed", "false");
+    await typeQuestion(chat, QUESTION);
+    await expect(ui.assistantTurns).toHaveCount(1);
+    expect(mock.requests[0]).toMatchObject({ scope: "Receta", recipe_id: otherRecipeId });
+  });
+
+  test("renaming the recipe re-registers the page context in place and keeps the picked scope", async ({ chat }) => {
+    const mock = await mockChat(chat, cartAnswer());
+    await chat.goto(`/recipes/${otherRecipeId}`);
+    const ui = await openAssistant(chat);
+    await expect(ui.panel.locator("header p")).toHaveText("Sobre Ensalada verde");
+    await optionOf(chat, "Carrito").click();
+    await expect(optionOf(chat, "Carrito")).toHaveAttribute("aria-pressed", "true");
+    await ui.close.click();
+    await expect(ui.panel).toBeHidden();
+
+    const rename = async (name: string) => {
+      await chat.getByRole("button", { name: "Editar" }).first().click();
+      await chat.getByLabel("Nombre").fill(name);
+      await chat.getByRole("button", { name: "Guardar" }).click();
+      await expect(chat.getByRole("dialog")).toBeHidden();
+    };
+    try {
+      await rename("Ensalada verde 2");
+      await openAssistant(chat);
+      // The subtitle comes from the context, so the new name proves the page registered again without a route change.
+      await expect(ui.panel.locator("header p")).toHaveText("Sobre Ensalada verde 2");
+      await expect(optionOf(chat, "Carrito")).toHaveAttribute("aria-pressed", "true");
+      await expect(optionOf(chat, "Esta receta")).toHaveAttribute("aria-pressed", "false");
+      await typeQuestion(chat, QUESTION);
+      await expect(ui.assistantTurns).toHaveCount(1);
+      expect(mock.requests[0].scope).toBe("Carrito");
+    } finally {
+      await ui.close.click();
+      await rename("Ensalada verde");
+    }
+  });
+});
+
 test.describe("REQ-21: the segmented group on desktop", () => {
   test("ArrowRight and Enter select Plan activo, which is pressed and keeps focus", async ({ chat }) => {
     await chat.goto("/");
@@ -248,10 +308,11 @@ test.describe("REQ-21: the button and listbox at 360 px", () => {
     await chat.goto("/");
     await openAssistant(chat);
     await scopeButton(chat, "Todo").click();
-    const box = await listbox(chat).boundingBox();
-    expect(box).not.toBeNull();
+    // A locator click waits for the panel's open transition to settle before it resolves the position, which a box read mid-transition would not.
     // 2 px inside the top edge is the 6 px padding, above the first option.
-    await chat.mouse.click(box!.x + box!.width / 2, box!.y + 2);
+    const list = listbox(chat);
+    const width = (await list.evaluate((node) => node.getBoundingClientRect().width));
+    await list.click({ position: { x: width / 2, y: 2 } });
     await expect(listbox(chat)).toBeVisible();
     await expect(scopeButton(chat, "Todo")).toHaveAttribute("aria-expanded", "true");
   });
@@ -261,7 +322,8 @@ test.describe("REQ-21: the button and listbox at 360 px", () => {
     await openAssistant(chat);
     await scopeButton(chat, "Todo").click();
     await expect(listbox(chat)).toBeVisible();
-    // Focus on the button, not an option: hiding the menu then raises no blur that would close it.
+    // Guards a WebKit/Safari case: Chromium already blurs a focused element hidden with display:none, which closes the menu on its own.
+    // Focus on the button, not an option, so hiding the menu raises no blur and only the resize handler can close it.
     await scopeButton(chat, "Todo").focus();
     await expect(listbox(chat)).toBeVisible();
     await chat.setViewportSize({ width: 1024, height: 740 });
