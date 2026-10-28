@@ -322,7 +322,7 @@ The old `messages` shape is removed in the same commit that renders `Turn[]` (T0
 
 **Batch 9b: live region, modality and focus (REQ-17, REQ-22)**
 
-- [ ] T033 [US5] Tests REQ-17, REQ-22 (tests/e2e/assistant-a11y.spec.ts).
+- [x] T033 [US5] Tests REQ-17, REQ-22 (tests/e2e/assistant-a11y.spec.ts).
   - From the Batch 5a review: after a chip click the clicked chip becomes disabled and focus drops to `body`. Cover focus after chip / Reintentar / "Preguntar en Todo" (input on desktop; log then new turn at ≤640 px).
   - REQ-17:
     - Turns are exposed as "Tú" and "Asistente", and the icon is hidden.
@@ -341,11 +341,11 @@ The old `messages` shape is removed in the same commit that renders `Turn[]` (T0
     - Closing while pending, then reopening: the answer is there and the FAB has no badge.
     - Chip at 360 px: focus is on the log while pending, then on the new turn. On desktop, focus is on the input.
     - Failing chip at 360 px: focus is on the error turn, then Tab moves to Reintentar (`expectIssues`).
-- [ ] T034 [US5] Modality (src/components/app/AppShell.tsx). REQ-22.
+- [x] T034 [US5] Modality (src/components/app/AppShell.tsx). REQ-22.
   - `sheet = open && narrow`.
   - `inert` on `.topbar` and `main.content`.
   - Scroll lock on `<html>`.
-- [ ] T035 [US5] Focus and the live region (src/components/shared/AssistantChat.tsx, src/components/shared/AssistantTurn.tsx). Depends on T034. REQ-17, REQ-22.
+- [x] T035 [US5] Focus and the live region (src/components/shared/AssistantChat.tsx, src/components/shared/AssistantTurn.tsx). Depends on T034. REQ-17, REQ-22.
   - From the Batch 9a review: at ≤640 px `close()` calls `fabRef.focus()` while the FAB is still `display:none`, so × and Escape leave focus on `body`. Focus the FAB after it renders (`flushSync` or an open→closed effect) and test both × and Escape at 360 px.
   - Tab wrap in the sheet.
   - Interaction details "Focus", including × returning focus to the FAB.
@@ -397,6 +397,16 @@ The old `messages` shape is removed in the same commit that renders `Turn[]` (T0
 ## Phase 8: Final verification
 
 - [ ] T041 [setup] `npx tsc --noEmit` and one full `npm run test:e2e`, with zero undeclared console errors or failed API calls.
+  - Manual phone check at Gate 3 (from the Batch 9b review; not automatable). iPhone Safari + VoiceOver and Android Chrome + TalkBack:
+    1. Sheet open: swiping on gutters and log edges never scrolls the page.
+    2. Keyboard up: the sheet shrinks and the composer stays visible.
+    3. Chip: no keyboard pop-up; the answer is announced once; focus on the log doesn't read the whole log.
+    4. Failing chip (airplane mode): error announced; Reintentar reachable.
+    5. Swipe navigation never reaches the page behind the sheet.
+    6. × (and Escape on a hardware keyboard) returns focus to the FAB.
+    7. A visible toast does not block ×.
+    8. Rotating to landscape >640 px while open: the page scrolls again and focus is sane.
+    9. Notched device: safe areas look acceptable (env() is 0 without viewport-fit=cover; backlog).
   - Apply the snapshot policy above.
   - Optionally, check a production build in a scratch copy, never in place.
   - Tick only the spec's Progress boxes (specs/assistant-chat-polish/spec.md) and report. Do not change **Status**, because the orchestrator owns status changes. Do not commit spec edits unless the user asks.
