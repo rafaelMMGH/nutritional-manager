@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MAX_MESSAGE } from "@/lib/assistant";
 
 export const loginSchema = z.object({
   email: z.string().email(),
@@ -84,7 +85,8 @@ export const mealTypePatchSchema = z.object({
 });
 
 export const chatSchema = z.object({
-  message: z.string().min(1),
+  // Trimmed first, so the limit counts the trimmed text's UTF-16 length like the composer does (REQ-10).
+  message: z.string().trim().min(1).max(MAX_MESSAGE),
   scope: z.string().default("auto"),
   recipe_id: z.string().optional()
 });

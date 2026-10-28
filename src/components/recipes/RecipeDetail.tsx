@@ -6,6 +6,7 @@ import { Archive, ArrowLeft, Check, ChefHat, CircleCheck, Pencil, Plus, Shopping
 import { ViewTransition } from "@/components/shared/ViewTransition";
 import { foodGroup, foodIcon, isReadableName, normalize, plural, qty } from "@/components/dashboard/food";
 import { useAssistantContext } from "@/components/app/assistant";
+import { recipeSuggestions } from "@/lib/assistant";
 import { recipeMeta } from "./recipe-meta";
 import { RecipeEditDialog } from "./RecipeEditDialog";
 import { useRecipeActions } from "./useRecipeActions";
@@ -37,8 +38,9 @@ export function RecipeDetail({ recipe }: Props) {
 
   useAssistantContext({
     subtitle: `Sobre ${recipe.name}`,
-    suggestions: ["¿Qué ingredientes lleva?", "¿Cómo se prepara?", ...(protein ? [`¿Cuánto ${protein.name.toLowerCase()} lleva?`] : []), "¿Qué tengo en mi carrito?"],
-    ask: (message) => actions.ask(message, recipe.id)
+    defaultScope: "Receta",
+    recipeId: recipe.id,
+    suggestions: recipeSuggestions(recipe.id, protein?.name)
   });
 
   async function remove() {

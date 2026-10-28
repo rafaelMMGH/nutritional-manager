@@ -1,0 +1,188 @@
+/* Assistant chat (shared): floating action button + panel anchored to the bottom-right corner */
+/* The light theme's --focus-ring is a pale brand tint (1.4:1 on white); rings here need 3:1, so light takes a darker brand step. */
+.assistant-fab, .assistant-chat { --assistant-focus: light-dark(var(--brand-600), var(--focus-ring)); }
+.assistant-fab {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--brand-solid);
+  color: var(--on-brand);
+  box-shadow: 0 10px 28px rgb(15 23 42 / 0.22);
+  cursor: pointer;
+  transition: transform 160ms ease, background 160ms ease;
+}
+.assistant-fab:hover { transform: scale(1.05); }
+.assistant-fab:focus-visible { outline: 3px solid var(--assistant-focus); outline-offset: 3px; }
+.assistant-fab.open { background: var(--toggle-bg); color: var(--toggle-fg); }
+.assistant-chat {
+  position: fixed;
+  right: 24px;
+  bottom: 96px;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  width: min(400px, calc(100vw - 32px));
+  height: min(640px, calc(100vh - 140px));
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: 0 24px 60px rgb(15 23 42 / 0.22);
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(16px) scale(0.96);
+  transform-origin: bottom right;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 180ms ease, transform 180ms ease, visibility 0s linear 180ms;
+}
+.assistant-chat.open { opacity: 1; transform: none; visibility: visible; pointer-events: auto; transition: opacity 180ms ease, transform 180ms ease; }
+.assistant-chat-close { display: grid; place-items: center; flex: none; width: 36px; height: 36px; margin-left: auto; border: 0; border-radius: 50%; background: var(--pill); color: var(--text-2); cursor: pointer; }
+.assistant-chat-close:hover { background: var(--pill-hover); }
+.assistant-chat-close:focus-visible, .assistant-chat-form button:focus-visible { outline: 2px solid var(--assistant-focus); outline-offset: 2px; }
+.assistant-chat-error { margin: 0 18px 8px; color: var(--warn-text); font-size: 13px; }
+.assistant-chat-form .assistant-mic { background: var(--pill); color: var(--text-1); }
+.assistant-chat-form .assistant-mic:hover { background: var(--pill-hover); }
+.assistant-chat-form .assistant-mic.listening { background: var(--danger-fill); color: var(--on-brand); animation: mic-pulse 1.4s ease-out infinite; }
+@keyframes mic-pulse { 0% { box-shadow: 0 0 0 0 rgb(239 68 68 / 0.45); } 100% { box-shadow: 0 0 0 12px rgb(239 68 68 / 0); } }
+@media (prefers-reduced-motion: reduce) {
+  .assistant-chat, .assistant-chat.open, .assistant-fab { transition: none; }
+  .assistant-chat-form .assistant-mic.listening { animation: none; }
+}
+.assistant-chat header { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 20px 20px 14px; border-bottom: 1px solid var(--hairline); }
+.assistant-chat-icon { display: grid; place-items: center; flex: none; width: 42px; height: 42px; border-radius: 50%; background: var(--brand-50); color: var(--brand-text); }
+.assistant-chat-heading { flex: 1; min-width: 0; }
+.assistant-chat-new { display: inline-flex; align-items: center; flex: none; gap: 6px; padding: 7px 12px; border: 1px solid var(--hairline); border-radius: 999px; background: var(--surface-raised); color: var(--text-1); font-size: 13px; font-weight: 600; cursor: pointer; }
+.assistant-chat-new:hover { border-color: var(--brand-200); background: var(--brand-50); }
+.assistant-chat-new:focus-visible { outline: 2px solid var(--assistant-focus); outline-offset: 2px; }
+/* Scope switcher (REQ-12, REQ-21). Desktop: a segmented group on its own row (order: 1 puts it after the heading, Nueva conversación and ×). ≤640 px: a button with a listbox popup (see the sheet rules). */
+.assistant-scope-group { display: flex; order: 1; flex: 1 0 100%; flex-wrap: wrap; gap: 6px; }
+.assistant-scope-menu { display: none; }
+.assistant-scope-option, .assistant-scope-button, .assistant-scope-choice { display: inline-flex; align-items: center; gap: 6px; border: 1px solid light-dark(var(--text-3), var(--field-line)); border-radius: 999px; background: var(--surface-raised); color: var(--text-1); font-size: 13px; font-weight: 600; cursor: pointer; }
+.assistant-scope-option { min-height: 32px; padding: 0 12px; }
+/* Selected: a heavier border, a tint and a check (the check is in the markup), so it never relies on color alone. */
+.assistant-scope-option[data-pressed] { padding: 0 11px; border: 2px solid var(--brand-ink); background: var(--brand-50); color: var(--brand-ink); }
+.assistant-scope-option:hover:not([data-pressed]) { border-color: var(--brand-200); background: var(--brand-50); }
+.assistant-scope-option:focus-visible, .assistant-scope-button:focus-visible, .assistant-scope-choice:focus-visible { outline: 2px solid var(--assistant-focus); outline-offset: 2px; }
+.assistant-scope-button { justify-content: space-between; max-width: 100%; padding: 0 14px; }
+.assistant-scope-list { position: absolute; z-index: 2; top: calc(100% + 4px); left: 0; display: grid; gap: 4px; min-width: 100%; padding: 6px; border: 1px solid light-dark(var(--text-3), var(--field-line)); border-radius: 16px; background: var(--surface); box-shadow: 0 12px 32px rgb(var(--shadow-rgb) / 0.22); }
+.assistant-scope-choice { justify-content: space-between; min-height: 44px; padding: 0 12px; border-color: transparent; border-radius: 12px; background: transparent; }
+.assistant-scope-choice[aria-selected=true] { border: 2px solid var(--brand-ink); background: var(--brand-50); color: var(--brand-ink); }
+.assistant-scope-choice:hover:not([aria-selected=true]) { background: var(--brand-50); }
+.assistant-chat h2 { margin: 0; font-size: 20px; font-weight: 700; }
+.assistant-chat header p { margin: 0; overflow: hidden; color: var(--text-muted); font-size: 13.5px; text-overflow: ellipsis; white-space: nowrap; }
+/* The log's frame, so the scroll button can sit over its bottom edge. */
+.assistant-chat-body { position: relative; display: flex; flex: 1; flex-direction: column; min-height: 0; }
+.assistant-chat-log { display: flex; flex: 1; flex-direction: column; gap: 10px; min-height: 0; padding: 16px; overflow-y: auto; }
+.assistant-chat-empty { display: grid; gap: 14px; margin-top: auto; }
+.assistant-chat-empty p { margin: 0; color: var(--text-muted); font-size: 14px; line-height: 1.45; }
+.assistant-chips { display: grid; gap: 8px; margin-top: 10px; }
+.assistant-chat-empty .assistant-chips { margin-top: 0; }
+.assistant-chips .assistant-suggestion { padding: 11px 14px; border: 1px solid var(--hairline); border-radius: 16px; background: var(--surface-raised); color: var(--text-1); font-size: 14px; font-weight: 500; text-align: left; cursor: pointer; }
+.assistant-chips .assistant-suggestion:hover:not(:disabled) { border-color: var(--brand-200); background: var(--brand-50); }
+.assistant-chips .assistant-suggestion:focus-visible { outline: 2px solid var(--assistant-focus); outline-offset: 2px; }
+.assistant-chips .assistant-suggestion:disabled { background: var(--pill); color: var(--text-2); cursor: default; }
+.assistant-turn { max-width: 90%; padding: 12px 14px; border-radius: 18px; font-size: 14px; line-height: 1.45; animation: assistant-fade-in 160ms ease-out; }
+.assistant-chips .assistant-suggestion { animation: assistant-fade-in 160ms ease-out; }
+@keyframes assistant-fade-in { from { opacity: 0; } }
+/* The global `p` rule paints paragraphs muted; turn text takes the bubble's color instead. */
+.assistant-turn p { margin: 0; color: inherit; white-space: pre-wrap; overflow-wrap: anywhere; }
+.assistant-turn:focus-visible { outline: 2px solid var(--assistant-focus); outline-offset: 2px; }
+.assistant-turn.user { align-self: flex-end; max-width: 80%; border-bottom-right-radius: 6px; background: var(--brand-fill); color: var(--on-brand); }
+.assistant-turn.assistant { align-self: flex-start; border-bottom-left-radius: 6px; background: var(--canvas); color: var(--text-1); }
+.assistant-turn-head { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; color: var(--text-2); }
+.assistant-turn-label { font-size: 12px; font-weight: 600; }
+.assistant-turn-live { display: grid; gap: 8px; overflow-wrap: anywhere; }
+.assistant-turn-section h3 { margin: 0 0 2px; color: var(--text-2); font-size: 13px; font-weight: 700; }
+.assistant-turn-section ul { margin: 0; padding-left: 18px; list-style: disc; }
+.assistant-turn-section li { padding: 1px 0; }
+.assistant-turn strong { font-weight: 700; }
+.assistant-turn p.assistant-turn-sources { color: var(--text-2); font-size: 12px; }
+.assistant-turn-pending { color: var(--text-2); }
+/* prompt-kit's text loader: the words blink between two theme colors (2 s, as upstream). */
+.assistant-loader { font-weight: 500; animation: assistant-loader-blink 2s ease-in-out infinite; }
+@keyframes assistant-loader-blink { 0%, 100% { color: var(--text-1); } 50% { color: var(--text-2); } }
+@media (prefers-reduced-motion: reduce) { .assistant-loader { animation: none; } }
+.assistant-retry { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; padding: 6px 12px; border: 1px solid var(--hairline); border-radius: 999px; background: var(--surface-raised); color: var(--text-1); font-size: 13px; font-weight: 600; cursor: pointer; }
+.assistant-retry:hover { border-color: var(--brand-200); background: var(--brand-50); }
+.assistant-retry:focus-visible { outline: 2px solid var(--assistant-focus); outline-offset: 2px; }
+.assistant-composer { margin: 0 14px 14px; }
+.assistant-chat-form { display: flex; align-items: flex-end; gap: 8px; padding: 6px 6px 6px 18px; border: 1.5px solid light-dark(var(--text-3), var(--field-line)); border-radius: 24px; }
+.assistant-chat-form:focus-within { border-color: var(--brand); }
+/* Over the shadcn textarea's utilities: the field is borderless inside the pill and grows to 5 lines (22 px each), then scrolls. */
+.assistant-chat-form .assistant-input { flex: 1; field-sizing: fixed; min-width: 0; min-height: 40px; max-height: 128px; padding: 9px 0; border: 0; border-radius: 0; outline: 0; box-shadow: none; background: transparent; color: var(--text-1); font-size: 15px; line-height: 22px; resize: none; overflow-y: auto; }
+.assistant-chat-form .assistant-input::placeholder { color: var(--text-muted); opacity: 1; }
+.assistant-counter { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0 4px; margin: 4px 8px 0; color: var(--text-2); font-size: 12px; }
+.assistant-counter.over { color: var(--warn-text); font-weight: 600; }
+.assistant-chat-form button { display: grid; place-items: center; flex: none; width: 40px; height: 40px; border: 0; border-radius: 50%; background: var(--btn); color: var(--on-brand); cursor: pointer; transition: background-color 140ms ease; }
+.assistant-chat-form button[type=submit]:hover:not(:disabled) { background: var(--btn-hover); }
+.assistant-chat-form button:disabled { background: var(--pill); color: var(--text-3); cursor: default; }
+/* Ir al último mensaje: fades in over the log's bottom edge once the reader is away from the bottom (REQ-11). */
+.assistant-scroll { position: absolute; bottom: 12px; left: 50%; z-index: 1; display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid var(--hairline); border-radius: 50%; background: var(--surface-raised); color: var(--text-1); box-shadow: 0 4px 14px rgb(15 23 42 / 0.16); cursor: pointer; opacity: 0; transform: translate(-50%, 16px) scale(0.95); visibility: hidden; transition: opacity 160ms ease, transform 160ms ease, visibility 0s linear 160ms; }
+.assistant-scroll.visible { opacity: 1; transform: translate(-50%, 0); visibility: visible; transition: opacity 160ms ease, transform 160ms ease; }
+.assistant-scroll:hover { border-color: var(--brand-200); background: var(--brand-50); }
+.assistant-scroll:focus-visible { outline: 2px solid var(--assistant-focus); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .assistant-scroll, .assistant-scroll.visible { transition: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .assistant-turn, .assistant-chips .assistant-suggestion { animation: none; }
+  .assistant-chat-form button { transition: none; }
+}
+/* Forced colors drops the fills that tell the two speakers apart and frame the field: keep an edge on them. */
+@media (forced-colors: active) {
+  .assistant-turn { border: 1px solid CanvasText; }
+  .assistant-turn strong { font-weight: 700; text-decoration: underline; }
+  .assistant-chat-form { border-color: CanvasText; }
+  .assistant-scope-option, .assistant-scope-button, .assistant-scope-list { border-color: CanvasText; }
+  .assistant-scope-option[data-pressed], .assistant-scope-choice[aria-selected=true] { border-color: Highlight; }
+  .assistant-chat-form:focus-within { border-color: Highlight; }
+}
+/* A short landscape phone is wider than the sheet breakpoint but has no room for the subtitle above the switcher. */
+@media (max-height: 480px) {
+  .assistant-chat header p { display: none; }
+  .assistant-chat header { padding-block: 12px 10px; }
+}
+/* Last, so the sheet's sizes win over the base rules above at equal specificity.
+   At ≤640 px the panel is a sheet: full height inside 8 px side gutters, over a dimmed page (REQ-15). */
+.assistant-chat-backdrop { position: fixed; inset: 0; z-index: 59; background: var(--overlay-modal); }
+@media (max-width: 640px) {
+  .assistant-fab { right: 16px; bottom: 16px; width: 54px; height: 54px; }
+  .assistant-fab.open { display: none; }
+  .assistant-chat {
+    top: var(--vv-top, 0px);
+    right: 8px;
+    bottom: auto;
+    left: 8px;
+    width: auto;
+    height: var(--vv-height, 100dvh);
+    padding: max(0px, env(safe-area-inset-top)) max(0px, env(safe-area-inset-right)) max(0px, env(safe-area-inset-bottom)) max(0px, env(safe-area-inset-left));
+    /* Over a dimmed page the surface alone is under 3:1 in both themes, so the sheet gets an edge as the field does. */
+    border: 1px solid light-dark(var(--text-2), var(--field-line));
+    transform-origin: bottom center;
+  }
+  .assistant-chat-close { width: 44px; height: 44px; }
+  .assistant-chat-new { min-height: 44px; padding-block: 0; }
+  .assistant-chips .assistant-suggestion { min-height: 44px; }
+  .assistant-retry { min-height: 44px; }
+  .assistant-scroll { width: 44px; height: 44px; }
+  .assistant-chat-form button { width: 44px; height: 44px; }
+  /* 5 lines of 22 px plus the 22 px of padding. */
+  .assistant-chat-form .assistant-input { min-height: 44px; max-height: 132px; padding-block: 11px; }
+  /* Row 1: icon, title, ×. Row 2: the scope button and Nueva conversación, which shrinks to its icon so "Alcance: Plan activo" fits beside it at 360 px.
+     The subtitle gives way: the page's scope is what the button says. */
+  .assistant-chat header { display: grid; grid-template: "icon title title close" auto "scope scope scope new" auto / auto minmax(0, 1fr) auto 44px; gap: 8px 12px; padding: 12px 12px 10px 16px; }
+  .assistant-chat-heading { display: contents; }
+  .assistant-chat-icon { grid-area: icon; }
+  .assistant-chat h2 { grid-area: title; }
+  .assistant-chat header p { display: none; }
+  .assistant-chat-new { grid-area: new; justify-self: end; width: 44px; padding: 0; justify-content: center; }
+  .assistant-chat-new span { display: none; }
+  .assistant-scope-group { display: none; }
+  .assistant-scope-menu { position: relative; display: block; grid-area: scope; justify-self: start; max-width: 100%; min-width: 0; }
+  .assistant-scope-button { min-height: 44px; }
+  .assistant-chat-close { grid-area: close; justify-self: end; margin-left: 0; }
+}

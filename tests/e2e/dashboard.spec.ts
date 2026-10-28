@@ -160,11 +160,11 @@ test.describe("weekly report", () => {
   });
 
   test("the weekly activity goal can be changed", async ({ page }) => {
-    const goal = Number(sql("select activity_goal_days from users limit 1"));
+    const goal = Number(sql("select activity_goal_days from users order by seq limit 1"));
     const step = goal < 7 ? 1 : -1;
     await page.locator(".home-tile-link").click();
     await clickAndSave(page, page.getByRole("button", { name: step > 0 ? "Más días" : "Menos días" }), "/api/goals");
-    expect(Number(sql("select activity_goal_days from users limit 1"))).toBe(goal + step);
+    expect(Number(sql("select activity_goal_days from users order by seq limit 1"))).toBe(goal + step);
 
     await openHome(page);
     await expect(page.locator(".home-tile-link")).toHaveText(`Meta ${goal + step} días`);
@@ -185,7 +185,7 @@ test.describe("weekly report", () => {
       page.locator('.home-popover button[type="submit"]').click()
     ]);
     expect(dayValue("weight_kg")).toBe("62.4");
-    expect(sql("select weight_goal_kg from users limit 1")).toBe("57");
+    expect(sql("select weight_goal_kg from users order by seq limit 1")).toBe("57");
 
     await openHome(page);
     await expect(page.locator(".tone-weight .home-tile-value")).toContainText("62.4 kg");
@@ -370,8 +370,8 @@ test.describe("assistant and upload", () => {
     await search.fill("¿Qué ingredientes necesito comprar?");
     await search.press("Enter");
     await expect(search).toHaveValue("");
-    await expect(page.locator(".assistant-bubble.user")).toContainText("¿Qué ingredientes necesito comprar?");
-    const answer = page.locator(".assistant-bubble.assistant:not(.typing)").last();
+    await expect(page.locator(".assistant-turn.user")).toContainText("¿Qué ingredientes necesito comprar?");
+    const answer = page.locator(".assistant-turn.assistant:not(.is-pending)").last();
     await expect(answer).toBeVisible({ timeout: 20_000 });
     await expect(answer).not.toContainText("No pude responder");
   });

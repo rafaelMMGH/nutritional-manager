@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useShell } from "@/components/app/AppShell";
 import { confirmDialog } from "@/components/app/feedback";
-import type { ChatAnswer } from "@/components/shared/AssistantChat";
 import { qty } from "@/components/dashboard/food";
 import { api, getErrorMessage } from "@/lib/client/api";
 
@@ -66,9 +65,5 @@ export function useRecipeActions() {
     }
   }
 
-  function ask(message: string, recipeId: string): Promise<ChatAnswer> {
-    return api("/api/rag/chat", { method: "POST", body: JSON.stringify({ message, scope: "Receta", recipe_id: recipeId }) });
-  }
-
-  return { addRecipe, addIngredient, updateRecipe, deleteRecipe, ask };
+  return { addRecipe, addIngredient, updateRecipe, deleteRecipe };
 }

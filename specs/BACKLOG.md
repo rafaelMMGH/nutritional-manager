@@ -23,11 +23,22 @@ _Last updated: 2026-10-26_
 
 ## Needs the user
 
+- [ ] **Review and merge PR #6** (assistant chat polish): https://github.com/rafaelMMGH/nutritional-manager/pull/6
+- [ ] **Manual phone check** for the assistant (13 items, `specs/assistant-chat-polish/tasks.md` T041): iPhone Safari + VoiceOver, Android Chrome + TalkBack.
+- [ ] **Delete local branch `backup/assistant-9a-before-split`** (safety copy from a commit re-split; identical tree to the branch).
+
 - [ ] **Push `fix/e2e-run-guard` and open its PR** after the commit, with base `main`.
 - [ ] **Restart Claude Code** so the new speed rules load. These are scout and size triage before grilling, sub-batches of about 300 lines, running only the affected tests while iterating plus one full run per batch, tests shown failing on purpose, and minor findings folded into the next batch. They live in `.claude/agents/*.md`, which is gitignored and local only, and in `docs/agent-workflow.md`.
 - [ ] **Decide on uncommitted local changes** that have been kept out of every commit so far:
   - the deletion of `src/server.js` and `package.json` dropping the `legacy:dev` script (both currently inside `stash@{0}`, see the run guard above)
   - `.claude/`, which is gitignored; un-ignore it to share the agents with the repo
+
+## Assistant chat (follow-ups)
+
+- [ ] **Optional spec-change:** combined questions on a recipe page ("¿Qué lleva y cómo se hace?") currently show only Preparación (today's narrowing rule, kept by spec v1.4). Decide whether they should show both sections.
+- [ ] **Stale snapshot:** `a-theme-visual` "signed in, light › cart looks as it did" fails on main because local cart data grew (1882 px vs 900). Refresh it or make the test data-independent.
+- [ ] **Escape in app popups (pre-existing):** `src/components/useDismiss.ts:13` (UserMenu) and `src/components/groceries/ManualAddForm.tsx:65` don't `preventDefault` on Escape, so one Escape also closes the open assistant panel. Small bug fix.
+- [ ] **Safe areas:** the app sets no `viewport-fit=cover`, so `env(safe-area-inset-*)` is 0; the REQ-15 safe-area check is weak.
 
 ## Shopping list
 
@@ -50,6 +61,8 @@ Findings, with file:line references: `specs/bugs/shopping-list-findings.md`.
 - [ ] Optional: in `src/lib/client/theme.ts`, after a real reveal-update failure, call `applyTheme(next)` as a fallback so the stored choice and the page agree.
 
 ## Done
+
+- 2026-10-28: **Assistant chat polish**, `feature/assistant-chat-polish`, spec v1.8 implemented (22 REQs, US1–US5). Pushed; PR #6 open.
 
 - 2026-10-23: **Theme switcher (light/dark)**, `feature/theme-switcher` (24 commits), merged as PR #1. Its visual snapshots (`tests/e2e/*-snapshots/`) are gitignored on purpose and stay local. It took about 8 h of agent time and about 2.3M subagent tokens. The retrospective led to the speed rules above.
 - 2026-10-24: Speed rules added to the agent definitions and `docs/agent-workflow.md`, including small-feature limits in `verifier-spec` analyze mode.

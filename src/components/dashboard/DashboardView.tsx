@@ -25,6 +25,7 @@ import {
   plural,
   qty
 } from "./food";
+import { MAX_MESSAGE, SCOPE_LABEL, messageLength, type ScopeKey } from "@/lib/assistant";
 import "./home.css";
 
 const WEEKDAYS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
@@ -37,7 +38,8 @@ type Props = {
   setWizard: (wizard: { step: number; data: any } | null) => void;
   user: any;
   goals: { weight_goal_kg: number | null; activity_goal_days: number };
-  askAssistant: (message: string, scope: string) => Promise<void>;
+  askAssistant: (message: string, scope: ScopeKey) => Promise<void>;
+  assistantBusy: boolean;
 };
 
 type Logs = { get: (date: string) => DayLog; latest: (date: string) => DayLog; all: () => [string, DayLog][]; save: (date: string, patch: Partial<DayLog>) => Promise<void> };
@@ -118,7 +120,7 @@ function Roll({ value }: { value: number | string }) {
   );
 }
 
-export function DashboardView({ data, user, goals: serverGoals, setView, setWizard, refresh, askAssistant }: Props) {
+export function DashboardView({ data, user, goals: serverGoals, setView, setWizard, refresh, askAssistant, assistantBusy }: Props) {
   const today = dateKey(new Date());
   const [selected, setSelected] = useState(today);
   const [stripStart, setStripStart] = useState(() => addDays(today, -1));
@@ -191,7 +193,7 @@ export function DashboardView({ data, user, goals: serverGoals, setView, setWiza
             )}
           </p>
         </div>
-        <SearchBar onAsk={askAssistant} />
+        <SearchBar onAsk={askAssistant} busy={assistantBusy} />
       </header>
 
       <div className="home-grid">
@@ -235,18 +237,13 @@ export function DashboardView({ data, user, goals: serverGoals, setView, setWiza
 
 /* ---------- Greeting search: questions go to the assistant ---------- */
 
-const ASSISTANT_SCOPES = [
-  { value: "auto", label: "Todo" },
-  { value: "Plan activo", label: "Plan activo" },
-  { value: "Recetario", label: "Recetario" },
-  { value: "Carrito actual", label: "Carrito" }
-];
+const ASSISTANT_SCOPES = (["auto", "Plan activo", "Recetario", "Carrito"] as const).map((value) => ({ value, label: SCOPE_LABEL[value] }));
 
-function SearchBar({ onAsk }: { onAsk: (message: string, scope: string) => Promise<void> }) {
+// `busy` is the assistant's: a pending question blocks the bar until it settles or Nueva conversación discards it.
+function SearchBar({ onAsk, busy }: { onAsk: (message: string, scope: ScopeKey) => Promise<void>; busy: boolean }) {
   const [query, setQuery] = useState("");
-  const [scope, setScope] = useState("auto");
+  const [scope, setScope] = useState<ScopeKey>("auto");
   const [open, setOpen] = useState(false);
-  const [busy, setBusy] = useState(false);
   const menu = useRef<HTMLDivElement>(null);
   useDismiss(open, () => setOpen(false), menu);
   const current = ASSISTANT_SCOPES.find((item) => item.value === scope) ?? ASSISTANT_SCOPES[0];
@@ -254,15 +251,11 @@ function SearchBar({ onAsk }: { onAsk: (message: string, scope: string) => Promi
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     const message = query.trim();
-    if (!message || busy) return;
+    // Over the limit it is not sent (REQ-13); the text stays so it can be shortened.
+    if (!message || busy || messageLength(query) > MAX_MESSAGE) return;
     // The question moves into the assistant panel right away, so the field clears on send, not when the answer lands.
     setQuery("");
-    setBusy(true);
-    try {
-      await onAsk(message, scope);
-    } finally {
-      setBusy(false);
-    }
+    await onAsk(message, scope);
   }
 
   return (
@@ -274,9 +267,10 @@ function SearchBar({ onAsk }: { onAsk: (message: string, scope: string) => Promi
         placeholder={scope === "auto" ? "Pregunta por tu plan, recetas o compras" : `Pregunta sobre ${current.label.toLowerCase()}`}
         aria-label="Preguntar al asistente"
         enterKeyHint="send"
+        disabled={busy}
       />
       <div className="home-search-scope" ref={menu}>
-        <button type="button" className={`home-search-filter${scope === "auto" ? "" : " is-on"}`} aria-haspopup="menu" aria-expanded={open} aria-label={`Buscar en: ${current.label}`} onClick={() => setOpen(!open)}>
+        <button type="button" className={`home-search-filter${scope === "auto" ? "" : " is-on"}`} aria-haspopup="menu" aria-expanded={open} aria-label={`Buscar en: ${current.label}`} disabled={busy} onClick={() => setOpen(!open)}>
           <Filter size={18} />
         </button>
         {open && (
