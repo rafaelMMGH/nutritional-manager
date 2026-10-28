@@ -25,7 +25,7 @@ import {
   plural,
   qty
 } from "./food";
-import { SCOPE_LABEL, type ScopeKey } from "@/lib/assistant";
+import { MAX_MESSAGE, SCOPE_LABEL, type ScopeKey } from "@/lib/assistant";
 import "./home.css";
 
 const WEEKDAYS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
@@ -251,7 +251,8 @@ function SearchBar({ onAsk, busy }: { onAsk: (message: string, scope: ScopeKey) 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     const message = query.trim();
-    if (!message || busy) return;
+    // Over the limit it is not sent (REQ-13); the text stays so it can be shortened.
+    if (!message || busy || message.length > MAX_MESSAGE) return;
     // The question moves into the assistant panel right away, so the field clears on send, not when the answer lands.
     setQuery("");
     await onAsk(message, scope);
@@ -266,9 +267,10 @@ function SearchBar({ onAsk, busy }: { onAsk: (message: string, scope: ScopeKey) 
         placeholder={scope === "auto" ? "Pregunta por tu plan, recetas o compras" : `Pregunta sobre ${current.label.toLowerCase()}`}
         aria-label="Preguntar al asistente"
         enterKeyHint="send"
+        disabled={busy}
       />
       <div className="home-search-scope" ref={menu}>
-        <button type="button" className={`home-search-filter${scope === "auto" ? "" : " is-on"}`} aria-haspopup="menu" aria-expanded={open} aria-label={`Buscar en: ${current.label}`} onClick={() => setOpen(!open)}>
+        <button type="button" className={`home-search-filter${scope === "auto" ? "" : " is-on"}`} aria-haspopup="menu" aria-expanded={open} aria-label={`Buscar en: ${current.label}`} disabled={busy} onClick={() => setOpen(!open)}>
           <Filter size={18} />
         </button>
         {open && (

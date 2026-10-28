@@ -67,6 +67,9 @@
   .home-search-filter:not(.is-on):hover { background: var(--canvas); color: var(--text-1); }
 }
 .home-search-filter:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+/* While a question is pending the bar waits (REQ-13): dimmed and not clickable. */
+.home-search input:disabled { color: var(--text-2); cursor: default; }
+.home-search-filter:disabled { opacity: 0.5; cursor: default; }
 .home-scope-menu { top: calc(100% + 10px); right: -4px; transform-origin: top right; transition: opacity 180ms var(--home-ease-out), transform 180ms var(--home-ease-out); }
 @starting-style {
   .home-scope-menu { opacity: 0; transform: scale(0.95); }

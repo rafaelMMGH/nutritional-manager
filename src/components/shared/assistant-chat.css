@@ -54,12 +54,26 @@
   .assistant-chat, .assistant-chat.open, .assistant-fab { transition: none; }
   .assistant-chat-form .assistant-mic.listening { animation: none; }
 }
-.assistant-chat header { display: flex; align-items: center; gap: 12px; padding: 20px 20px 14px; border-bottom: 1px solid var(--hairline); }
+.assistant-chat header { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 20px 20px 14px; border-bottom: 1px solid var(--hairline); }
 .assistant-chat-icon { display: grid; place-items: center; flex: none; width: 42px; height: 42px; border-radius: 50%; background: var(--brand-50); color: var(--brand-text); }
-.assistant-chat header > div { flex: 1; min-width: 0; }
+.assistant-chat-heading { flex: 1; min-width: 0; }
 .assistant-chat-new { display: inline-flex; align-items: center; flex: none; gap: 6px; padding: 7px 12px; border: 1px solid var(--hairline); border-radius: 999px; background: var(--surface-raised); color: var(--text-1); font-size: 13px; font-weight: 600; cursor: pointer; }
 .assistant-chat-new:hover { border-color: var(--brand-200); background: var(--brand-50); }
 .assistant-chat-new:focus-visible { outline: 2px solid var(--assistant-focus); outline-offset: 2px; }
+/* Scope switcher (REQ-12, REQ-21). Desktop: a segmented group on its own row (order: 1 puts it after the heading, Nueva conversación and ×). ≤640 px: a button with a listbox popup (see the sheet rules). */
+.assistant-scope-group { display: flex; order: 1; flex: 1 0 100%; flex-wrap: wrap; gap: 6px; }
+.assistant-scope-menu { display: none; }
+.assistant-scope-option, .assistant-scope-button, .assistant-scope-choice { display: inline-flex; align-items: center; gap: 6px; border: 1px solid light-dark(var(--text-3), var(--field-line)); border-radius: 999px; background: var(--surface-raised); color: var(--text-1); font-size: 13px; font-weight: 600; cursor: pointer; }
+.assistant-scope-option { min-height: 32px; padding: 0 12px; }
+/* Selected: a heavier border, a tint and a check (the check is in the markup), so it never relies on color alone. */
+.assistant-scope-option[data-pressed] { padding: 0 11px; border: 2px solid var(--brand-ink); background: var(--brand-50); color: var(--brand-ink); }
+.assistant-scope-option:hover:not([data-pressed]) { border-color: var(--brand-200); background: var(--brand-50); }
+.assistant-scope-option:focus-visible, .assistant-scope-button:focus-visible, .assistant-scope-choice:focus-visible { outline: 2px solid var(--assistant-focus); outline-offset: 2px; }
+.assistant-scope-button { justify-content: space-between; max-width: 100%; padding: 0 14px; }
+.assistant-scope-list { position: absolute; z-index: 2; top: calc(100% + 4px); left: 0; display: grid; gap: 4px; min-width: 100%; padding: 6px; border: 1px solid light-dark(var(--text-3), var(--field-line)); border-radius: 16px; background: var(--surface); box-shadow: 0 12px 32px rgb(15 23 42 / 0.22); }
+.assistant-scope-choice { justify-content: space-between; min-height: 44px; padding: 0 12px; border-color: transparent; border-radius: 12px; background: transparent; }
+.assistant-scope-choice[aria-selected=true] { border: 2px solid var(--brand-ink); background: var(--brand-50); color: var(--brand-ink); }
+.assistant-scope-choice:hover:not([aria-selected=true]) { background: var(--brand-50); }
 .assistant-chat h2 { margin: 0; font-size: 20px; font-weight: 700; }
 .assistant-chat header p { margin: 0; overflow: hidden; color: var(--text-muted); font-size: 13.5px; text-overflow: ellipsis; white-space: nowrap; }
 /* The log's frame, so the scroll button can sit over its bottom edge. */
@@ -123,7 +137,14 @@
   .assistant-turn { border: 1px solid CanvasText; }
   .assistant-turn strong { font-weight: 700; text-decoration: underline; }
   .assistant-chat-form { border-color: CanvasText; }
+  .assistant-scope-option, .assistant-scope-button, .assistant-scope-list { border-color: CanvasText; }
+  .assistant-scope-option[data-pressed], .assistant-scope-choice[aria-selected=true] { border-color: Highlight; }
   .assistant-chat-form:focus-within { border-color: Highlight; }
+}
+/* A short landscape phone is wider than the sheet breakpoint but has no room for the subtitle above the switcher. */
+@media (max-height: 480px) {
+  .assistant-chat header p { display: none; }
+  .assistant-chat header { padding-block: 12px 10px; }
 }
 /* Last, so the sheet's sizes win over the base rules above at equal specificity.
    At ≤640 px the panel is a sheet: full height inside 8 px side gutters, over a dimmed page (REQ-15). */
@@ -151,12 +172,17 @@
   .assistant-chat-form button { width: 44px; height: 44px; }
   /* 5 lines of 22 px plus the 22 px of padding. */
   .assistant-chat-form .assistant-input { min-height: 44px; max-height: 132px; padding-block: 11px; }
-  /* Row 1: icon, title, ×. Row 2: the scope line and Nueva conversación (the scope button takes the first cell in Batch 10). */
-  .assistant-chat header { display: grid; grid-template: "icon title title close" auto "scope scope new new" auto / auto minmax(0, 1fr) auto 44px; gap: 4px 12px; padding: 12px 12px 10px 16px; }
-  .assistant-chat header > div { display: contents; }
+  /* Row 1: icon, title, ×. Row 2: the scope button and Nueva conversación, which shrinks to its icon so "Alcance: Plan activo" fits beside it at 360 px.
+     The subtitle gives way: the page's scope is what the button says. */
+  .assistant-chat header { display: grid; grid-template: "icon title title close" auto "scope scope scope new" auto / auto minmax(0, 1fr) auto 44px; gap: 8px 12px; padding: 12px 12px 10px 16px; }
+  .assistant-chat-heading { display: contents; }
   .assistant-chat-icon { grid-area: icon; }
   .assistant-chat h2 { grid-area: title; }
-  .assistant-chat header p { grid-area: scope; min-width: 0; }
-  .assistant-chat-new { grid-area: new; justify-self: end; }
+  .assistant-chat header p { display: none; }
+  .assistant-chat-new { grid-area: new; justify-self: end; width: 44px; padding: 0; justify-content: center; }
+  .assistant-chat-new span { display: none; }
+  .assistant-scope-group { display: none; }
+  .assistant-scope-menu { position: relative; display: block; grid-area: scope; justify-self: start; max-width: 100%; min-width: 0; }
+  .assistant-scope-button { min-height: 44px; }
   .assistant-chat-close { grid-area: close; justify-self: end; margin-left: 0; }
 }

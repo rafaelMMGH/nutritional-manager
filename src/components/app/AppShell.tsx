@@ -103,6 +103,10 @@ export function AppShell({ user, children }: Props) {
           busy={assistant.busy}
           open={assistant.open}
           onOpenChange={assistant.setOpen}
+          scope={assistant.scope}
+          recipe={Boolean(assistant.context.recipeId)}
+          onScopeChange={assistant.setScope}
+          focusRequest={assistant.focusRequest}
           onSend={assistant.send}
           onSuggest={assistant.sendRequest}
           onRetry={assistant.retry}

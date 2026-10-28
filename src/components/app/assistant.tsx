@@ -71,6 +71,7 @@ export function useAssistantState() {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState(false);
+  const [focusRequest, setFocusRequest] = useState(0);
   const [page, setPageContext] = useState<AssistantPageContext | null>(null);
   const [scope, setScope] = useState<ScopeKey>(DEFAULT_CONTEXT.defaultScope);
   const context = page ?? DEFAULT_CONTEXT;
@@ -161,8 +162,9 @@ export function useAssistantState() {
   /** Opens the assistant and asks within a specific scope (used by the dashboard search bar). */
   const askInScope = useCallback(async (message: string, askedScope: ScopeKey) => {
     setOpen(true);
+    setFocusRequest((count) => count + 1);
     await send({ message, scope: askedScope });
   }, [send]);
 
-  return { turns, busy, open, setOpen, context, scope, setScope, setPage, suggestions, send: sendTyped, sendRequest: send, retry, clear, askInScope };
+  return { turns, busy, open, setOpen, focusRequest, context, scope, setScope, setPage, suggestions, send: sendTyped, sendRequest: send, retry, clear, askInScope };
 }

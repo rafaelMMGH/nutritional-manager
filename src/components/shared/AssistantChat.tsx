@@ -5,9 +5,11 @@ import { Bot, Loader2, MessageSquarePlus, Mic, Square, X } from "lucide-react";
 import { AssistantTurn, ChipList, type AssistantRequest, type Turn, type TurnChip } from "./AssistantTurn";
 import { useMediaQuery } from "@/lib/client/useMediaQuery";
 import { PromptInput } from "./PromptInput";
+import { ScopeSwitcher } from "./ScopeSwitcher";
 import { ScrollButton } from "./ScrollButton";
 import { useChatScroll } from "./useChatScroll";
 import { useDictation } from "./useDictation";
+import type { ScopeKey } from "@/lib/assistant";
 import "./assistant-chat.css";
 
 // Same breakpoint as the sheet rules in assistant-chat.css.
@@ -21,6 +23,12 @@ type Props = {
   busy: boolean;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Where the next typed question is asked, and whether the page is a recipe (which adds "Esta receta"). */
+  scope: ScopeKey;
+  recipe: boolean;
+  onScopeChange: (scope: ScopeKey) => void;
+  /** Changes whenever something outside the panel (the dashboard search bar) asks, so the input takes focus even if the panel is already open. */
+  focusRequest: number;
   onSend: (message: string) => void;
   onSuggest: (request: AssistantRequest) => void;
   onRetry: (turn: Turn) => void;
@@ -30,7 +38,7 @@ type Props = {
 
 // Floating chat over the RAG endpoint: a FAB in the bottom-right corner opens the panel (kept mounted so the
 // conversation survives closing it). Suggestion chips when empty, one article per turn, pill composer with dictation.
-export function AssistantChat({ title = "Asistente", subtitle, suggestions = [], turns, busy, open, onOpenChange, onSend, onSuggest, onRetry, onClear }: Props) {
+export function AssistantChat({ title = "Asistente", subtitle, suggestions = [], turns, busy, open, onOpenChange, scope, recipe, onScopeChange, focusRequest, onSend, onSuggest, onRetry, onClear }: Props) {
   const [draft, setDraft] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fabRef = useRef<HTMLButtonElement>(null);
@@ -40,7 +48,7 @@ export function AssistantChat({ title = "Asistente", subtitle, suggestions = [],
 
   useEffect(() => {
     if (open) inputRef.current?.focus();
-  }, [open]);
+  }, [open, focusRequest]);
 
   // Escape closes the panel; a popup inside it (the compact scope menu) takes Escape first by calling preventDefault.
   // In the modal sheet Tab wraps, because inert on the page alone lets focus escape to the browser's own controls.
@@ -93,8 +101,14 @@ export function AssistantChat({ title = "Asistente", subtitle, suggestions = [],
   function wrapTab(event: KeyboardEvent) {
     const panel = panelRef.current;
     if (!panel) return;
-    const stops = [...panel.querySelectorAll<HTMLElement>("button, textarea, input, a[href], [tabindex]:not([tabindex='-1'])")].filter(
-      (node) => !node.matches(":disabled") && getComputedStyle(node).visibility !== "hidden"
+    // Only what Tab can really land on: not the display:none switcher variant, not roving tabindex="-1" options, not disabled or hidden.
+    const stops = [...panel.querySelectorAll<HTMLElement>("button, textarea, input, a[href], [tabindex]")].filter(
+      (node) =>
+        node.tabIndex >= 0 &&
+        !node.matches(":disabled") &&
+        !node.closest("[inert]") &&
+        node.getClientRects().length > 0 &&
+        getComputedStyle(node).visibility !== "hidden"
     );
     const first = stops[0];
     const last = stops[stops.length - 1];
@@ -189,13 +203,14 @@ export function AssistantChat({ title = "Asistente", subtitle, suggestions = [],
       <aside ref={panelRef} id="assistant-chat-panel" className={open ? "assistant-chat open" : "assistant-chat"} aria-label={title} aria-hidden={!open} inert={!open}>
         <header>
           <span className="assistant-chat-icon"><Bot size={20} /></span>
-          <div>
+          <div className="assistant-chat-heading">
             <h2>{title}</h2>
             <p>{subtitle}</p>
           </div>
+          <ScopeSwitcher value={scope} onChange={onScopeChange} recipe={recipe} />
           {turns.length > 0 && (
-            <button type="button" className="assistant-chat-new" onClick={startOver}>
-              <MessageSquarePlus size={16} aria-hidden="true" /> Nueva conversación
+            <button type="button" className="assistant-chat-new" onClick={startOver} aria-label="Nueva conversación" title="Nueva conversación">
+              <MessageSquarePlus size={16} aria-hidden="true" /> <span>Nueva conversación</span>
             </button>
           )}
           <button type="button" className="assistant-chat-close" onClick={close} aria-label="Cerrar asistente"><X size={18} /></button>
