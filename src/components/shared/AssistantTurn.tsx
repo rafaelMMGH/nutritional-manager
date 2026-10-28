@@ -67,7 +67,7 @@ function AnswerContent({ answer }: { answer: ChatAnswer }) {
 }
 
 // One turn of the conversation. The assistant turn keeps its live region mounted from the moment the request is sent, so
-// a screen reader announces the answer when it lands; the label, the pending indicator and the chips stay outside the region.
+// a screen reader announces the answer when it lands; the article takes script focus only (tabIndex -1); the label, the pending indicator and the chips stay outside the region.
 export function AssistantTurn({
   turn,
   chipsAction,
@@ -87,7 +87,7 @@ export function AssistantTurn({
   }
   const pending = turn.status === "pending";
   return (
-    <article className={pending ? "assistant-turn assistant is-pending" : "assistant-turn assistant"} aria-label="Asistente">
+    <article className={pending ? "assistant-turn assistant is-pending" : "assistant-turn assistant"} aria-label="Asistente" tabIndex={-1}>
       <div className="assistant-turn-head">
         <Bot size={14} aria-hidden="true" />
         {turn.status !== "error" && <span className="assistant-turn-label">{SCOPE_LABEL[turn.request.scope]}</span>}

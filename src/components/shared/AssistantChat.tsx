@@ -11,7 +11,7 @@ import { useDictation } from "./useDictation";
 import "./assistant-chat.css";
 
 // Same breakpoint as the sheet rules in assistant-chat.css.
-const SHEET = "(max-width: 640px)";
+export const SHEET_QUERY = "(max-width: 640px)";
 
 type Props = {
   title?: string;
@@ -36,16 +36,31 @@ export function AssistantChat({ title = "Asistente", subtitle, suggestions = [],
   const fabRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLElement>(null);
   const dictation = useDictation(setDraft);
-  const sheet = useMediaQuery(SHEET);
+  const sheet = useMediaQuery(SHEET_QUERY);
 
   useEffect(() => {
+    if (open) inputRef.current?.focus();
+  }, [open]);
+
+  // Escape closes the panel; a popup inside it (the compact scope menu) takes Escape first by calling preventDefault.
+  // In the modal sheet Tab wraps, because inert on the page alone lets focus escape to the browser's own controls.
+  useEffect(() => {
     if (!open) return;
-    inputRef.current?.focus();
     const onKey = (event: KeyboardEvent) => {
+      if (event.defaultPrevented) return;
       if (event.key === "Escape") close();
+      else if (event.key === "Tab" && sheet) wrapTab(event);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
+  }, [open, sheet]);
+
+  // The FAB is `display: none` while the sheet is open, so it can take focus only after the closing render.
+  const returnFocus = useRef(false);
+  useEffect(() => {
+    if (open || !returnFocus.current) return;
+    returnFocus.current = false;
+    fabRef.current?.focus();
   }, [open]);
 
   // The sheet follows the visual viewport, so the on-screen keyboard shrinks it instead of covering the composer.
@@ -71,8 +86,26 @@ export function AssistantChat({ title = "Asistente", subtitle, suggestions = [],
 
   function close() {
     dictation.stop();
+    returnFocus.current = true;
     onOpenChange(false);
-    fabRef.current?.focus();
+  }
+
+  function wrapTab(event: KeyboardEvent) {
+    const panel = panelRef.current;
+    if (!panel) return;
+    const stops = [...panel.querySelectorAll<HTMLElement>("button, textarea, input, a[href], [tabindex]:not([tabindex='-1'])")].filter(
+      (node) => !node.matches(":disabled") && getComputedStyle(node).visibility !== "hidden"
+    );
+    const first = stops[0];
+    const last = stops[stops.length - 1];
+    const active = document.activeElement;
+    if (event.shiftKey && (active === first || !panel.contains(active))) {
+      event.preventDefault();
+      last?.focus();
+    } else if (!event.shiftKey && (active === last || !panel.contains(active))) {
+      event.preventDefault();
+      first?.focus();
+    }
   }
 
   const { logRef, atBottom, scrollToBottom } = useChatScroll(turns);
@@ -84,6 +117,7 @@ export function AssistantChat({ title = "Asistente", subtitle, suggestions = [],
 
   function startOver() {
     dictation.stop();
+    followTurn.current = false;
     onClear();
     inputRef.current?.focus();
   }
@@ -94,9 +128,36 @@ export function AssistantChat({ title = "Asistente", subtitle, suggestions = [],
   const lastAssistant = turns.findLast((turn) => turn.role === "assistant");
   const retrying = lastAssistant?.role === "assistant" && lastAssistant.status === "pending" && lastAssistant.retrying;
   const chipsTurnId = !retrying && latest?.role === "assistant" && latest.status === "answer" ? latest.id : null;
+
+  // A chip or Reintentar disappears or turns disabled once the request is sent, which would drop focus on <body>. Desktop
+  // goes to the input. The sheet keeps the on-screen keyboard down: focus waits on the log, then moves to the new turn
+  // (REQ-22), unless the user has moved it somewhere else meanwhile.
+  const followTurn = useRef(false);
+  function keepFocus() {
+    if (sheet) {
+      followTurn.current = true;
+      logRef.current?.focus({ preventScroll: true });
+    } else {
+      inputRef.current?.focus();
+    }
+  }
+  useEffect(() => {
+    if (!followTurn.current) return;
+    const last = turns.findLast((turn) => turn.role === "assistant");
+    if (last?.role === "assistant" && last.status === "pending") return;
+    followTurn.current = false;
+    const log = logRef.current;
+    if (last && log && document.activeElement === log && log.lastElementChild instanceof HTMLElement) log.lastElementChild.focus({ preventScroll: true });
+  }, [turns]);
+
   const askChip = (request: AssistantRequest) => {
     dictation.stop();
     onSuggest(request);
+    keepFocus();
+  };
+  const retry = (turn: Turn) => {
+    onRetry(turn);
+    keepFocus();
   };
 
   function ask(text: string) {
@@ -147,7 +208,7 @@ export function AssistantChat({ title = "Asistente", subtitle, suggestions = [],
                 <ChipList chips={suggestions} disabled={busy} onAsk={askChip} />
               </div>
             )}
-            {turns.map((turn) => <AssistantTurn key={turn.id} turn={turn} chipsAction={turn.id === chipsTurnId ? { disabled: busy, onAsk: askChip } : undefined} onRetry={turn.id === lastAssistant?.id ? onRetry : undefined} />)}
+            {turns.map((turn) => <AssistantTurn key={turn.id} turn={turn} chipsAction={turn.id === chipsTurnId ? { disabled: busy, onAsk: askChip } : undefined} onRetry={turn.id === lastAssistant?.id ? retry : undefined} />)}
           </div>
           <ScrollButton visible={!atBottom} onClick={jumpToLast} />
         </div>

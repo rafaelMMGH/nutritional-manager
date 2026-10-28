@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { createContext, FormEvent, ReactNode, useCallback, useContext, useMemo, useRef, useState } from "react";
+import { createContext, FormEvent, ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { CheckCircle2, ChevronDown, LogOut, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,11 +12,12 @@ import { useDismiss } from "@/components/useDismiss";
 import { Badge, ConfirmationDialogHost, Empty } from "@/components/app/feedback";
 import { accountNav, activeView, hrefFor, mainNav } from "@/components/app/navigation";
 import { AssistantPageProvider, useAssistantState } from "@/components/app/assistant";
-import { AssistantChat } from "@/components/shared/AssistantChat";
+import { AssistantChat, SHEET_QUERY } from "@/components/shared/AssistantChat";
 import { ThemeToggle } from "@/components/app/ThemeToggle";
 import "./shell.css";
 import { api, getErrorMessage } from "@/lib/client/api";
 import type { ScopeKey } from "@/lib/assistant";
+import { useMediaQuery } from "@/lib/client/useMediaQuery";
 
 export type ShellUser = { name: string; email: string };
 
@@ -46,6 +47,20 @@ export function AppShell({ user, children }: Props) {
   const assistant = useAssistantState();
   const { setOpen: setAssistantOpen, askInScope, busy: assistantBusy } = assistant;
 
+  // At ≤640 px the open panel is a modal sheet (REQ-22): the page behind is inert and cannot scroll. Tab wrapping and
+  // focus live in AssistantChat; inert alone would let Tab escape to the browser.
+  const narrow = useMediaQuery(SHEET_QUERY);
+  const sheet = assistant.open && narrow;
+  useEffect(() => {
+    if (!sheet) return;
+    const root = document.documentElement;
+    const before = root.style.overflow;
+    root.style.overflow = "hidden";
+    return () => {
+      root.style.overflow = before;
+    };
+  }, [sheet]);
+
   // Every page reads its data on the server, so re-rendering them picks up any change.
   const refresh = useCallback(() => router.refresh(), [router]);
 
@@ -69,7 +84,7 @@ export function AppShell({ user, children }: Props) {
   return (
     <ShellContext.Provider value={shell}>
       <div className="app-shell">
-        <header className="topbar">
+        <header className="topbar" inert={sheet}>
           <div className="topbar-account">
             <UserMenu user={user} onLogout={logout} />
             <ThemeToggle />
@@ -79,7 +94,7 @@ export function AppShell({ user, children }: Props) {
           </div>
         </header>
         <AssistantPageProvider value={assistant.setPage}>
-          <main className="content">{children}</main>
+          <main className="content" inert={sheet}>{children}</main>
         </AssistantPageProvider>
         <AssistantChat
           subtitle={assistant.context.subtitle}

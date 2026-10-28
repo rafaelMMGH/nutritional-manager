@@ -56,7 +56,7 @@
 }
 .assistant-chat header { display: flex; align-items: center; gap: 12px; padding: 20px 20px 14px; border-bottom: 1px solid var(--hairline); }
 .assistant-chat-icon { display: grid; place-items: center; flex: none; width: 42px; height: 42px; border-radius: 50%; background: var(--brand-50); color: var(--brand-text); }
-.assistant-chat header div { flex: 1; min-width: 0; }
+.assistant-chat header > div { flex: 1; min-width: 0; }
 .assistant-chat-new { display: inline-flex; align-items: center; flex: none; gap: 6px; padding: 7px 12px; border: 1px solid var(--hairline); border-radius: 999px; background: var(--surface-raised); color: var(--text-1); font-size: 13px; font-weight: 600; cursor: pointer; }
 .assistant-chat-new:hover { border-color: var(--brand-200); background: var(--brand-50); }
 .assistant-chat-new:focus-visible { outline: 2px solid var(--assistant-focus); outline-offset: 2px; }
@@ -78,6 +78,7 @@
 @keyframes assistant-fade-in { from { opacity: 0; } }
 /* The global `p` rule paints paragraphs muted; turn text takes the bubble's color instead. */
 .assistant-turn p { margin: 0; color: inherit; white-space: pre-wrap; overflow-wrap: anywhere; }
+.assistant-turn:focus-visible { outline: 2px solid var(--assistant-focus); outline-offset: 2px; }
 .assistant-turn.user { align-self: flex-end; max-width: 80%; border-bottom-right-radius: 6px; background: var(--brand-fill); color: var(--on-brand); }
 .assistant-turn.assistant { align-self: flex-start; border-bottom-left-radius: 6px; background: var(--canvas); color: var(--text-1); }
 .assistant-turn-head { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; color: var(--text-2); }
@@ -148,10 +149,11 @@
   .assistant-retry { min-height: 44px; }
   .assistant-scroll { width: 44px; height: 44px; }
   .assistant-chat-form button { width: 44px; height: 44px; }
-  .assistant-chat-form .assistant-input { min-height: 44px; padding-block: 11px; }
+  /* 5 lines of 22 px plus the 22 px of padding. */
+  .assistant-chat-form .assistant-input { min-height: 44px; max-height: 132px; padding-block: 11px; }
   /* Row 1: icon, title, ×. Row 2: the scope line and Nueva conversación (the scope button takes the first cell in Batch 10). */
   .assistant-chat header { display: grid; grid-template: "icon title title close" auto "scope scope new new" auto / auto minmax(0, 1fr) auto 44px; gap: 4px 12px; padding: 12px 12px 10px 16px; }
-  .assistant-chat header div { display: contents; }
+  .assistant-chat header > div { display: contents; }
   .assistant-chat-icon { grid-area: icon; }
   .assistant-chat h2 { grid-area: title; }
   .assistant-chat header p { grid-area: scope; min-width: 0; }
