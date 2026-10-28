@@ -158,12 +158,12 @@ test.describe("REQ-12: recipe pages", () => {
     await openAssistant(chat);
     await optionOf(chat, "Recetario").click();
     await expect(optionOf(chat, "Recetario")).toHaveAttribute("aria-pressed", "true");
-    await chat.getByRole("link", { name: "Recetario" }).first().click();
-    await expect(chat).toHaveURL(/\/recipes$/);
-    await chat.getByRole("link", { name: /Ensalada verde/ }).first().click();
+    // A client-side push straight from recipe A to recipe B: no list in between and no full page load.
+    await chat.evaluate((href) => (window as unknown as { next: { router: { push: (to: string) => void } } }).next.router.push(href), `/recipes/${otherRecipeId}`);
     await expect(chat).toHaveURL(new RegExp(`/recipes/${otherRecipeId}`));
     const ui = assistantUi(chat);
-    if (!(await ui.panel.isVisible())) await openAssistant(chat);
+    // A client-side navigation keeps the panel open.
+    await expect(ui.panel).toBeVisible();
     await expect(optionOf(chat, "Esta receta")).toHaveAttribute("aria-pressed", "true");
     await expect(optionOf(chat, "Recetario")).toHaveAttribute("aria-pressed", "false");
     await typeQuestion(chat, QUESTION);
@@ -198,7 +198,7 @@ test.describe("REQ-12: recipe pages", () => {
       await expect(ui.assistantTurns).toHaveCount(1);
       expect(mock.requests[0].scope).toBe("Carrito");
     } finally {
-      await ui.close.click();
+      if (await ui.panel.isVisible()) await ui.close.click();
       await rename("Ensalada verde");
     }
   });
@@ -322,9 +322,10 @@ test.describe("REQ-21: the button and listbox at 360 px", () => {
     await openAssistant(chat);
     await scopeButton(chat, "Todo").click();
     await expect(listbox(chat)).toBeVisible();
-    // Guards a WebKit/Safari case: Chromium already blurs a focused element hidden with display:none, which closes the menu on its own.
-    // Focus on the button, not an option, so hiding the menu raises no blur and only the resize handler can close it.
+    // Guards a WebKit/Safari case: Chromium blurs a focused element hidden with display:none, and the blur handler would
+    // close the menu on its own. The focusout is swallowed before React sees it, so only the resize handler can close it.
     await scopeButton(chat, "Todo").focus();
+    await chat.evaluate(() => document.addEventListener("focusout", (event) => event.stopImmediatePropagation(), { capture: true }));
     await expect(listbox(chat)).toBeVisible();
     await chat.setViewportSize({ width: 1024, height: 740 });
     await chat.setViewportSize(PHONE);

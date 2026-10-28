@@ -71,6 +71,30 @@ for (const theme of THEMES) {
       expect(await focusWalk(chat, theme)).toEqual([]);
     });
 
+    test("the switcher: default, selected and focused", async ({ chat }) => {
+      await visit(chat, "/", theme);
+      const ui = await openAssistant(chat);
+      const group = ui.panel.getByRole("group", { name: "Alcance" });
+      const option = (name: string) => group.getByRole("button", { name, exact: true });
+      // Default: Todo selected, the others plain (auditNow also hovers each one).
+      await expect(option("Todo")).toHaveAttribute("aria-pressed", "true");
+      let result = await audit(chat);
+      expect(result.violations, "default").toEqual([]);
+      // Selected: another option carries the border, the check and the brand fill.
+      await option("Carrito").click();
+      await expect(option("Carrito")).toHaveAttribute("aria-pressed", "true");
+      result = await audit(chat);
+      expect(result.violations, "selected").toEqual([]);
+      // Focus, from the keyboard so :focus-visible applies: the selected option and an unselected one.
+      await chat.keyboard.press("Shift");
+      for (const name of ["Carrito", "Recetario"]) {
+        await option(name).focus();
+        await expect(option(name)).toBeFocused();
+        const focus = await chat.evaluate(() => window.__audit.focus());
+        expect(focus.ok, `${name} focus ring ${focus.ratio.toFixed(2)}:1`).toBe(true);
+      }
+    });
+
     test("pending", async ({ chat }) => {
       await mockChat(chat, cartAnswer(), { hold: true });
       await visit(chat, "/", theme);
@@ -134,6 +158,56 @@ test.describe("REQ-14: forced colors", () => {
       return color;
     });
     expect(await form.evaluate((node) => getComputedStyle(node).borderTopColor)).toBe(highlight);
+  });
+
+  /** The computed color of a CSS system color keyword. */
+  const systemColor = (page: Page, keyword: string) =>
+    page.evaluate((name) => {
+      const probe = document.createElement("span");
+      probe.style.color = name;
+      document.body.append(probe);
+      const color = getComputedStyle(probe).color;
+      probe.remove();
+      return color;
+    }, keyword);
+  const borderOf = (locator: ReturnType<Page["locator"]>) => locator.evaluate((node) => ({ width: parseFloat(getComputedStyle(node).borderTopWidth), color: getComputedStyle(node).borderTopColor }));
+
+  test("the selected scope keeps a Highlight border and its check on desktop", async ({ chat }) => {
+    await chat.goto("/");
+    const ui = await openAssistant(chat);
+    const group = ui.panel.getByRole("group", { name: "Alcance" });
+    const selected = group.getByRole("button", { name: "Todo", exact: true });
+    const plain = group.getByRole("button", { name: "Plan activo", exact: true });
+    await expect(selected).toHaveAttribute("aria-pressed", "true");
+    const mark = await borderOf(selected);
+    expect(mark.width).toBeGreaterThanOrEqual(2);
+    expect(mark.color).toBe(await systemColor(chat, "Highlight"));
+    // Not the plain option's edge, so the selection shows without color perception.
+    expect(await borderOf(plain)).toMatchObject({ color: await systemColor(chat, "CanvasText") });
+    expect((await borderOf(plain)).width).toBeLessThan(mark.width);
+    await expect(selected.locator("svg")).toBeVisible();
+    await expect(plain.locator("svg")).toHaveCount(0);
+  });
+
+  test.describe("at 360 px", () => {
+    test.use({ viewport: { width: 360, height: 740 } });
+
+    test("the open menu keeps a Highlight border and a check on the selected scope", async ({ chat }) => {
+      await chat.goto("/");
+      const ui = await openAssistant(chat);
+      await ui.panel.getByRole("button", { name: "Alcance: Todo" }).click();
+      const list = ui.panel.getByRole("listbox", { name: "Alcance" });
+      const selected = list.getByRole("option", { name: "Todo", exact: true });
+      const plain = list.getByRole("option", { name: "Plan activo", exact: true });
+      await expect(selected).toHaveAttribute("aria-selected", "true");
+      const mark = await borderOf(selected);
+      expect(mark.width).toBeGreaterThanOrEqual(2);
+      expect(mark.color).toBe(await systemColor(chat, "Highlight"));
+      expect((await borderOf(plain)).width).toBeLessThan(mark.width);
+      await expect(selected.locator("svg")).toBeVisible();
+      await expect(plain.locator("svg")).toHaveCount(0);
+      expect(await borderOf(list)).toMatchObject({ color: await systemColor(chat, "CanvasText") });
+    });
   });
 
   test("the bubbles keep an edge when the system drops their fills", async ({ chat }) => {

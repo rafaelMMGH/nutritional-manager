@@ -59,6 +59,9 @@ async function askFromSearchBar(page: Page, scope: string, message: string) {
   await search.press("Enter");
 }
 
+/** The desktop switcher's option, which exposes aria-pressed. */
+const switcherOption = (page: Page, name: string) => assistantUi(page).panel.getByRole("group", { name: "Alcance" }).getByRole("button", { name, exact: true });
+
 /** The label of every finished assistant turn, in thread order. */
 async function labelsOf(page: Page) {
   const ui = assistantUi(page);
@@ -114,6 +117,17 @@ test.describe("REQ-5: chips under the latest answer", () => {
     expect((await request).postDataJSON()).toMatchObject({ message: RECIPES_CHIP, scope: "Recetario" });
     await expect(ui.assistantTurns.getByRole("heading", { level: 3 })).toHaveText(["Recetas"]);
     expect(await labelsOf(chat)).toEqual(["Recetario"]);
+  });
+
+  test("a groceries chip leaves the switcher at Carrito", async ({ chat }) => {
+    await chat.goto("/groceries/cart");
+    const ui = await openAssistant(chat);
+    await expect(switcherOption(chat, "Carrito")).toHaveAttribute("aria-pressed", "true");
+    await ui.chips.nth(2).click();
+    await expect(ui.assistantTurns).toHaveCount(1);
+    expect(await labelsOf(chat)).toEqual(["Recetario"]);
+    await expect(switcherOption(chat, "Carrito")).toHaveAttribute("aria-pressed", "true");
+    await expect(switcherOption(chat, "Recetario")).toHaveAttribute("aria-pressed", "false");
   });
 
   test("the cart chip of a recipe page is labelled Carrito", async ({ chat }) => {
@@ -210,6 +224,19 @@ test.describe("REQ-20: strict scopes", () => {
     await expect(ui.userTurns).toHaveText([CART_CHIP, CART_CHIP]);
     await expect(ui.assistantTurns.nth(1).getByRole("listitem")).toHaveCount(3);
     expect(await labelsOf(chat)).toEqual(["Recetario", "Todo"]);
+  });
+
+  test("Preguntar en Todo leaves the switcher at Recetario", async ({ chat }) => {
+    await chat.goto("/");
+    const ui = await openAssistant(chat);
+    await switcherOption(chat, "Recetario").click();
+    await typeQuestion(chat, CART_CHIP);
+    await expect(ui.chips).toHaveText([ASK_ALL, RECIPES_CHIP, BUY_CHIP]);
+    await ui.panel.getByRole("button", { name: ASK_ALL }).click();
+    await expect(ui.assistantTurns).toHaveCount(2);
+    expect(await labelsOf(chat)).toEqual(["Recetario", "Todo"]);
+    await expect(switcherOption(chat, "Recetario")).toHaveAttribute("aria-pressed", "true");
+    await expect(switcherOption(chat, "Todo")).toHaveAttribute("aria-pressed", "false");
   });
 
   test("a suggestion on an out-of-scope reply is asked in its own scope", async ({ chat }) => {

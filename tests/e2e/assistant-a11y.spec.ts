@@ -1,6 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 import { expectIssues } from "./fixtures";
-import { auditNow, visit } from "./theme-audit";
+import { auditNow, installToolkit, visit } from "./theme-audit";
 import { canvasColor, contrast, effectiveBackground, toRgb, type Rgba, type Theme } from "./theme-helpers";
 import { assistantUi, buildAnswer, cartAnswer, createChatUser, deleteChatUser, expect, focusWalk, mockChat, openAssistant, test } from "./assistant-helpers";
 
@@ -130,6 +130,17 @@ test.describe("REQ-15: the sheet at 360 px", () => {
     await expectTargets({ "×": ui.close, chips: ui.chips, mic: ui.panel.getByRole("button", { name: "Dictar pregunta" }), send: ui.send });
     // The field is a target too (its width is the pill's, so only the height is checked).
     expect((await boxOf(ui.input)).height).toBeGreaterThanOrEqual(44);
+  });
+
+  test("the scope button and every menu option are 44 px targets that do not overlap", async ({ chat }) => {
+    await chat.goto("/");
+    const ui = await openSheet(chat);
+    const button = ui.panel.getByRole("button", { name: "Alcance: Todo" });
+    await expectTargets({ "×": ui.close, "Alcance": button });
+    await button.click();
+    const options = ui.panel.getByRole("listbox", { name: "Alcance" }).getByRole("option");
+    await expect(options).toHaveCount(4);
+    await expectTargets({ "×": ui.close, "Alcance": button, option: options });
   });
 
   test("with a thread: Nueva conversación and Ir al último mensaje too, and the header takes two rows", async ({ chat }) => {
@@ -289,6 +300,9 @@ test.describe("REQ-15: the narrow header", () => {
     test("the subtitle and the Nueva conversación text are hidden; the icon button keeps its name and tooltip", async ({ chat }) => {
       await startThread(chat);
       const fresh = assistantUi(chat).panel.getByRole("button", { name: "Nueva conversación", exact: true });
+      // Hidden, not missing: toBeHidden also passes on an element that does not exist.
+      await expect(subtitleOf(chat)).toHaveCount(1);
+      await expect(fresh.locator("span")).toHaveCount(1);
       await expect(subtitleOf(chat)).toBeHidden();
       await expect(fresh).toHaveAttribute("title", "Nueva conversación");
       await expect(fresh.locator("span")).toBeHidden();
@@ -302,6 +316,7 @@ test.describe("REQ-15: the narrow header", () => {
     test("only the subtitle is hidden; the Nueva conversación text shows", async ({ chat }) => {
       await startThread(chat);
       const fresh = assistantUi(chat).panel.getByRole("button", { name: "Nueva conversación", exact: true });
+      await expect(subtitleOf(chat)).toHaveCount(1);
       await expect(subtitleOf(chat)).toBeHidden();
       await expect(fresh.locator("span")).toBeVisible();
       await expect(fresh.locator("span")).toHaveText("Nueva conversación");
@@ -747,6 +762,35 @@ for (const theme of ["light", "dark"] as Theme[]) {
       result = await auditNow(chat, { scope: ".assistant-chat", tab: false, hover: true });
       expect(result.violations, "answers").toEqual([]);
       expect(await focusWalk(chat, theme)).toEqual([]);
+    });
+
+    test("the open compact menu passes contrast and its options and button show a focus ring", async ({ chat }) => {
+      test.setTimeout(120_000);
+      await visit(chat, "/", theme);
+      const ui = await openSheet(chat);
+      const button = ui.panel.getByRole("button", { name: "Alcance: Todo" });
+      await button.click();
+      const list = ui.panel.getByRole("listbox", { name: "Alcance" });
+      await expect(list).toBeVisible();
+      // The menu is inside .assistant-chat, so this audits its text, fills and edges, and hovers each option.
+      const result = await auditNow(chat, { scope: ".assistant-chat", tab: false, hover: true });
+      expect(result.violations, "open menu").toEqual([]);
+
+      const failures: string[] = [];
+      await chat.evaluate(installToolkit);
+      await chat.keyboard.press("Shift");
+      for (const name of ["Todo", "Plan activo", "Recetario", "Carrito"]) {
+        const option = list.getByRole("option", { name, exact: true });
+        await option.focus();
+        await expect(option).toBeFocused();
+        const focus = await chat.evaluate(() => window.__audit.focus());
+        if (!focus.ok) failures.push(`${theme} option ${name} ${focus.ratio.toFixed(2)}:1`);
+      }
+      await chat.keyboard.press("Escape");
+      await expect(button).toBeFocused();
+      const focus = await chat.evaluate(() => window.__audit.focus());
+      if (!focus.ok) failures.push(`${theme} button ${focus.ratio.toFixed(2)}:1`);
+      expect(failures).toEqual([]);
     });
   });
 }
