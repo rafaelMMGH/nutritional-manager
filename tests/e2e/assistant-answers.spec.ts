@@ -257,8 +257,8 @@ test.describe("REQ-14: an answered turn meets contrast in the light theme", () =
     await expect(ui.assistantTurns).toHaveCount(1);
     await expect(ui.chips).toHaveCount(2);
     await expect(ui.assistantTurns.locator(".assistant-turn-sources")).toBeVisible();
-    // The log only: the panel header subtitle, the input placeholder and its border are still below AA in light (T031 tunes them).
-    const { violations } = await auditNow(chat, { scope: ".assistant-chat-log", tab: false, hover: false });
+    // The whole panel: T031 tuned the header subtitle, the placeholder and the field border to pass in light too.
+    const { violations } = await auditNow(chat, { scope: ".assistant-chat", tab: false, hover: false });
     expect(violations).toEqual([]);
   });
 });

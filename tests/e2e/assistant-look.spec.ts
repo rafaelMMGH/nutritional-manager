@@ -1,9 +1,9 @@
 import type { Page } from "@playwright/test";
 import { MAX_MESSAGE } from "../../src/lib/assistant";
 import { expectIssues } from "./fixtures";
-import { auditNow, installToolkit, visit } from "./theme-audit";
-import { contrast, effectiveBackground, toRgb, type Theme } from "./theme-helpers";
-import { assistantUi, buildAnswer, cartAnswer, createChatUser, deleteChatUser, expect, mockChat, openAssistant, test } from "./assistant-helpers";
+import { auditNow, visit } from "./theme-audit";
+import type { Theme } from "./theme-helpers";
+import { assistantUi, focusWalk, buildAnswer, cartAnswer, createChatUser, deleteChatUser, expect, mockChat, openAssistant, test } from "./assistant-helpers";
 
 // How the assistant looks and moves. Spec assistant-chat-polish, US5: REQ-14 (contrast in both themes, forced colors),
 // REQ-16 (motion) and the "Look" details (bubble width, long tokens, no horizontal overflow at 360 px).
@@ -24,35 +24,6 @@ async function ask(page: Page, message: string) {
 
 /** The whole panel (header, log, composer), not only the log: the subtitle, placeholder and field border count too. */
 const audit = (page: Page) => auditNow(page, { scope: ".assistant-chat", tab: false, hover: true });
-
-/**
- * Tabs through the panel's controls and reports every one whose focus indicator is below 3:1. The field draws its
- * ring as the pill's border (the field itself has no outline), so it is measured on that border.
- */
-async function focusWalk(page: Page, theme: Theme) {
-  await page.evaluate(installToolkit);
-  await page.keyboard.press("Shift");
-  await page.locator("#assistant-chat-panel header button").first().focus();
-  const failures: string[] = [];
-  let stops = 0;
-  for (let presses = 0; presses < 25; presses++) {
-    const inside = await page.evaluate(() => Boolean(document.activeElement?.closest(".assistant-chat")));
-    if (!inside) break;
-    stops++;
-    if (await page.evaluate(() => document.activeElement instanceof HTMLTextAreaElement)) {
-      const form = page.locator(".assistant-chat-form");
-      const border = await toRgb(page, await form.evaluate((node) => getComputedStyle(node).borderTopColor));
-      const ratio = contrast(border, await effectiveBackground(page.locator(".assistant-composer")));
-      if (ratio < 3) failures.push(`${theme} field ring ${ratio.toFixed(2)}:1`);
-    } else {
-      const result = await page.evaluate(() => window.__audit.focus());
-      if (!result.ok) failures.push(`${theme} ${result.where} ${result.ratio.toFixed(2)}:1`);
-    }
-    await page.keyboard.press("Tab");
-  }
-  expect(stops).toBeGreaterThanOrEqual(4);
-  return failures;
-}
 
 for (const theme of THEMES) {
   test.describe(`REQ-14: contrast in the ${theme} theme`, () => {
@@ -143,7 +114,26 @@ test.describe("REQ-14: forced colors", () => {
     for (const mark of await marks.all()) {
       const { weight, underline } = await mark.evaluate((node) => ({ weight: parseInt(getComputedStyle(node).fontWeight, 10), underline: getComputedStyle(node).textDecorationLine }));
       expect(weight >= 600 || underline.includes("underline")).toBe(true);
+      // The default bold alone would pass the line above; the underline is the rule this CSS adds.
+      expect(underline).toContain("underline");
     }
+  });
+
+  test("the field keeps its border and it turns to Highlight on focus", async ({ chat }) => {
+    await chat.goto("/");
+    const ui = await openAssistant(chat);
+    const form = chat.locator(".assistant-chat-form");
+    expect(await form.evaluate((node) => parseFloat(getComputedStyle(node).borderTopWidth))).toBeGreaterThan(0);
+    await ui.input.focus();
+    const highlight = await chat.evaluate(() => {
+      const probe = document.createElement("span");
+      probe.style.color = "Highlight";
+      document.body.append(probe);
+      const color = getComputedStyle(probe).color;
+      probe.remove();
+      return color;
+    });
+    expect(await form.evaluate((node) => getComputedStyle(node).borderTopColor)).toBe(highlight);
   });
 
   test("the bubbles keep an edge when the system drops their fills", async ({ chat }) => {
@@ -171,7 +161,7 @@ test.describe("REQ-16: motion", () => {
     test.use({ reducedMotion: "reduce" });
 
     test("turns, loader, panel, scroll button and chips have no animation or transition, and the scroll is instant", async ({ chat }) => {
-      await mockChat(chat, cartAnswer(8), { hold: true });
+      const mock = await mockChat(chat, cartAnswer(8), { hold: true });
       await chat.goto("/");
       const ui = assistantUi(chat);
       expect(await motionOf(ui.panel)).toMatchObject({ animation: "none", transitionMs: 0 });
@@ -185,6 +175,13 @@ test.describe("REQ-16: motion", () => {
       expect(await motionOf(ui.userTurns)).toMatchObject({ animation: "none", transitionMs: 0 });
       expect(await motionOf(chat.locator(".assistant-loader"))).toMatchObject({ animation: "none" });
       expect(await motionOf(chat.locator(".assistant-scroll"))).toMatchObject({ animation: "none", transitionMs: 0 });
+
+      // A settled answer, the FAB and the composer buttons too.
+      mock.release();
+      await expect(ui.assistantTurns).toHaveCount(1);
+      expect(await motionOf(ui.assistantTurns)).toMatchObject({ animation: "none", transitionMs: 0 });
+      expect(await motionOf(ui.fab)).toMatchObject({ animation: "none", transitionMs: 0 });
+      expect(await motionOf(chat.locator(".assistant-chat-form button"))).toMatchObject({ animation: "none", transitionMs: 0 });
     });
 
     test("the log is at the target right after a send and right after Ir al último mensaje", async ({ chat }) => {
@@ -248,5 +245,6 @@ test.describe("Look: width and long tokens at 360 px", () => {
     expect(widths.user).toBeLessThanOrEqual(widths.content * 0.8 + 0.5);
     expect(widths.logOverflow).toBeLessThanOrEqual(0);
     expect(widths.page).toBeLessThanOrEqual(0);
+    expect(await chat.locator(".assistant-chat").evaluate((node) => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(0);
   });
 });

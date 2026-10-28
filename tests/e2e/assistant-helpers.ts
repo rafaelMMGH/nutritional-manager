@@ -2,7 +2,9 @@ import { randomUUID } from "node:crypto";
 import type { APIRequestContext, BrowserContext, Page } from "@playwright/test";
 import type { ChatAnswer, Rich, ScopeKey, Section } from "../../src/lib/assistant";
 import { sql } from "./database";
-import { test as base, watch } from "./fixtures";
+import { expect, test as base, watch } from "./fixtures";
+import { installToolkit } from "./theme-audit";
+import { contrast, effectiveBackground, toRgb, type Theme } from "./theme-helpers";
 
 export { expect } from "./fixtures";
 
@@ -335,4 +337,36 @@ export async function mockChat(page: Page, answer: ChatAnswer | ((body: { messag
     return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(typeof answer === "function" ? answer(body) : answer) });
   });
   return mock;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Focus rings
+
+/**
+ * Tabs through the panel's controls and reports every one whose focus indicator is below 3:1. The field draws its
+ * ring as the pill's border (the field itself has no outline), so it is measured on that border.
+ */
+export async function focusWalk(page: Page, theme: Theme) {
+  await page.evaluate(installToolkit);
+  await page.keyboard.press("Shift");
+  await page.locator("#assistant-chat-panel header button").first().focus();
+  const failures: string[] = [];
+  let stops = 0;
+  for (let presses = 0; presses < 25; presses++) {
+    const inside = await page.evaluate(() => Boolean(document.activeElement?.closest(".assistant-chat")));
+    if (!inside) break;
+    stops++;
+    if (await page.evaluate(() => document.activeElement instanceof HTMLTextAreaElement)) {
+      const form = page.locator(".assistant-chat-form");
+      const border = await toRgb(page, await form.evaluate((node) => getComputedStyle(node).borderTopColor));
+      const ratio = contrast(border, await effectiveBackground(page.locator(".assistant-composer")));
+      if (ratio < 3) failures.push(`${theme} field ring ${ratio.toFixed(2)}:1`);
+    } else {
+      const result = await page.evaluate(() => window.__audit.focus());
+      if (!result.ok) failures.push(`${theme} ${result.where} ${result.ratio.toFixed(2)}:1`);
+    }
+    await page.keyboard.press("Tab");
+  }
+  expect(stops).toBeGreaterThanOrEqual(4);
+  return failures;
 }
