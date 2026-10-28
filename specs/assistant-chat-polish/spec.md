@@ -309,7 +309,7 @@ None.
 - [x] US2 (P1): follow-ups, unknown reply, thinking, retry and timeout, strict scopes (REQ-5 to REQ-8, REQ-20)
 - [x] US3 (P1): empty state, new conversation, composer, scroll (REQ-9 to REQ-11)
 - [x] US5 (P1): themes and contrast, narrow sheet, motion, live region, modality (REQ-14 to REQ-17, REQ-22)
-- [ ] US4 (P2): scope switcher, search-bar scope, switcher accessibility (REQ-12, REQ-13, REQ-21)
+- [x] US4 (P2): scope switcher, search-bar scope, switcher accessibility (REQ-12, REQ-13, REQ-21)
 
 ## Change log
 
