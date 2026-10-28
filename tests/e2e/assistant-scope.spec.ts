@@ -159,6 +159,8 @@ test.describe("REQ-12: recipe pages", () => {
     await optionOf(chat, "Recetario").click();
     await expect(optionOf(chat, "Recetario")).toHaveAttribute("aria-pressed", "true");
     // A client-side push straight from recipe A to recipe B: no list in between and no full page load.
+    // The push goes through the Next debugging handle: if Next removes it, fail here with a clear message.
+    expect(await chat.evaluate(() => typeof (window as unknown as { next?: { router?: { push?: unknown } } }).next?.router?.push)).toBe("function");
     await chat.evaluate((href) => (window as unknown as { next: { router: { push: (to: string) => void } } }).next.router.push(href), `/recipes/${otherRecipeId}`);
     await expect(chat).toHaveURL(new RegExp(`/recipes/${otherRecipeId}`));
     const ui = assistantUi(chat);

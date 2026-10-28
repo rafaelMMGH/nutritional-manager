@@ -7,7 +7,7 @@ import { assistantUi, focusWalk, buildAnswer, cartAnswer, createChatUser, delete
 
 // How the assistant looks and moves. Spec assistant-chat-polish, US5: REQ-14 (contrast in both themes, forced colors),
 // REQ-16 (motion) and the "Look" details (bubble width, long tokens, no horizontal overflow at 360 px).
-// The compact scope menu, the switcher states and the modal backdrop are audited by the batches that add them.
+// The compact scope menu, the switcher states and the modal backdrop are audited in assistant-a11y.spec.ts.
 
 test.beforeAll(() => createChatUser("look"));
 test.afterAll(() => deleteChatUser());

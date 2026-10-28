@@ -169,7 +169,7 @@ test.describe("REQ-15: the sheet at 360 px", () => {
     await expect(visibleChips.first()).toBeVisible();
     await expectTargets({ "×": ui.close, "Nueva conversación": chat.getByRole("button", { name: "Nueva conversación" }), chips: visibleChips, send: ui.send });
 
-    // Row 1: title and ×. Row 2: the scope line and Nueva conversación (the scope button joins it in Batch 10).
+    // Row 1: title and ×. Row 2: the scope line and Nueva conversación (the scope button sits on it too).
     const title = await boxOf(ui.panel.getByRole("heading", { name: "Asistente" }));
     const close = await boxOf(ui.close);
     const fresh = await boxOf(chat.getByRole("button", { name: "Nueva conversación" }));
@@ -772,9 +772,15 @@ for (const theme of ["light", "dark"] as Theme[]) {
       await button.click();
       const list = ui.panel.getByRole("listbox", { name: "Alcance" });
       await expect(list).toBeVisible();
-      // The menu is inside .assistant-chat, so this audits its text, fills and edges, and hovers each option.
+      // The menu is inside .assistant-chat, so this audits its text, fills and edges. The shared hover list has no
+      // [role="option"], so each option is hovered here and audited on its own (the --brand-50 hover background).
       const result = await auditNow(chat, { scope: ".assistant-chat", tab: false, hover: true });
       expect(result.violations, "open menu").toEqual([]);
+      for (const name of ["Todo", "Plan activo", "Recetario", "Carrito"]) {
+        await list.getByRole("option", { name, exact: true }).hover();
+        const hovered = await auditNow(chat, { scope: ".assistant-chat", tab: false, hover: false });
+        expect(hovered.violations, `option ${name} hovered`).toEqual([]);
+      }
 
       const failures: string[] = [];
       await chat.evaluate(installToolkit);

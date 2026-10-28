@@ -112,6 +112,7 @@ test.describe("REQ-5: chips under the latest answer", () => {
     await chat.goto("/groceries/cart");
     const ui = await openAssistant(chat);
     await expect(ui.chips).toHaveText([CART_CHIP, BUY_CHIP, RECIPES_CHIP]);
+    await expect(ui.chips.nth(2)).toHaveText(RECIPES_CHIP);
     const request = chat.waitForRequest(API);
     await ui.chips.nth(2).click();
     expect((await request).postDataJSON()).toMatchObject({ message: RECIPES_CHIP, scope: "Recetario" });
