@@ -525,13 +525,35 @@ test.describe("REQ-22: the sheet at 360 px is modal", () => {
       await chat.keyboard.press("Shift+Tab");
       expect(await inside(), `Shift+Tab ${press + 1}`).toBe(true);
     }
-    // The ends: Enviar is the last control, the first one is Nueva conversación.
-    expect([...seen]).toEqual(expect.arrayContaining(["Cerrar asistente", "Enviar", "Nueva conversación", "Pregunta"]));
+    // The ends: Enviar is the last control, the first one is the scope button (the desktop group is hidden at this width).
+    expect([...seen]).toEqual(expect.arrayContaining(["Cerrar asistente", "Enviar", "Nueva conversación", "Pregunta", "Alcance: Todo"]));
+    const scope = ui.panel.getByRole("button", { name: "Alcance: Todo" });
     await ui.send.focus();
     await chat.keyboard.press("Tab");
-    await expect(chat.getByRole("button", { name: "Nueva conversación" })).toBeFocused();
+    await expect(scope).toBeFocused();
     await chat.keyboard.press("Shift+Tab");
     await expect(ui.send).toBeFocused();
+    await scope.focus();
+    await chat.keyboard.press("Shift+Tab");
+    await expect(ui.send).toBeFocused();
+  });
+
+  test("with an empty thread the walk still stays in the sheet, skips the hidden desktop group and wraps at the scope button", async ({ chat }) => {
+    await chat.goto("/");
+    const ui = await openSheet(chat);
+    const inside = () => chat.evaluate(() => Boolean(document.activeElement?.closest("#assistant-chat-panel")));
+    const visited: string[] = [];
+    for (let press = 0; press < 12; press++) {
+      await chat.keyboard.press("Tab");
+      expect(await inside(), `Tab ${press + 1}`).toBe(true);
+      visited.push(await chat.evaluate(() => document.activeElement?.getAttribute("aria-label") ?? document.activeElement?.textContent?.trim() ?? ""));
+    }
+    // Every stop is on screen: the display:none group's buttons are never visited, and the walk wraps around the real ones.
+    expect([...new Set(visited)].sort()).toEqual(["Alcance: Todo", "Cerrar asistente", "Pregunta"]);
+    for (let press = 0; press < 12; press++) {
+      await chat.keyboard.press("Shift+Tab");
+      expect(await inside(), `Shift+Tab ${press + 1}`).toBe(true);
+    }
   });
 
   test("× closes the sheet and focus returns to the FAB", async ({ chat }) => {
