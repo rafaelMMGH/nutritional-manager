@@ -2,7 +2,7 @@
 
 Open work for future sessions. The orchestrator should read this at session start and offer the top open item. Tick items when done; move finished items to "Done" with the date.
 
-_Last updated: 2026-10-26_
+_Last updated: 2026-10-28_
 
 ## In progress
 
@@ -23,7 +23,6 @@ _Last updated: 2026-10-26_
 
 ## Needs the user
 
-- [ ] **Review and merge PR #6** (assistant chat polish): https://github.com/rafaelMMGH/nutritional-manager/pull/6
 - [ ] **Manual phone check** for the assistant (13 items, `specs/assistant-chat-polish/tasks.md` T041): iPhone Safari + VoiceOver, Android Chrome + TalkBack.
 - [ ] **Delete local branch `backup/assistant-9a-before-split`** (safety copy from a commit re-split; identical tree to the branch).
 
@@ -62,7 +61,7 @@ Findings, with file:line references: `specs/bugs/shopping-list-findings.md`.
 
 ## Done
 
-- 2026-10-28: **Assistant chat polish**, `feature/assistant-chat-polish`, spec v1.8 implemented (22 REQs, US1–US5). Pushed; PR #6 open.
+- 2026-10-28: **Assistant chat polish**, `feature/assistant-chat-polish`, spec v1.8 implemented (22 REQs, US1–US5). Merged as PR #6 on 2026-10-28.
 
 - 2026-10-23: **Theme switcher (light/dark)**, `feature/theme-switcher` (24 commits), merged as PR #1. Its visual snapshots (`tests/e2e/*-snapshots/`) are gitignored on purpose and stay local. It took about 8 h of agent time and about 2.3M subagent tokens. The retrospective led to the speed rules above.
 - 2026-10-24: Speed rules added to the agent definitions and `docs/agent-workflow.md`, including small-feature limits in `verifier-spec` analyze mode.
