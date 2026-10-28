@@ -551,6 +551,16 @@ test.describe("REQ-22: the sheet at 360 px is modal", () => {
     // Every stop is on screen: the display:none group's buttons are never visited, and the walk wraps around the real ones.
     expect(visited).toEqual(expect.arrayContaining(["Alcance: Todo", "Cerrar asistente", "Pregunta"]));
     for (const option of ["Todo", "Plan activo", "Recetario", "Carrito"]) expect(visited).not.toContain(option);
+    // The wrap itself: Shift+Tab on the scope button, the first stop, lands on the last one.
+    const scope = ui.panel.getByRole("button", { name: "Alcance: Todo" });
+    await scope.focus();
+    await chat.keyboard.press("Shift+Tab");
+    await expect(ui.panel.locator(":focus")).toHaveCount(1);
+    const last = await chat.evaluate(() => document.activeElement?.getAttribute("aria-label") ?? document.activeElement?.textContent?.trim() ?? "");
+    // The walk went round more than once, so a later visit of the scope button is preceded by the last stop.
+    const again = visited.lastIndexOf("Alcance: Todo");
+    expect(again, `visited ${visited.join(" | ")}`).toBeGreaterThan(0);
+    expect(last).toBe(visited[again - 1]);
     for (let press = 0; press < 12; press++) {
       await chat.keyboard.press("Shift+Tab");
       expect(await inside(), `Shift+Tab ${press + 1}`).toBe(true);

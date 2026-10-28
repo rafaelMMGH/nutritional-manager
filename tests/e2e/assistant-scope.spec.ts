@@ -96,11 +96,51 @@ test.describe("REQ-12: a change applies to the next question only", () => {
     await typeQuestion(chat, QUESTION);
     await expect(ui.assistantTurns).toHaveCount(1);
     await optionOf(chat, "Recetario").click();
+    await expect(optionOf(chat, "Recetario")).toHaveAttribute("aria-pressed", "true");
     await chat.getByRole("link", { name: "Compras" }).click();
     await expect(chat).toHaveURL(/\/groceries/);
     await expect(optionOf(chat, "Carrito")).toHaveAttribute("aria-pressed", "true");
     await expect(ui.userTurns).toHaveCount(1);
     await expect(ui.assistantTurns).toHaveCount(1);
+  });
+
+  /** After a navigation the panel may have closed; it is reopened so the switcher can be read. */
+  async function reopenIfClosed(page: Page) {
+    const ui = assistantUi(page);
+    if (!(await ui.panel.isVisible())) await openAssistant(page);
+    return ui;
+  }
+
+  test("moving between pages that share a default resets a chosen scope: the thread stays and the next request is auto", async ({ chat }) => {
+    const mock = await mockChat(chat, cartAnswer());
+    await chat.goto("/");
+    const ui = await openAssistant(chat);
+    await typeQuestion(chat, QUESTION);
+    await expect(ui.assistantTurns).toHaveCount(1);
+    await optionOf(chat, "Recetario").click();
+    await expect(optionOf(chat, "Recetario")).toHaveAttribute("aria-pressed", "true");
+    await chat.getByRole("link", { name: "Planes" }).first().click();
+    await expect(chat).toHaveURL(/\/plans/);
+    await reopenIfClosed(chat);
+    await expect(optionOf(chat, "Todo")).toHaveAttribute("aria-pressed", "true");
+    await expect(optionOf(chat, "Recetario")).toHaveAttribute("aria-pressed", "false");
+    await expect(ui.userTurns).toHaveCount(1);
+    await expect(ui.assistantTurns).toHaveCount(1);
+    await typeQuestion(chat, QUESTION);
+    await expect(ui.assistantTurns).toHaveCount(2);
+    expect(mock.requests.map((request) => request.scope)).toEqual(["auto", "auto"]);
+  });
+
+  test("moving between two groceries pages resets a chosen scope to Carrito", async ({ chat }) => {
+    await chat.goto("/groceries/cart");
+    await openAssistant(chat);
+    await optionOf(chat, "Recetario").click();
+    await expect(optionOf(chat, "Recetario")).toHaveAttribute("aria-pressed", "true");
+    await chat.getByRole("link", { name: /Plantillas/ }).click();
+    await expect(chat).toHaveURL(/\/groceries\/templates/);
+    await reopenIfClosed(chat);
+    await expect(optionOf(chat, "Carrito")).toHaveAttribute("aria-pressed", "true");
+    await expect(optionOf(chat, "Recetario")).toHaveAttribute("aria-pressed", "false");
   });
 });
 
@@ -131,6 +171,7 @@ test.describe("REQ-21: the segmented group on desktop", () => {
   test("the compact button is not rendered on desktop", async ({ chat }) => {
     await chat.goto("/");
     const ui = await openAssistant(chat);
+    await expect(groupOf(chat)).toBeVisible();
     await expect(ui.panel.getByRole("button", { name: /^Alcance:/ })).toHaveCount(0);
   });
 });
@@ -201,6 +242,32 @@ test.describe("REQ-21: the button and listbox at 360 px", () => {
     await scopeButton(chat, "Esta receta").click();
     await expect(listbox(chat).getByRole("option")).toHaveText(["Todo", "Plan activo", "Recetario", "Carrito", "Esta receta"]);
     await expect(optionIn(chat, "Esta receta")).toBeFocused();
+  });
+
+  test("a click on the listbox padding or gap keeps the menu open", async ({ chat }) => {
+    await chat.goto("/");
+    await openAssistant(chat);
+    await scopeButton(chat, "Todo").click();
+    const box = await listbox(chat).boundingBox();
+    expect(box).not.toBeNull();
+    // 2 px inside the top edge is the 6 px padding, above the first option.
+    await chat.mouse.click(box!.x + box!.width / 2, box!.y + 2);
+    await expect(listbox(chat)).toBeVisible();
+    await expect(scopeButton(chat, "Todo")).toHaveAttribute("aria-expanded", "true");
+  });
+
+  test("widening past 640 px closes an open menu, so it is not open when the sheet comes back", async ({ chat }) => {
+    await chat.goto("/");
+    await openAssistant(chat);
+    await scopeButton(chat, "Todo").click();
+    await expect(listbox(chat)).toBeVisible();
+    // Focus on the button, not an option: hiding the menu then raises no blur that would close it.
+    await scopeButton(chat, "Todo").focus();
+    await expect(listbox(chat)).toBeVisible();
+    await chat.setViewportSize({ width: 1024, height: 740 });
+    await chat.setViewportSize(PHONE);
+    await expect(listbox(chat)).toHaveCount(0);
+    await expect(scopeButton(chat, "Todo")).toHaveAttribute("aria-expanded", "false");
   });
 
   test("a question uses the chosen scope", async ({ chat }) => {
