@@ -396,7 +396,8 @@ The old `messages` shape is removed in the same commit that renders `Turn[]` (T0
 
 ## Phase 8: Final verification
 
-- [ ] T041 [setup] `npx tsc --noEmit` and one full `npm run test:e2e`, with zero undeclared console errors or failed API calls.
+- [x] T041 [setup] `npx tsc --noEmit` and one full `npm run test:e2e`, with zero undeclared console errors or failed API calls.
+  - Automated part done 2026-10-28: tsc clean; full run 423/424 (only the known a-theme-visual cart baseline); production build OK in a scratch copy. The manual phone check below is still open and is listed as a known issue in the PR.
   - Manual phone check at Gate 3 (from the Batch 9b review; not automatable). iPhone Safari + VoiceOver and Android Chrome + TalkBack:
     1. Sheet open: swiping on gutters and log edges never scrolls the page.
     2. Keyboard up: the sheet shrinks and the composer stays visible.

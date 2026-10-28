@@ -6,8 +6,6 @@ _Last updated: 2026-10-26_
 
 ## In progress
 
-- [ ] **Assistant chat polish**, spec `specs/assistant-chat-polish/spec.md` v1.3 **approved** 2026-10-26 (size LARGE, 22 REQs, no migration, no new packages). UX checklist 60/60. Next: plan + tasks (planner), analyze loop, Gate 2, then branch `feature/assistant-chat-polish`.
-
 - [ ] **E2E run guard**, branch `fix/e2e-run-guard` (no commits of its own yet; its base, `feature/theme-switcher`, is merged into `main`, so the PR can target `main`). The bug note is `specs/bugs/e2e-run-guard.md`.
   - **⚠️ The code is in `stash@{0}`, not in the working tree.** On 2026-10-24 at 18:27 another Claude session stashed it ("fix/e2e-run-guard WIP: run guard + local server.js/package.json changes") and switched to `fix/shopping-list-quick`.
   - **The stash also holds the user's own unrelated changes:** the `src/server.js` deletion and `package.json` dropping `legacy:dev`. To resume:
@@ -24,6 +22,10 @@ _Last updated: 2026-10-26_
   - **Still needed:** one clean full suite (173 tests) on a quiet machine with no other session running e2e. Then commit path-limited with the bug note `specs/bugs/e2e-run-guard.md` (still untracked in the working tree), and push only with the user's yes.
 
 ## Needs the user
+
+- [ ] **Push `feature/assistant-chat-polish` and open its PR** (72+ local commits, base `main`). PR description draft: `specs/assistant-chat-polish/PR.md`.
+- [ ] **Manual phone check** for the assistant (13 items, `specs/assistant-chat-polish/tasks.md` T041): iPhone Safari + VoiceOver, Android Chrome + TalkBack.
+- [ ] **Delete local branch `backup/assistant-9a-before-split`** (safety copy from a commit re-split; identical tree to the branch).
 
 - [ ] **Push `fix/e2e-run-guard` and open its PR** after the commit, with base `main`.
 - [ ] **Restart Claude Code** so the new speed rules load. These are scout and size triage before grilling, sub-batches of about 300 lines, running only the affected tests while iterating plus one full run per batch, tests shown failing on purpose, and minor findings folded into the next batch. They live in `.claude/agents/*.md`, which is gitignored and local only, and in `docs/agent-workflow.md`.
@@ -59,6 +61,8 @@ Findings, with file:line references: `specs/bugs/shopping-list-findings.md`.
 - [ ] Optional: in `src/lib/client/theme.ts`, after a real reveal-update failure, call `applyTheme(next)` as a fallback so the stored choice and the page agree.
 
 ## Done
+
+- 2026-10-28: **Assistant chat polish**, `feature/assistant-chat-polish`, spec v1.8 implemented (22 REQs, US1–US5). Not yet pushed; see "Needs the user".
 
 - 2026-10-23: **Theme switcher (light/dark)**, `feature/theme-switcher` (24 commits), merged as PR #1. Its visual snapshots (`tests/e2e/*-snapshots/`) are gitignored on purpose and stay local. It took about 8 h of agent time and about 2.3M subagent tokens. The retrospective led to the speed rules above.
 - 2026-10-24: Speed rules added to the agent definitions and `docs/agent-workflow.md`, including small-feature limits in `verifier-spec` analyze mode.

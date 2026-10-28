@@ -1,6 +1,6 @@
 # Spec: Assistant chat polish
 
-**Status:** planned
+**Status:** implemented
 **Version:** 1.8 · **Branch:** feature/assistant-chat-polish · **Owner:** Rafael Martinez
 
 ## Overview
