@@ -127,6 +127,26 @@ test.describe("REQ-10: Enter on a narrow screen", () => {
   });
 });
 
+test.describe("REQ-10: Enter with a coarse primary pointer on a wide screen", () => {
+  test.use({ viewport: { width: 1024, height: 768 }, hasTouch: true, isMobile: true });
+
+  test("at 1024 px Enter adds a newline and sends nothing", async ({ chat }) => {
+    const { ui, mock } = await open(chat);
+    // The premise: the emulation really is a coarse pointer on a screen wider than the 640 px breakpoint.
+    expect(await chat.evaluate(() => [matchMedia("(pointer: coarse)").matches, matchMedia("(max-width: 640px)").matches])).toEqual([true, false]);
+    await ui.input.pressSequentially("uno");
+    await ui.input.press("Enter");
+    await ui.input.pressSequentially("dos");
+    await expect(ui.input).toHaveValue("uno\ndos");
+    await settle(chat);
+    expect(mock.requests).toHaveLength(0);
+
+    await ui.send.click();
+    await expect(ui.assistantTurns).toHaveCount(1);
+    expect(mock.requests.map((request) => request.message)).toEqual(["uno\ndos"]);
+  });
+});
+
 test.describe("REQ-10: the counter", () => {
   test("shows from 450 as n/500, not before, and is the field's description outside any live region", async ({ chat }) => {
     const { ui } = await open(chat);
@@ -427,7 +447,11 @@ test.describe("REQ-11: the composer growing", () => {
   test("a composer that grows with 5 lines keeps a log that was at the bottom at the bottom", async ({ chat }) => {
     const { ui } = await open(chat);
     await fillLog(chat);
+    const logHeight = () => ui.log.evaluate((node) => node.clientHeight);
+    const before = await logHeight();
     await ui.input.fill(["uno", "dos", "tres", "cuatro", "cinco"].join("\n"));
+    // The premise: the composer really grew, so the log really shrank under the reader.
+    await expect.poll(logHeight).toBeLessThan(before);
     await expect.poll(() => toLogBottom(chat)).toBeLessThanOrEqual(24);
     await expect(scrollButton(chat)).toBeHidden();
   });
