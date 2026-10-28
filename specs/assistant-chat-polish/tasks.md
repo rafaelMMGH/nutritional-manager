@@ -295,7 +295,7 @@ The old `messages` shape is removed in the same commit that renders `Turn[]` (T0
 
 **Batch 9a: sheet geometry, targets, backdrop (REQ-15, REQ-14 at 360 px)**
 
-- [ ] T032 [US5] Tests REQ-15 and REQ-14 at 360 px (tests/e2e/assistant-a11y.spec.ts).
+- [x] T032 [US5] Tests REQ-15 and REQ-14 at 360 px (tests/e2e/assistant-a11y.spec.ts).
   - At 740×360, the panel is within the viewport and the input is fully visible.
   - At 360×740:
     - The sheet fills the height, the FAB is hidden and `.assistant-chat-backdrop` is present.
@@ -309,7 +309,7 @@ The old `messages` shape is removed in the same commit that renders `Turn[]` (T0
     - The backdrop: `auditNow` with the sheet open, plus an explicit check that the sheet's edge or surface against the backdrop-composited page is ≥ 3:1.
     - Focus rings on the sheet's controls (×, chips, mic, send), via a Tab walk audit.
     - The compact menu is added in T040.
-- [ ] T045 [US5] Sheet geometry (src/components/shared/AssistantChat.tsx, src/components/shared/assistant-chat.css). Depends on T025. REQ-14, REQ-15.
+- [x] T045 [US5] Sheet geometry (src/components/shared/AssistantChat.tsx, src/components/shared/assistant-chat.css). Depends on T025. REQ-14, REQ-15.
   - At ≤640 px when open:
     - A full-height sheet with 8 px gutters.
     - The FAB is hidden.
@@ -346,6 +346,7 @@ The old `messages` shape is removed in the same commit that renders `Turn[]` (T0
   - `inert` on `.topbar` and `main.content`.
   - Scroll lock on `<html>`.
 - [ ] T035 [US5] Focus and the live region (src/components/shared/AssistantChat.tsx, src/components/shared/AssistantTurn.tsx). Depends on T034. REQ-17, REQ-22.
+  - From the Batch 9a review: at ≤640 px `close()` calls `fabRef.focus()` while the FAB is still `display:none`, so × and Escape leave focus on `body`. Focus the FAB after it renders (`flushSync` or an open→closed effect) and test both × and Escape at 360 px.
   - Tab wrap in the sheet.
   - Interaction details "Focus", including × returning focus to the FAB.
   - The region persists across pending → answer/error.
