@@ -1,7 +1,7 @@
 # Spec: Assistant chat polish
 
 **Status:** planned
-**Version:** 1.7 · **Branch:** feature/assistant-chat-polish · **Owner:** Rafael Martinez
+**Version:** 1.8 · **Branch:** feature/assistant-chat-polish · **Owner:** Rafael Martinez
 
 ## Overview
 
@@ -63,6 +63,7 @@ Rationale only; the rules live in the REQs.
 - **Long answers show their start:** the user reads from the start of the answer.
 - **Modal sheet at ≤640 px, non-modal desktop panel:** a sheet covers the page and touch users have no Escape key.
 - **Compact scope button on narrow screens:** five options do not fit a 360 px header.
+- **Nueva conversación as an icon button at ≤640 px; no subtitle at ≤640 px wide or ≤480 px tall:** at 360 px the full text does not fit beside "Alcance: Plan activo"; the button keeps its accessible name.
 - **One input limit and counting rule on client, bar and server:** bounded input keeps answers and layout predictable; one rule avoids disagreement; the client alone can be bypassed.
 - **Look:** structured answers need width; the theme-switcher spec requires both themes.
 - **Accessibility and motion minimums:** common standards; forced-colors users must still see state; CLAUDE.md requires respecting reduced motion.
@@ -221,6 +222,7 @@ As the user, I want the panel to work in both themes, on my phone, with assistiv
   - Given 360×740, then the sheet fills the viewport height, the FAB is hidden, each target is ≥44×44 px and no target boxes intersect.
   - Given the visual viewport is resized to emulate the keyboard, then the input's box lies inside `visualViewport`.
   - Given 360 px with a long unbroken token, then it wraps and the panel has no horizontal overflow.
+  - The header follows Interaction details "Narrow header". Given 360 px and a non-empty thread, then row 2 shows "Alcance: Plan activo" and the "Nueva conversación" button (accessible name "Nueva conversación"), both ≥44 px, with no overlap and no clipping.
 - **REQ-16:** Motion follows Interaction details "Motion".
   - Given reduced motion, when an answer arrives, then new messages and the loader compute `animation-name: none` or a 0 duration.
   - Given reduced motion, when the panel or sheet opens and the scroll button and chips appear, then each computes a transition and animation duration of 0.
@@ -262,7 +264,7 @@ As the user, I want to choose what the assistant searches from inside the panel.
 ## Interaction details
 
 - **Copy:**
-  - Panel title "Asistente" (existing); "Pregunta"; "Enviar"; "Pensando…"; "Reintentar"; "Ir al último mensaje"; "Nueva conversación"
+  - Panel title "Asistente" (existing); "Pregunta"; "Enviar"; "Pensando…"; "Reintentar"; "Ir al último mensaje"; "Nueva conversación" (always the accessible name and tooltip; visible text only above 640 px wide)
   - Leads: meal times "Estos son los horarios de tus comidas."; plan "Tu objetivo: <objetivo>"; full recipe list "Estas son tus recetas."; filtered recipe list "Estas recetas coinciden con tu pregunta."; cart "Esto es lo que tienes en tu carrito."; Esta receta "Sobre <receta>:"
   - Section titles: "Comidas", "Suplementos", "Recomendaciones", "Recetas", "Ingredientes", "Preparación"; empty supplements item "Sin suplementos registrados"
   - Unknown lead: "No encontré eso en tu información."
@@ -276,7 +278,7 @@ As the user, I want to choose what the assistant searches from inside the panel.
   - After a chip, Reintentar or "Preguntar en Todo": on desktop, the input. At ≤640 px, the log container while waiting, then the new turn (answer or error, focusable by script only); on an error turn, Reintentar is the next focusable control.
   - After a scope change: the switcher (the option, or the compact button). After close: the FAB.
 - **Touch targets (≤640 px):** FAB, ×, Nueva conversación, switcher options or the compact button and its menu options, chips, Reintentar, "Ir al último mensaje", mic, send.
-- **Narrow header (360 px):** row 1: "Asistente" and ×; row 2: "Alcance: <scope>" and "Nueva conversación".
+- **Narrow header (≤640 px wide):** row 1: "Asistente" and ×; row 2: "Alcance: <scope>" and "Nueva conversación" as a 44×44 icon button (accessible name and tooltip "Nueva conversación"). The panel subtitle is hidden at ≤640 px wide and in short viewports (≤480 px tall); in short viewports wider than 640 px, "Nueva conversación" keeps its visible text.
 - **Layout:** user bubbles right-aligned, ≤80% of the log width; assistant answers full width with no bubble and a decorative icon; long tokens wrap; no thread cap.
 - **Motion:** under reduced motion nothing animates (messages, the loader as static "Pensando…" text, the panel or sheet, the scroll button, chips) and scrolling is instant. Otherwise fades and transitions are ≤200 ms (the "Pensando…" loader's looping text blink is exempt) and smooth scrolling is allowed.
 - **Contrast** (both themes): message, lead and item text; scope label, sources, highlights; user bubble; switcher states (default, selected, focus); compact button and menu; chips; send enabled and disabled; placeholder; "Pensando…"; scroll button; error; Reintentar; ×; Nueva conversación; counter and its over-limit state; modal backdrop; focus rings.
@@ -321,3 +323,4 @@ None.
 | 1.5 | 2026-10-26 | Spec-change: recommendations one item per line; empty sections hidden |
 | 1.6 | 2026-10-27 | Spec-change: Reintentar only on the latest turn; chips hidden during a retry; loader exempt from the fade cap |
 | 1.7 | 2026-10-27 | Spec-change: Enter adds a newline on coarse-pointer devices too |
+| 1.8 | 2026-10-28 | Spec-change: narrow header shows Nueva conversación as an icon button and hides the subtitle; corrected: icon-only applies at ≤640 px wide only, the ≤480 px-tall condition only hides the subtitle |
