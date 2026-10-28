@@ -110,6 +110,8 @@ export function useChatScroll(turns: Turn[]) {
     if (turns.length === 0) {
       auto.current = false;
       stuck.current = true;
+      following.current = true;
+      lastTop.current = 0;
       setAtBottom(true);
       return;
     }
