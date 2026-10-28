@@ -1,4 +1,6 @@
 /* Assistant chat (shared): floating action button + panel anchored to the bottom-right corner */
+/* The light theme's --focus-ring is a pale brand tint (1.4:1 on white); rings here need 3:1, so light takes a darker brand step. */
+.assistant-fab, .assistant-chat { --assistant-focus: light-dark(var(--brand-600), var(--focus-ring)); }
 .assistant-fab {
   position: fixed;
   right: 24px;
@@ -17,7 +19,7 @@
   transition: transform 160ms ease, background 160ms ease;
 }
 .assistant-fab:hover { transform: scale(1.05); }
-.assistant-fab:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 3px; }
+.assistant-fab:focus-visible { outline: 3px solid var(--assistant-focus); outline-offset: 3px; }
 .assistant-fab.open { background: var(--toggle-bg); color: var(--toggle-fg); }
 .assistant-chat {
   position: fixed;
@@ -42,13 +44,14 @@
 .assistant-chat.open { opacity: 1; transform: none; visibility: visible; pointer-events: auto; transition: opacity 180ms ease, transform 180ms ease; }
 .assistant-chat-close { display: grid; place-items: center; flex: none; width: 36px; height: 36px; margin-left: auto; border: 0; border-radius: 50%; background: var(--pill); color: var(--text-2); cursor: pointer; }
 .assistant-chat-close:hover { background: var(--pill-hover); }
+.assistant-chat-close:focus-visible, .assistant-chat-form button:focus-visible { outline: 2px solid var(--assistant-focus); outline-offset: 2px; }
 .assistant-chat-error { margin: 0 18px 8px; color: var(--warn-text); font-size: 13px; }
 .assistant-chat-form .assistant-mic { background: var(--pill); color: var(--text-1); }
 .assistant-chat-form .assistant-mic:hover { background: var(--pill-hover); }
 .assistant-chat-form .assistant-mic.listening { background: var(--danger-fill); color: var(--on-brand); animation: mic-pulse 1.4s ease-out infinite; }
 @keyframes mic-pulse { 0% { box-shadow: 0 0 0 0 rgb(239 68 68 / 0.45); } 100% { box-shadow: 0 0 0 12px rgb(239 68 68 / 0); } }
 @media (prefers-reduced-motion: reduce) {
-  .assistant-chat, .assistant-fab { transition: none; }
+  .assistant-chat, .assistant-chat.open, .assistant-fab { transition: none; }
   .assistant-chat-form .assistant-mic.listening { animation: none; }
 }
 @media (max-width: 640px) {
@@ -60,24 +63,26 @@
 .assistant-chat header div { flex: 1; min-width: 0; }
 .assistant-chat-new { display: inline-flex; align-items: center; flex: none; gap: 6px; padding: 7px 12px; border: 1px solid var(--hairline); border-radius: 999px; background: var(--surface-raised); color: var(--text-1); font-size: 13px; font-weight: 600; cursor: pointer; }
 .assistant-chat-new:hover { border-color: var(--brand-200); background: var(--brand-50); }
-.assistant-chat-new:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.assistant-chat-new:focus-visible { outline: 2px solid var(--assistant-focus); outline-offset: 2px; }
 .assistant-chat h2 { margin: 0; font-size: 20px; font-weight: 700; }
-.assistant-chat header p { margin: 0; overflow: hidden; color: var(--text-3); font-size: 13.5px; text-overflow: ellipsis; white-space: nowrap; }
+.assistant-chat header p { margin: 0; overflow: hidden; color: var(--text-muted); font-size: 13.5px; text-overflow: ellipsis; white-space: nowrap; }
 /* The log's frame, so the scroll button can sit over its bottom edge. */
 .assistant-chat-body { position: relative; display: flex; flex: 1; flex-direction: column; min-height: 0; }
 .assistant-chat-log { display: flex; flex: 1; flex-direction: column; gap: 10px; min-height: 0; padding: 16px; overflow-y: auto; }
 .assistant-chat-empty { display: grid; gap: 14px; margin-top: auto; }
-.assistant-chat-empty p { margin: 0; color: var(--text-3); font-size: 14px; line-height: 1.45; }
+.assistant-chat-empty p { margin: 0; color: var(--text-muted); font-size: 14px; line-height: 1.45; }
 .assistant-chips { display: grid; gap: 8px; margin-top: 10px; }
 .assistant-chat-empty .assistant-chips { margin-top: 0; }
 .assistant-chips .assistant-suggestion { padding: 11px 14px; border: 1px solid var(--hairline); border-radius: 16px; background: var(--surface-raised); color: var(--text-1); font-size: 14px; font-weight: 500; text-align: left; cursor: pointer; }
 .assistant-chips .assistant-suggestion:hover:not(:disabled) { border-color: var(--brand-200); background: var(--brand-50); }
-.assistant-chips .assistant-suggestion:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.assistant-chips .assistant-suggestion:focus-visible { outline: 2px solid var(--assistant-focus); outline-offset: 2px; }
 .assistant-chips .assistant-suggestion:disabled { background: var(--pill); color: var(--text-2); cursor: default; }
-.assistant-turn { max-width: 90%; padding: 12px 14px; border-radius: 18px; font-size: 14px; line-height: 1.45; }
+.assistant-turn { max-width: 90%; padding: 12px 14px; border-radius: 18px; font-size: 14px; line-height: 1.45; animation: assistant-fade-in 160ms ease-out; }
+.assistant-chips .assistant-suggestion { animation: assistant-fade-in 160ms ease-out; }
+@keyframes assistant-fade-in { from { opacity: 0; } }
 /* The global `p` rule paints paragraphs muted; turn text takes the bubble's color instead. */
 .assistant-turn p { margin: 0; color: inherit; white-space: pre-wrap; overflow-wrap: anywhere; }
-.assistant-turn.user { align-self: flex-end; border-bottom-right-radius: 6px; background: var(--brand-fill); color: var(--on-brand); }
+.assistant-turn.user { align-self: flex-end; max-width: 80%; border-bottom-right-radius: 6px; background: var(--brand-fill); color: var(--on-brand); }
 .assistant-turn.assistant { align-self: flex-start; border-bottom-left-radius: 6px; background: var(--canvas); color: var(--text-1); }
 .assistant-turn-head { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; color: var(--text-2); }
 .assistant-turn-label { font-size: 12px; font-weight: 600; }
@@ -94,13 +99,13 @@
 @media (prefers-reduced-motion: reduce) { .assistant-loader { animation: none; } }
 .assistant-retry { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; padding: 6px 12px; border: 1px solid var(--hairline); border-radius: 999px; background: var(--surface-raised); color: var(--text-1); font-size: 13px; font-weight: 600; cursor: pointer; }
 .assistant-retry:hover { border-color: var(--brand-200); background: var(--brand-50); }
-.assistant-retry:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.assistant-retry:focus-visible { outline: 2px solid var(--assistant-focus); outline-offset: 2px; }
 .assistant-composer { margin: 0 14px 14px; }
-.assistant-chat-form { display: flex; align-items: flex-end; gap: 8px; padding: 6px 6px 6px 18px; border: 1.5px solid var(--field-line); border-radius: 24px; }
+.assistant-chat-form { display: flex; align-items: flex-end; gap: 8px; padding: 6px 6px 6px 18px; border: 1.5px solid light-dark(var(--text-3), var(--field-line)); border-radius: 24px; }
 .assistant-chat-form:focus-within { border-color: var(--brand); }
 /* Over the shadcn textarea's utilities: the field is borderless inside the pill and grows to 5 lines (22 px each), then scrolls. */
 .assistant-chat-form .assistant-input { flex: 1; field-sizing: fixed; min-width: 0; min-height: 40px; max-height: 128px; padding: 9px 0; border: 0; border-radius: 0; outline: 0; box-shadow: none; background: transparent; color: var(--text-1); font-size: 15px; line-height: 22px; resize: none; overflow-y: auto; }
-.assistant-chat-form .assistant-input::placeholder { color: var(--placeholder); }
+.assistant-chat-form .assistant-input::placeholder { color: var(--text-muted); opacity: 1; }
 .assistant-counter { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0 4px; margin: 4px 8px 0; color: var(--text-2); font-size: 12px; }
 .assistant-counter.over { color: var(--warn-text); font-weight: 600; }
 .assistant-chat-form button { display: grid; place-items: center; flex: none; width: 40px; height: 40px; border: 0; border-radius: 50%; background: var(--btn); color: var(--on-brand); cursor: pointer; transition: background-color 140ms ease; }
@@ -110,5 +115,16 @@
 .assistant-scroll { position: absolute; bottom: 12px; left: 50%; z-index: 1; display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid var(--hairline); border-radius: 50%; background: var(--surface-raised); color: var(--text-1); box-shadow: 0 4px 14px rgb(15 23 42 / 0.16); cursor: pointer; opacity: 0; transform: translate(-50%, 16px) scale(0.95); visibility: hidden; transition: opacity 160ms ease, transform 160ms ease, visibility 0s linear 160ms; }
 .assistant-scroll.visible { opacity: 1; transform: translate(-50%, 0); visibility: visible; transition: opacity 160ms ease, transform 160ms ease; }
 .assistant-scroll:hover { border-color: var(--brand-200); background: var(--brand-50); }
-.assistant-scroll:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.assistant-scroll:focus-visible { outline: 2px solid var(--assistant-focus); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { .assistant-scroll, .assistant-scroll.visible { transition: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .assistant-turn, .assistant-chips .assistant-suggestion { animation: none; }
+  .assistant-chat-form button { transition: none; }
+}
+/* Forced colors drops the fills that tell the two speakers apart and frame the field: keep an edge on them. */
+@media (forced-colors: active) {
+  .assistant-turn { border: 1px solid CanvasText; }
+  .assistant-turn strong { font-weight: 700; text-decoration: underline; }
+  .assistant-chat-form { border-color: CanvasText; }
+  .assistant-chat-form:focus-within { border-color: Highlight; }
+}
