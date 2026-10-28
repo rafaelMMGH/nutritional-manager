@@ -1,6 +1,6 @@
 # Tasks: Assistant chat polish
 
-**Spec:** [spec.md](spec.md) (v1.5) · **Plan:** [plan.md](plan.md) · **Contract:** [contracts/chat-api.md](contracts/chat-api.md)
+**Spec:** [spec.md](spec.md) (v1.8) · **Plan:** [plan.md](plan.md) · **Contract:** [contracts/chat-api.md](contracts/chat-api.md)
 
 Format: `- [ ] T### [P] [US#] Description (path/to/file)`.
 `[P]` = can run in parallel with other `[P]` tasks in the same batch (different files, no shared dependency).
@@ -23,7 +23,7 @@ Task IDs stay stable across revisions, so some appear out of numeric order. New 
   - `specs/BACKLOG.md` and `specs/bugs/e2e-run-guard.md` are user changes. Leave them alone.
 - e2e runs are sequential. Never run two at once, and never leave a background run.
 - Do not add npm packages, run `next build` in place, run migrations or use the `shadcn` CLI.
-- Copy is es-MX and verbatim from spec v1.5, including the confirmed leads and section titles in the contract. Tests may assert it.
+- Copy is es-MX and verbatim from spec v1.8, including the confirmed leads and section titles in the contract. Tests may assert it.
 - Every new or changed test is shown red by temporarily breaking the code it protects.
 - **Contrast per batch:** each batch styles the elements it adds with theme tokens only (`var(--…)`, including hover and focus states). The existing `theme-palette` audits and hover sweeps must stay green at every gate. T031 only tunes and verifies.
 - **Snapshots:** if `a-theme-visual` diffs only in the assistant area, report it to the orchestrator, which asks the user. Run `--update-snapshots` only after the user's explicit yes. A diff outside the assistant area is a regression to fix in the batch.
@@ -382,7 +382,7 @@ The old `messages` shape is removed in the same commit that renders `Turn[]` (T0
   - Disabled while `assistantBusy`.
   - Skips a trimmed length over 500.
   - Uses `askInScope`.
-- [ ] T040 [US4] Switcher assertions in earlier specs (tests/e2e/assistant-next-step.spec.ts, tests/e2e/assistant-look.spec.ts, tests/e2e/assistant-a11y.spec.ts). REQ-5, REQ-14, REQ-15, REQ-20, REQ-22.
+- [x] T040 [US4] Switcher assertions in earlier specs (tests/e2e/assistant-next-step.spec.ts, tests/e2e/assistant-look.spec.ts, tests/e2e/assistant-a11y.spec.ts). REQ-5, REQ-14, REQ-15, REQ-20, REQ-22.
   - REQ-5: a groceries chip leaves the switcher at "Carrito".
   - REQ-20: "Preguntar en Todo" leaves it at "Recetario".
   - REQ-14:
@@ -407,6 +407,10 @@ The old `messages` shape is removed in the same commit that renders `Turn[]` (T0
     7. A visible toast does not block ×.
     8. Rotating to landscape >640 px while open: the page scrolls again and focus is sane.
     9. Notched device: safe areas look acceptable (env() is 0 without viewport-fit=cover; backlog).
+    10. Screen reader on the compact scope button and menu (REQ-21): expanded state announced, options swipeable and selectable with a double tap, focus returns to the button.
+    11. Rotate past 640 px with the scope menu open, then back: the menu is closed (the Safari case the resize test only emulates).
+    12. Real touch keyboard (REQ-10): Enter adds a newline and does not send.
+    13. Real input method, e.g. Japanese (REQ-10): Enter during composition sends nothing.
   - Apply the snapshot policy above.
   - Optionally, check a production build in a scratch copy, never in place.
   - Tick only the spec's Progress boxes (specs/assistant-chat-polish/spec.md) and report. Do not change **Status**, because the orchestrator owns status changes. Do not commit spec edits unless the user asks.
