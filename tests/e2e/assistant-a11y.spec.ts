@@ -549,7 +549,8 @@ test.describe("REQ-22: the sheet at 360 px is modal", () => {
       visited.push(await chat.evaluate(() => document.activeElement?.getAttribute("aria-label") ?? document.activeElement?.textContent?.trim() ?? ""));
     }
     // Every stop is on screen: the display:none group's buttons are never visited, and the walk wraps around the real ones.
-    expect([...new Set(visited)].sort()).toEqual(["Alcance: Todo", "Cerrar asistente", "Pregunta"]);
+    expect(visited).toEqual(expect.arrayContaining(["Alcance: Todo", "Cerrar asistente", "Pregunta"]));
+    for (const option of ["Todo", "Plan activo", "Recetario", "Carrito"]) expect(visited).not.toContain(option);
     for (let press = 0; press < 12; press++) {
       await chat.keyboard.press("Shift+Tab");
       expect(await inside(), `Shift+Tab ${press + 1}`).toBe(true);

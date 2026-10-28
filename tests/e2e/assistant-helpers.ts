@@ -349,7 +349,8 @@ export async function mockChat(page: Page, answer: ChatAnswer | ((body: { messag
 export async function focusWalk(page: Page, theme: Theme) {
   await page.evaluate(installToolkit);
   await page.keyboard.press("Shift");
-  await page.locator("#assistant-chat-panel header button").first().focus();
+  // The first one on screen: the switcher's other variant is display:none and cannot take focus.
+  await page.locator("#assistant-chat-panel header button:visible").first().focus();
   const failures: string[] = [];
   let stops = 0;
   for (let presses = 0; presses < 25; presses++) {
