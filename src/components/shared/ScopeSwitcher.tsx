@@ -13,12 +13,14 @@ type Props = {
   onChange: (scope: ScopeKey) => void;
   /** A recipe page also offers "Esta receta". */
   recipe: boolean;
+  /** Whether the compact button shows (the sheet's media query); crossing it closes an open menu. */
+  sheet: boolean;
 };
 
 // Where the next question is asked (REQ-12). Both variants are rendered and the CSS shows one: a segmented group on
 // desktop and a button with a listbox popup at ≤640 px (REQ-21). The hidden one is `display: none`, so it is neither
 // read nor reachable. The selected option carries a border and a check, never color alone.
-export function ScopeSwitcher({ value, onChange, recipe }: Props) {
+export function ScopeSwitcher({ value, onChange, recipe, sheet }: Props) {
   const scopes = recipe ? [...PAGE_SCOPES, "Receta" as const] : PAGE_SCOPES;
   return (
     <>
@@ -36,14 +38,14 @@ export function ScopeSwitcher({ value, onChange, recipe }: Props) {
           </Toggle>
         ))}
       </ToggleGroup>
-      <ScopeMenu scopes={scopes} value={value} onChange={onChange} />
+      <ScopeMenu scopes={scopes} value={value} onChange={onChange} sheet={sheet} />
     </>
   );
 }
 
 // A button that opens a listbox: real focus moves between the options (roving), Enter or Space selects and closes, Escape
 // closes and takes the event (preventDefault) so the panel behind it stays open (REQ-22).
-function ScopeMenu({ scopes, value, onChange }: { scopes: ScopeKey[]; value: ScopeKey; onChange: (scope: ScopeKey) => void }) {
+function ScopeMenu({ scopes, value, onChange, sheet }: { scopes: ScopeKey[]; value: ScopeKey; onChange: (scope: ScopeKey) => void; sheet: boolean }) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -54,6 +56,9 @@ function ScopeMenu({ scopes, value, onChange }: { scopes: ScopeKey[]; value: Sco
   useEffect(() => {
     if (open) options().find((node) => node.getAttribute("aria-selected") === "true")?.focus();
   }, [open]);
+
+  // The menu is hidden by CSS above 640 px; it must not still be open when the sheet comes back.
+  useEffect(() => setOpen(false), [sheet]);
 
   function close() {
     setOpen(false);
@@ -114,7 +119,7 @@ function ScopeMenu({ scopes, value, onChange }: { scopes: ScopeKey[]; value: Sco
         <ChevronDown size={16} aria-hidden="true" />
       </button>
       {open && (
-        <div id={listboxId} role="listbox" aria-label="Alcance" className="assistant-scope-list">
+        <div id={listboxId} role="listbox" aria-label="Alcance" className="assistant-scope-list" onMouseDown={(event) => event.preventDefault()}>
           {scopes.map((scope) => (
             <div key={scope} role="option" aria-selected={scope === value} tabIndex={-1} className="assistant-scope-choice" onClick={() => choose(scope)}>
               {SCOPE_LABEL[scope]}

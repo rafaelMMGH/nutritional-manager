@@ -207,7 +207,7 @@ export function AssistantChat({ title = "Asistente", subtitle, suggestions = [],
             <h2>{title}</h2>
             <p>{subtitle}</p>
           </div>
-          <ScopeSwitcher value={scope} onChange={onScopeChange} recipe={recipe} />
+          <ScopeSwitcher value={scope} onChange={onScopeChange} recipe={recipe} sheet={sheet} />
           {turns.length > 0 && (
             <button type="button" className="assistant-chat-new" onClick={startOver} aria-label="Nueva conversación" title="Nueva conversación">
               <MessageSquarePlus size={16} aria-hidden="true" /> <span>Nueva conversación</span>

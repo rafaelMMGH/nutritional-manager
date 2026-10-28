@@ -70,7 +70,7 @@
 .assistant-scope-option:hover:not([data-pressed]) { border-color: var(--brand-200); background: var(--brand-50); }
 .assistant-scope-option:focus-visible, .assistant-scope-button:focus-visible, .assistant-scope-choice:focus-visible { outline: 2px solid var(--assistant-focus); outline-offset: 2px; }
 .assistant-scope-button { justify-content: space-between; max-width: 100%; padding: 0 14px; }
-.assistant-scope-list { position: absolute; z-index: 2; top: calc(100% + 4px); left: 0; display: grid; gap: 4px; min-width: 100%; padding: 6px; border: 1px solid light-dark(var(--text-3), var(--field-line)); border-radius: 16px; background: var(--surface); box-shadow: 0 12px 32px rgb(15 23 42 / 0.22); }
+.assistant-scope-list { position: absolute; z-index: 2; top: calc(100% + 4px); left: 0; display: grid; gap: 4px; min-width: 100%; padding: 6px; border: 1px solid light-dark(var(--text-3), var(--field-line)); border-radius: 16px; background: var(--surface); box-shadow: 0 12px 32px rgb(var(--shadow-rgb) / 0.22); }
 .assistant-scope-choice { justify-content: space-between; min-height: 44px; padding: 0 12px; border-color: transparent; border-radius: 12px; background: transparent; }
 .assistant-scope-choice[aria-selected=true] { border: 2px solid var(--brand-ink); background: var(--brand-50); color: var(--brand-ink); }
 .assistant-scope-choice:hover:not([aria-selected=true]) { background: var(--brand-50); }

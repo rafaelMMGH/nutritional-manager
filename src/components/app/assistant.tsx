@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { createContext, useCallback, useContext, useLayoutEffect, useRef, useState } from "react";
 import type { AssistantRequest, Turn, TurnChip } from "@/components/shared/AssistantTurn";
 import { api } from "@/lib/client/api";
@@ -12,6 +13,8 @@ export type AssistantPageContext = {
   /** The recipe a "Receta" question is about. */
   recipeId?: string;
   suggestions: Chip[];
+  /** The route the context was registered on; `useAssistantContext` fills it in. */
+  path?: string;
 };
 
 /** A request still pending after this long is given up on (REQ-8). */
@@ -57,7 +60,8 @@ export const AssistantPageProvider = PageContextSetter.Provider;
 // Lets a page swap the assistant's subtitle, starter questions and default scope while it is mounted. The context is plain data.
 export function useAssistantContext(context: AssistantPageContext) {
   const setContext = useContext(PageContextSetter);
-  const key = JSON.stringify(context);
+  const pathname = usePathname();
+  const key = JSON.stringify({ ...context, path: pathname });
   // Layout effects, so the context changes in the same commit as the route: a question typed right after navigating can't be sent with the old scope.
   useLayoutEffect(() => {
     setContext?.(JSON.parse(key));
@@ -80,15 +84,23 @@ export function useAssistantState() {
   const nextId = useRef(0);
   const generation = useRef(0);
 
-  // Navigating keeps the thread but puts the scope back to the new page's default (REQ-12). A change that keeps the page's
-  // default scope and recipe (e.g. a renamed subtitle) leaves the user's chosen scope alone.
+  // A context for another route (or recipe, or default scope) puts the scope back to its default (REQ-12). Pages register
+  // when their subtree mounts, which can be a later commit than the route change, so the route travels with the context.
+  // Editing the context in place (e.g. a renamed subtitle) leaves the user's chosen scope alone.
   const setPage = useCallback((next: AssistantPageContext | null) => {
     const before = pageRef.current ?? DEFAULT_CONTEXT;
     const after = next ?? DEFAULT_CONTEXT;
     pageRef.current = next;
     setPageContext(next);
-    if (before.defaultScope !== after.defaultScope || before.recipeId !== after.recipeId) setScope(after.defaultScope);
+    if (before.defaultScope !== after.defaultScope || before.recipeId !== after.recipeId || before.path !== after.path) setScope(after.defaultScope);
   }, []);
+
+  // Navigating keeps the thread but resets the scope to the new page's default (REQ-12), also between pages that share one
+  // and pages that register no context at all. Child layout effects run first, so a page mounted in the same commit is already in `pageRef`.
+  const pathname = usePathname();
+  useLayoutEffect(() => {
+    setScope((pageRef.current ?? DEFAULT_CONTEXT).defaultScope);
+  }, [pathname]);
 
   /**
    * Asks `sent` for the turn `id` and settles that turn with the answer or the error. Requests are never aborted: each

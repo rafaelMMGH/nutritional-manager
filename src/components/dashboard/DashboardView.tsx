@@ -25,7 +25,7 @@ import {
   plural,
   qty
 } from "./food";
-import { MAX_MESSAGE, SCOPE_LABEL, type ScopeKey } from "@/lib/assistant";
+import { MAX_MESSAGE, SCOPE_LABEL, messageLength, type ScopeKey } from "@/lib/assistant";
 import "./home.css";
 
 const WEEKDAYS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
@@ -252,7 +252,7 @@ function SearchBar({ onAsk, busy }: { onAsk: (message: string, scope: ScopeKey) 
     event.preventDefault();
     const message = query.trim();
     // Over the limit it is not sent (REQ-13); the text stays so it can be shortened.
-    if (!message || busy || message.length > MAX_MESSAGE) return;
+    if (!message || busy || messageLength(query) > MAX_MESSAGE) return;
     // The question moves into the assistant panel right away, so the field clears on send, not when the answer lands.
     setQuery("");
     await onAsk(message, scope);
