@@ -240,7 +240,7 @@ test.describe("Look: width and long tokens at 360 px", () => {
       const style = getComputedStyle(log);
       const content = log.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
       const user = (document.querySelector(".assistant-turn.user") as HTMLElement).getBoundingClientRect().width;
-      return { content, user, logOverflow: log.scrollWidth - log.clientWidth, page: document.documentElement.scrollWidth - window.innerWidth };
+      return { content, user, logOverflow: log.scrollWidth - log.clientWidth, page: document.documentElement.scrollWidth - document.documentElement.clientWidth };
     });
     expect(widths.user).toBeLessThanOrEqual(widths.content * 0.8 + 0.5);
     expect(widths.logOverflow).toBeLessThanOrEqual(0);

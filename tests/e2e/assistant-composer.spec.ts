@@ -189,27 +189,36 @@ test.describe("REQ-10: the counter", () => {
   });
 });
 
-test.describe("REQ-10: growth", () => {
-  test("the field grows to 5 lines, then scrolls", async ({ chat }) => {
-    const { ui } = await open(chat);
-    const heights = async () => ui.input.evaluate((node) => ({ client: node.clientHeight, scroll: node.scrollHeight }));
-    const lines = (count: number) => Array.from({ length: count }, (_, index) => `l${index + 1}`).join("\n");
+/** The field grows up to 5 lines, then scrolls; it shrinks back with the content. */
+async function expectGrowthToFiveLines(chat: Page) {
+  const { ui } = await open(chat);
+  const heights = async () => ui.input.evaluate((node) => ({ client: node.clientHeight, scroll: node.scrollHeight }));
+  const lines = (count: number) => Array.from({ length: count }, (_, index) => `l${index + 1}`).join("\n");
 
-    await ui.input.fill(lines(1));
-    const one = await heights();
-    await ui.input.fill(lines(3));
-    expect((await heights()).client).toBeGreaterThan(one.client);
-    await ui.input.fill(lines(5));
-    const five = await heights();
-    expect(five.scroll).toBeLessThanOrEqual(five.client);
-    await ui.input.fill(lines(6));
-    const six = await heights();
-    expect(six.client).toBe(five.client);
-    expect(six.scroll).toBeGreaterThan(six.client);
-    await expect(ui.input).toHaveCSS("overflow-y", "auto");
-    // It shrinks back with the content.
-    await ui.input.fill(lines(1));
-    expect((await heights()).client).toBe(one.client);
+  await ui.input.fill(lines(1));
+  const one = await heights();
+  await ui.input.fill(lines(3));
+  expect((await heights()).client).toBeGreaterThan(one.client);
+  await ui.input.fill(lines(5));
+  const five = await heights();
+  expect(five.scroll).toBeLessThanOrEqual(five.client);
+  await ui.input.fill(lines(6));
+  const six = await heights();
+  expect(six.client).toBe(five.client);
+  expect(six.scroll).toBeGreaterThan(six.client);
+  await expect(ui.input).toHaveCSS("overflow-y", "auto");
+  // It shrinks back with the content.
+  await ui.input.fill(lines(1));
+  expect((await heights()).client).toBe(one.client);
+}
+
+test.describe("REQ-10: growth", () => {
+  test("the field grows to 5 lines, then scrolls", async ({ chat }) => expectGrowthToFiveLines(chat));
+
+  test.describe("at 360 px, where the sheet pads the field by 11 px", () => {
+    test.use({ viewport: { width: 360, height: 740 } });
+
+    test("the field grows to 5 lines, then scrolls", async ({ chat }) => expectGrowthToFiveLines(chat));
   });
 });
 

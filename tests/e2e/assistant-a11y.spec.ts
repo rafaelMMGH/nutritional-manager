@@ -2,10 +2,11 @@ import type { Locator, Page } from "@playwright/test";
 import { expectIssues } from "./fixtures";
 import { auditNow, visit } from "./theme-audit";
 import { canvasColor, contrast, effectiveBackground, toRgb, type Rgba, type Theme } from "./theme-helpers";
-import { assistantUi, cartAnswer, createChatUser, deleteChatUser, expect, focusWalk, mockChat, openAssistant, test } from "./assistant-helpers";
+import { assistantUi, buildAnswer, cartAnswer, createChatUser, deleteChatUser, expect, focusWalk, mockChat, openAssistant, test } from "./assistant-helpers";
 
 // The assistant as a phone sheet. Spec assistant-chat-polish, US5: REQ-15 (geometry, touch targets, safe areas, the
-// on-screen keyboard, long tokens), REQ-14 at 360 px (backdrop, focus rings). Modality and focus are Batch 9b.
+// on-screen keyboard, long tokens), REQ-14 at 360 px (backdrop, focus rings), REQ-17 (turn names, live region) and REQ-22
+// (modality and focus).
 
 test.beforeAll(() => createChatUser("a11y"));
 test.afterAll(() => deleteChatUser());
@@ -13,6 +14,7 @@ test.afterAll(() => deleteChatUser());
 const QUESTION = "¿Qué tengo en mi carrito?";
 const FAILED_500 = [/POST \/api\/rag\/chat → 500/, /Failed to load resource.*500/];
 const PHONE = { width: 360, height: 740 };
+const ERROR_TEXT = "No pude responder en este momento.";
 
 /** The browser reports no SpeechRecognition on this build: stub it so the mic (a target to measure) is rendered. */
 async function withMic(page: Page) {
@@ -126,6 +128,8 @@ test.describe("REQ-15: the sheet at 360 px", () => {
     await expectTargets({ FAB: ui.fab });
     await openSheet(chat);
     await expectTargets({ "×": ui.close, chips: ui.chips, mic: ui.panel.getByRole("button", { name: "Dictar pregunta" }), send: ui.send });
+    // The field is a target too (its width is the pill's, so only the height is checked).
+    expect((await boxOf(ui.input)).height).toBeGreaterThanOrEqual(44);
   });
 
   test("with a thread: Nueva conversación and Ir al último mensaje too, and the header takes two rows", async ({ chat }) => {
@@ -186,7 +190,7 @@ test.describe("REQ-15: the sheet at 360 px", () => {
     const overflow = await chat.evaluate(() => {
       const panel = document.querySelector(".assistant-chat") as HTMLElement;
       const log = document.querySelector(".assistant-chat-log") as HTMLElement;
-      return { panel: panel.scrollWidth - panel.clientWidth, log: log.scrollWidth - log.clientWidth, page: document.documentElement.scrollWidth - innerWidth };
+      return { panel: panel.scrollWidth - panel.clientWidth, log: log.scrollWidth - log.clientWidth, page: document.documentElement.scrollWidth - document.documentElement.clientWidth };
     });
     expect(overflow.panel).toBe(0);
     expect(overflow.log).toBe(0);
@@ -264,6 +268,379 @@ test.describe("REQ-15: safe areas and the on-screen keyboard", () => {
     const input = await boxOf(ui.input);
     expect(input.y).toBeGreaterThanOrEqual(0);
     expect(input.y + input.height).toBeLessThanOrEqual(420);
+  });
+});
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// REQ-17: turn names and the live region
+
+test.describe("REQ-17: turns and the live region", () => {
+  /** True when `locator` sits inside (or is) a live region. */
+  const inLiveRegion = (locator: Locator) => locator.evaluate((node) => Boolean(node.closest("[aria-live]")));
+
+  test("turns are exposed as Tú and Asistente and the assistant icon is hidden", async ({ chat }) => {
+    await mockChat(chat, cartAnswer(3));
+    await chat.goto("/");
+    const ui = await openSheet(chat);
+    await ask(chat, QUESTION);
+    await expect(ui.assistantTurns).toHaveCount(1);
+    await expect(ui.panel.getByRole("article", { name: "Tú", exact: true })).toHaveCount(1);
+    await expect(ui.panel.getByRole("article", { name: "Asistente", exact: true })).toHaveCount(1);
+    const icon = ui.assistantTurns.locator(".assistant-turn-head svg");
+    await expect(icon).toHaveCount(1);
+    await expect(icon).toHaveAttribute("aria-hidden", "true");
+  });
+
+  test("the region exists while pending without Pensando…, then holds the lead and every item and nothing else", async ({ chat }) => {
+    const mock = await mockChat(chat, cartAnswer(3), { hold: true });
+    await chat.goto("/");
+    const ui = await openSheet(chat);
+    await ask(chat, QUESTION);
+    await expect(ui.pending).toHaveCount(1);
+    await expect(ui.live).toHaveCount(1);
+    await expect(ui.live).toHaveAttribute("aria-live", "polite");
+    await expect(ui.live).toHaveText("");
+    await expect(ui.pending.getByText("Pensando…")).toBeVisible();
+    expect(await inLiveRegion(ui.pending.getByText("Pensando…"))).toBe(false);
+    // The same element goes from pending to answer: a region inserted with its content is not reliably announced.
+    await ui.live.evaluate((node) => node.setAttribute("data-probe", "same"));
+
+    mock.release();
+    await expect(ui.assistantTurns).toHaveCount(1);
+    await expect(ui.live).toHaveAttribute("data-probe", "same");
+    await expect(ui.live).toContainText("Esto es lo que tienes en tu carrito.");
+    for (const item of ["Ingrediente 01 · 1 g", "Ingrediente 02 · 2 g", "Ingrediente 03 · 3 g"]) await expect(ui.live).toContainText(item);
+    const region = (await ui.live.textContent()) ?? "";
+    expect(region).not.toContain(QUESTION);
+    expect(region).not.toContain((await ui.labels.first().textContent()) ?? "unreachable");
+    for (const [name, locator] of Object.entries({ "user turn": ui.userTurns, label: ui.labels, chips: ui.chips.first() })) {
+      expect(await inLiveRegion(locator.first()), `${name} is outside the region`).toBe(false);
+    }
+    expect(region).not.toContain((await ui.chips.first().textContent()) ?? "unreachable");
+  });
+
+  test.describe("an error", () => {
+    test.use({ expectedIssues: expectIssues(...FAILED_500) });
+
+    test("the region holds the error text but not Reintentar, which follows it in tab order", async ({ chat }) => {
+      await mockChat(chat, cartAnswer(), { status: 500 });
+      await chat.goto("/");
+      const ui = await openSheet(chat);
+      await ask(chat, QUESTION);
+      await expect(ui.assistantTurns).toHaveCount(1);
+      await expect(ui.live).toHaveText(ERROR_TEXT);
+      const retry = ui.panel.getByRole("button", { name: "Reintentar" });
+      expect(await inLiveRegion(retry)).toBe(false);
+      const turn = ui.assistantTurns.first();
+      await expect(turn).toHaveAttribute("tabindex", "-1");
+      await turn.focus();
+      await chat.keyboard.press("Tab");
+      await expect(retry).toBeFocused();
+    });
+  });
+
+  test("the existing accessible names are unchanged", async ({ chat }) => {
+    await chat.addInitScript(() => {
+      (window as unknown as { SpeechRecognition: unknown }).SpeechRecognition = class {
+        onerror: ((event: { error: string }) => void) | null = null;
+        start() {
+          setTimeout(() => this.onerror?.({ error: "not-allowed" }), 0);
+        }
+        stop() {}
+        abort() {}
+      };
+    });
+    await chat.goto("/");
+    const ui = assistantUi(chat);
+    await expect(chat.getByRole("button", { name: "Abrir asistente", exact: true })).toBeVisible();
+    await openSheet(chat);
+    await expect(chat.getByRole("button", { name: "Cerrar asistente", exact: true })).toHaveCount(2);
+    await expect(ui.panel.getByRole("textbox", { name: "Pregunta", exact: true })).toBeVisible();
+    await ui.input.fill("hola");
+    await expect(ui.panel.getByRole("button", { name: "Enviar", exact: true })).toBeEnabled();
+    await ui.panel.getByRole("button", { name: "Dictar pregunta" }).click();
+    await expect(ui.panel.getByRole("alert")).toHaveText("Permite el acceso al micrófono para dictar.");
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+// REQ-22: modality and focus
+
+/** The first starter chip of the empty thread, or the first chip under the latest answer. */
+const firstChip = (page: Page) => assistantUi(page).chips.filter({ visible: true }).first();
+
+test.describe("REQ-22: desktop is non-modal", () => {
+  test("opening focuses the input and the page stays usable", async ({ chat }) => {
+    await chat.goto("/");
+    const ui = await openSheet(chat);
+    await expect(ui.input).toBeFocused();
+    await expect(ui.backdrop).toHaveCount(0);
+    await expect(chat.locator("main.content")).toHaveJSProperty("inert", false);
+    await expect(chat.locator("header.topbar")).toHaveJSProperty("inert", false);
+    expect(await chat.evaluate(() => document.documentElement.style.overflow)).toBe("");
+    await chat.getByRole("link", { name: "Compras" }).click();
+    await expect(chat).toHaveURL(/\/groceries$/);
+    await expect(ui.panel).toBeVisible();
+  });
+
+  test("Escape closes the panel and focuses the FAB", async ({ chat }) => {
+    await chat.goto("/");
+    const ui = await openSheet(chat);
+    await chat.keyboard.press("Escape");
+    await expect(ui.panel).toBeHidden();
+    await expect(ui.fab).toBeFocused();
+    await expect(ui.fab).toHaveAccessibleName("Abrir asistente");
+  });
+
+  test("a chip leaves focus in the input, while pending and after the answer", async ({ chat }) => {
+    const mock = await mockChat(chat, cartAnswer(3), { hold: true });
+    await chat.goto("/");
+    const ui = await openSheet(chat);
+    await firstChip(chat).click();
+    await expect(ui.pending).toHaveCount(1);
+    await expect(ui.input).toBeFocused();
+    mock.release();
+    await expect(ui.assistantTurns).toHaveCount(1);
+    await expect(ui.input).toBeFocused();
+  });
+
+  test("Preguntar en Todo leaves focus in the input", async ({ chat }) => {
+    await mockChat(chat, buildAnswer({ kind: "out_of_scope", lead: [{ text: "Eso no está en este alcance." }] }));
+    await chat.goto("/");
+    const ui = await openSheet(chat);
+    await ask(chat, QUESTION);
+    await expect(ui.assistantTurns).toHaveCount(1);
+    const second = await mockChat(chat, cartAnswer(3), { hold: true });
+    await chat.getByRole("button", { name: "Preguntar en Todo" }).click();
+    await expect(ui.pending).toHaveCount(1);
+    await expect(ui.input).toBeFocused();
+    second.release();
+    await expect(ui.assistantTurns).toHaveCount(2);
+    await expect(ui.input).toBeFocused();
+  });
+
+  test.describe("an error", () => {
+    test.use({ expectedIssues: expectIssues(...FAILED_500) });
+
+    test("Reintentar leaves focus in the input", async ({ chat }) => {
+      await mockChat(chat, cartAnswer(), { status: 500 });
+      await chat.goto("/");
+      const ui = await openSheet(chat);
+      await ask(chat, QUESTION);
+      const retry = chat.getByRole("button", { name: "Reintentar" });
+      await expect(retry).toBeVisible();
+      const second = await mockChat(chat, cartAnswer(3), { hold: true });
+      await retry.click();
+      await expect(ui.pending).toHaveCount(1);
+      await expect(ui.input).toBeFocused();
+      second.release();
+      await expect(ui.live).toContainText("Esto es lo que tienes en tu carrito.");
+      await expect(ui.input).toBeFocused();
+    });
+  });
+});
+
+/** Closing while a question is pending keeps it: the answer is in the thread on reopening and the FAB carries no badge. */
+async function expectAnswerKeptAfterClosing(chat: Page, close: (ui: ReturnType<typeof assistantUi>) => Promise<void>) {
+  const mock = await mockChat(chat, cartAnswer(3), { hold: true });
+  await chat.goto("/");
+  const ui = await openSheet(chat);
+  await ask(chat, QUESTION);
+  await expect(ui.pending).toHaveCount(1);
+  await close(ui);
+  await expect(ui.panel).toBeHidden();
+  mock.release();
+  await expect.poll(() => mock.requests.length).toBe(1);
+  await chat.waitForTimeout(250);
+  await expect(ui.fab).toHaveAccessibleName("Abrir asistente");
+  expect(await ui.fab.evaluate((node) => ({ text: node.textContent?.trim(), children: node.children.length }))).toEqual({ text: "", children: 1 });
+  await ui.fab.click();
+  await expect(ui.assistantTurns).toHaveCount(1);
+  await expect(ui.live).toContainText("Esto es lo que tienes en tu carrito.");
+}
+
+test.describe("REQ-22: closing while pending", () => {
+  test("desktop: the answer lands and the FAB shows no badge", async ({ chat }) => {
+    await expectAnswerKeptAfterClosing(chat, (ui) => ui.fab.click());
+  });
+
+  test.describe("at 360 px", () => {
+    test.use({ viewport: PHONE });
+
+    test("the answer lands and the FAB shows no badge", async ({ chat }) => {
+      await expectAnswerKeptAfterClosing(chat, (ui) => ui.close.click());
+    });
+  });
+});
+
+test.describe("REQ-22: the sheet at 360 px is modal", () => {
+  test.use({ viewport: PHONE });
+
+  test("opening focuses the input, makes the page inert and locks its scroll", async ({ chat }) => {
+    await chat.goto("/");
+    const ui = assistantUi(chat);
+    const scrollable = await chat.evaluate(() => document.documentElement.scrollHeight - document.documentElement.clientHeight);
+    expect(scrollable, "the page scrolls without the sheet").toBeGreaterThan(0);
+    await openSheet(chat);
+    await expect(ui.input).toBeFocused();
+    await expect(chat.locator("main.content")).toHaveJSProperty("inert", true);
+    await expect(chat.locator("header.topbar")).toHaveJSProperty("inert", true);
+    expect(await chat.evaluate(() => getComputedStyle(document.documentElement).overflow)).toBe("hidden");
+
+    await chat.mouse.move(180, 300);
+    await chat.mouse.wheel(0, 400);
+    await chat.mouse.move(3, 300);
+    await chat.mouse.wheel(0, 400);
+    await chat.waitForTimeout(150);
+    expect(await chat.evaluate(() => scrollY)).toBe(0);
+
+    // Script focus cannot reach an inert page either.
+    await chat.locator("main.content a, main.content button").first().evaluate((node) => (node as HTMLElement).focus());
+    await expect(ui.input).toBeFocused();
+
+    await ui.close.click();
+    await expect(chat.locator("main.content")).toHaveJSProperty("inert", false);
+    await expect(chat.locator("header.topbar")).toHaveJSProperty("inert", false);
+    expect(await chat.evaluate(() => document.documentElement.style.overflow)).toBe("");
+  });
+
+  test("Tab and Shift+Tab never leave the sheet and wrap at its ends", async ({ chat }) => {
+    await withMic(chat);
+    await mockChat(chat, cartAnswer(3));
+    await chat.goto("/");
+    const ui = await openSheet(chat);
+    await ask(chat, QUESTION);
+    await expect(ui.assistantTurns).toHaveCount(1);
+    await ui.input.fill("hola");
+    const inside = () => chat.evaluate(() => Boolean(document.activeElement?.closest("#assistant-chat-panel")));
+    const seen = new Set<string>();
+    const name = () => chat.evaluate(() => document.activeElement?.getAttribute("aria-label") ?? document.activeElement?.textContent?.trim() ?? document.activeElement?.tagName ?? "");
+    for (let press = 0; press < 20; press++) {
+      await chat.keyboard.press("Tab");
+      expect(await inside(), `Tab ${press + 1}`).toBe(true);
+      seen.add(await name());
+    }
+    for (let press = 0; press < 20; press++) {
+      await chat.keyboard.press("Shift+Tab");
+      expect(await inside(), `Shift+Tab ${press + 1}`).toBe(true);
+    }
+    // The ends: Enviar is the last control, the first one is Nueva conversación.
+    expect([...seen]).toEqual(expect.arrayContaining(["Cerrar asistente", "Enviar", "Nueva conversación", "Pregunta"]));
+    await ui.send.focus();
+    await chat.keyboard.press("Tab");
+    await expect(chat.getByRole("button", { name: "Nueva conversación" })).toBeFocused();
+    await chat.keyboard.press("Shift+Tab");
+    await expect(ui.send).toBeFocused();
+  });
+
+  test("× closes the sheet and focus returns to the FAB", async ({ chat }) => {
+    await chat.goto("/");
+    const ui = await openSheet(chat);
+    await ui.close.click();
+    await expect(ui.panel).toBeHidden();
+    await expect(ui.fab).toBeVisible();
+    await expect(ui.fab).toBeFocused();
+  });
+
+  test("Escape closes the sheet and focus returns to the FAB", async ({ chat }) => {
+    await chat.goto("/");
+    const ui = await openSheet(chat);
+    await chat.keyboard.press("Escape");
+    await expect(ui.panel).toBeHidden();
+    await expect(ui.fab).toBeFocused();
+  });
+
+  test("Ir al último mensaje and Nueva conversación focus the input", async ({ chat }) => {
+    await mockChat(chat, cartAnswer(8));
+    await chat.goto("/");
+    const ui = await openSheet(chat);
+    for (let turn = 1; turn <= 3; turn++) {
+      await ask(chat, QUESTION);
+      await expect(ui.assistantTurns).toHaveCount(turn);
+    }
+    await ui.log.evaluate((node) => node.scrollTo({ top: 0, behavior: "instant" }));
+    await chat.getByRole("button", { name: "Ir al último mensaje" }).click();
+    await expect(ui.input).toBeFocused();
+    await chat.getByRole("button", { name: "Nueva conversación" }).click();
+    await expect(ui.input).toBeFocused();
+  });
+
+  test("a chip focuses the log while pending, then the new turn, which is script-focusable only", async ({ chat }) => {
+    const mock = await mockChat(chat, cartAnswer(3), { hold: true });
+    await chat.goto("/");
+    const ui = await openSheet(chat);
+    await firstChip(chat).click();
+    await expect(ui.pending).toHaveCount(1);
+    await expect(ui.log).toBeFocused();
+    mock.release();
+    await expect(ui.assistantTurns).toHaveCount(1);
+    await expect(ui.assistantTurns.last()).toBeFocused();
+    await expect(ui.assistantTurns.last()).toHaveAttribute("tabindex", "-1");
+  });
+
+  test("a chip under an answer and Preguntar en Todo do the same", async ({ chat }) => {
+    await mockChat(chat, buildAnswer({ kind: "out_of_scope", lead: [{ text: "Eso no está en este alcance." }] }));
+    await chat.goto("/");
+    const ui = await openSheet(chat);
+    await ask(chat, QUESTION);
+    await expect(ui.assistantTurns).toHaveCount(1);
+    const second = await mockChat(chat, cartAnswer(3), { hold: true });
+    await chat.getByRole("button", { name: "Preguntar en Todo" }).click();
+    await expect(ui.pending).toHaveCount(1);
+    await expect(ui.log).toBeFocused();
+    second.release();
+    await expect(ui.assistantTurns).toHaveCount(2);
+    await expect(ui.assistantTurns.last()).toBeFocused();
+
+    const third = await mockChat(chat, cartAnswer(2), { hold: true });
+    await ui.chips.filter({ visible: true }).first().click();
+    await expect(ui.pending).toHaveCount(1);
+    await expect(ui.log).toBeFocused();
+    third.release();
+    await expect(ui.assistantTurns).toHaveCount(3);
+    await expect(ui.assistantTurns.last()).toBeFocused();
+  });
+
+  test("focus the user moved elsewhere while waiting is left alone", async ({ chat }) => {
+    const mock = await mockChat(chat, cartAnswer(3), { hold: true });
+    await chat.goto("/");
+    const ui = await openSheet(chat);
+    await firstChip(chat).click();
+    await expect(ui.log).toBeFocused();
+    await ui.input.focus();
+    mock.release();
+    await expect(ui.assistantTurns).toHaveCount(1);
+    await expect(ui.input).toBeFocused();
+  });
+
+  test.describe("a failing chip", () => {
+    test.use({ expectedIssues: expectIssues(...FAILED_500) });
+
+    test("focus is on the log while pending, then on the error turn, and Tab reaches Reintentar, which works the same way", async ({ chat }) => {
+      const mock = await mockChat(chat, cartAnswer(), { status: 500, hold: true });
+      await chat.goto("/");
+      const ui = await openSheet(chat);
+      await firstChip(chat).click();
+      await expect(ui.pending).toHaveCount(1);
+      await expect(ui.log).toBeFocused();
+      mock.release();
+      await expect(ui.assistantTurns).toHaveCount(1);
+      await expect(ui.live).toHaveText(ERROR_TEXT);
+      await expect(ui.assistantTurns.first()).toBeFocused();
+      await expect(ui.assistantTurns.first()).toHaveAttribute("tabindex", "-1");
+      await chat.keyboard.press("Tab");
+      const retry = chat.getByRole("button", { name: "Reintentar" });
+      await expect(retry).toBeFocused();
+
+      const second = await mockChat(chat, cartAnswer(3), { hold: true });
+      await retry.press("Enter");
+      await expect(ui.pending).toHaveCount(1);
+      await expect(ui.log).toBeFocused();
+      second.release();
+      await expect(ui.live).toContainText("Esto es lo que tienes en tu carrito.");
+      await expect(ui.assistantTurns.first()).toBeFocused();
+    });
   });
 });
 
